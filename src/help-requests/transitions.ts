@@ -2,9 +2,18 @@
  * 依頼の状態を進める処理(純粋関数)。もとの依頼は書き換えず、新しい依頼を作って返す。
  * できないとき(権限がない・状態が合わない)は、理由つきの失敗を返す。
  */
-import { fail, findHelper, isJoinable, isOpen, leaderOf, MAX_HELPERS, succeed } from "./model.js";
+import {
+  fail,
+  findHelper,
+  isJoinable,
+  isOpen,
+  leaderOf,
+  MAX_HELPERS,
+  succeed,
+  withoutLocation,
+} from "./model.js";
 import type { Helper, HelpRequest, Ratings, Result } from "./model.js";
-import type { FinishInput, JoinInput } from "./inputs.js";
+import type { FinishInput, JoinInput, LocationInput } from "./inputs.js";
 import { canFinish, canStart, pickLeader } from "./leader.js";
 import type { RandomSource } from "./leader.js";
 import {
@@ -44,9 +53,30 @@ export function arrive(r: HelpRequest, userId: string, now: Date): Result<HelpRe
     return fail(409, "この依頼は、いまは到着を受け付けていません。");
   }
   if (helper.arrivedAt) return succeed(r);
+  // 着いたら現在地はもう要らないので消す(お年寄りの画面は「着きました」に変わる)
   const helpers = r.helpers.map((h) =>
-    h.userId === userId ? { ...h, arrivedAt: now.toISOString() } : h,
+    h.userId === userId ? { ...withoutLocation(h), arrivedAt: now.toISOString() } : h,
   );
+  return succeed({ ...r, helpers });
+}
+
+/**
+ * 向かっている若者の現在地を残す(参加者だけ・到着前だけ)。
+ * 状態が accepted(参加あり)か working(雪かき中)で、その人がまだ到着していないときだけ受け付ける。
+ */
+export function recordLocation(
+  r: HelpRequest,
+  input: LocationInput,
+  now: Date,
+): Result<HelpRequest> {
+  const helper = findHelper(r, input.userId);
+  if (!helper) return NOT_HELPER;
+  if (r.status !== "accepted" && r.status !== "working") {
+    return fail(409, "この依頼は、いまは位置を受け付けていません。");
+  }
+  if (helper.arrivedAt) return fail(409, "到着したので、位置はもう送らなくて大丈夫です。");
+  const location = { lat: input.lat, lng: input.lng, accuracy: input.accuracy, at: now.toISOString() };
+  const helpers = r.helpers.map((h) => (h.userId === input.userId ? { ...h, location } : h));
   return succeed({ ...r, helpers });
 }
 

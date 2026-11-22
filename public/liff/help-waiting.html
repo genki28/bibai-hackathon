@@ -7,9 +7,16 @@
     <!--
       【お年寄り】助けを呼んだ後の待機画面。リッチメニューの「たすけて」を押したとき、すでに呼んでいればこの画面になる。
       受注状況を数秒ごとに更新する: お待ちください → 受注が完了しました(向かってくる人の名前)→ 雪かき中です → 終わったら「いいねを送る」。
+      向かっている人がいる間は、地図にその人の現在地と「あと約〇分」を出す(elder-live-map.js)。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md(お年寄りのトーン)を見てください。
     -->
     <link rel="stylesheet" href="./template.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
     <style>
       /* やさしい冬のトーン。状態のアイコンを大きな丸に入れる */
       #status-icon {
@@ -87,6 +94,78 @@
       #step-cancelled {
         text-align: center;
       }
+      /* 来てくれる人の現在地(elder-live-map.js)。お年寄り向けに地図も文字も大きく */
+      .live-section {
+        margin: 24px 0 8px;
+      }
+      .live-section h2 {
+        margin: 0 0 12px;
+        font-size: 1.3rem;
+        color: #235341;
+      }
+      #live-map {
+        height: 340px;
+        border: 1px solid #cadcd2;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #e4ece7;
+      }
+      .live-list {
+        margin: 14px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .live-row {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+        border: 1px solid #cadcd2;
+        border-left: 6px solid #a84320;
+        border-radius: 12px;
+        background: #fff;
+      }
+      .live-row.is-arrived {
+        border-left-color: #286250;
+      }
+      .live-row.is-no-location {
+        border-left-color: #9aa9a3;
+      }
+      .live-main {
+        font-size: 1.35rem;
+        font-weight: 800;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+        color: #243d3a;
+      }
+      .live-sub {
+        font-size: 1.05rem;
+        color: #536762;
+      }
+      /* 地図の上の、若者のアイコンと名前の札(map.js の showPersonMarker) */
+      .person-marker {
+        background: transparent;
+        border: 0;
+      }
+      .person-marker-icon {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        border: 3px solid #fff;
+        border-radius: 50%;
+        font-size: 1.5rem;
+        line-height: 1;
+        background: #a84320;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+      }
+      .leaflet-tooltip.person-label {
+        padding: 2px 8px;
+        font-size: 1rem;
+        font-weight: 800;
+        color: #243d3a;
+      }
     </style>
     <link rel="stylesheet" href="./snow-ui.css" />
   </head>
@@ -110,6 +189,12 @@
         <p id="request-status" class="center"><strong>読み込み中です…</strong></p>
         <p id="request-helpers" class="center"></p>
         </div>
+        <section id="live-section" class="live-section" aria-label="来てくれる人の現在地" hidden>
+          <h2>いま来てくれている人</h2>
+          <div id="live-map" role="img" aria-label="来てくれる人の現在地の地図"></div>
+          <ul id="live-list" class="live-list" aria-live="polite"></ul>
+          <p class="note">「あと約〇分」は、まっすぐ歩いたときの目安です。</p>
+        </section>
         <p id="request-detail" class="note center"></p>
         <a id="thanks-link" class="button" href="./thanks.html" hidden>ありがとうを伝える</a>
         <button id="cancel-button" class="button danger" type="button" hidden>おねがいを取り消す</button>
@@ -125,6 +210,11 @@
         <p class="note">また雪かきが必要になったら、メニューの「たすけて」を押してください。</p>
       </section>
     </main>
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script type="module" src="./help-waiting.js"></script>
   </body>

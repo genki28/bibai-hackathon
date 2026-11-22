@@ -8,7 +8,7 @@ import { randomUUID } from "node:crypto";
 import { ACTIVE_CANDIDATE_STATUSES, findActiveFor } from "./active.js";
 import { fail, isJoinable, isOngoingForElder, MAX_HELPERS } from "./model.js";
 import type { HelpRequest, HelpRequestInput, Ratings, Result } from "./model.js";
-import type { FinishInput, JoinInput } from "./inputs.js";
+import type { FinishInput, JoinInput, LocationInput } from "./inputs.js";
 import { createMemoryHelpRequestRepository, ONGOING_STATUSES } from "./repository.js";
 import type { HelpRequestRepository } from "./repository.js";
 import * as transitions from "./transitions.js";
@@ -47,6 +47,8 @@ export type HelpRequestStore = {
   readonly cancel: (id: string, userId: string, now: Date) => Promise<Result<HelpRequest>>;
   /** スコップ計の回数を残す(雪かき中の参加者だけ。前より増えたときだけ)。 */
   readonly recordScoops: (id: string, userId: string, count: number) => Promise<Result<HelpRequest>>;
+  /** 向かっている若者の現在地を残す(参加者だけ・到着前だけ)。 */
+  readonly recordLocation: (id: string, input: LocationInput, now: Date) => Promise<Result<HelpRequest>>;
   readonly thank: (
     id: string,
     userId: string,
@@ -160,6 +162,7 @@ export function createHelpRequestStore(
       update(id, (r) => transitions.finish(r, input, snowDepthM, now)),
     cancel: (id, userId, now) => update(id, (r) => transitions.cancel(r, userId, now)),
     recordScoops: (id, userId, count) => update(id, (r) => transitions.recordScoops(r, userId, count)),
+    recordLocation: (id, input, now) => update(id, (r) => transitions.recordLocation(r, input, now)),
     thank: (id, userId, ratings, now) =>
       update(id, (r) => transitions.thank(r, userId, ratings, now)),
     deleteInvolving: (userIds) => repo.deleteInvolving(userIds),

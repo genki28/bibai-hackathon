@@ -40,6 +40,22 @@ export type HelpRequestInput = HelpRequestExtras & {
 };
 
 /**
+ * 向かっている若者の現在地(到着するまでの間だけ持つ)。
+ * 見えるのは依頼したお年寄り本人だけ(views.ts で分ける)。到着・参加の取り消しで消える。
+ */
+export type HelperLocation = {
+  readonly lat: number;
+  readonly lng: number;
+  /** 位置の誤差(m)。分からなければ null。 */
+  readonly accuracy: number | null;
+  /** 位置を受け取った時刻。 */
+  readonly at: string;
+};
+
+/** これより古い位置は、お年寄りの画面に出さない(分)。 */
+export const LOCATION_MAX_AGE_MINUTES = 30;
+
+/**
  * 参加した若者。リーダーは雪かきを開始した瞬間にランダムで決まる(HelpRequest.leaderUserId)。
  * リーダーの役割は「雪かきを行った範囲に丸を付ける(= 終了する)」ことだけ。
  */
@@ -50,6 +66,8 @@ export type Helper = {
   readonly arrivedAt: string | null;
   /** スコップ計で数えた、すくった回数。使っていなければ省略(ポイントには入れない)。 */
   readonly scoops?: number;
+  /** 向かっている間の現在地。共有していない・到着したあとは省略。 */
+  readonly location?: HelperLocation;
 };
 
 /** 雪かきの結果。参加した全員に workPoints が入る。 */
@@ -121,3 +139,9 @@ export const findHelper = (r: HelpRequest, userId: string): Helper | null =>
 /** リーダー(開始前は null)。 */
 export const leaderOf = (r: HelpRequest): Helper | null =>
   r.leaderUserId ? findHelper(r, r.leaderUserId) : null;
+
+/** 現在地を除いた参加者(もとの参加者は変えない)。 */
+export function withoutLocation(helper: Helper): Helper {
+  const { location: _location, ...rest } = helper;
+  return rest;
+}

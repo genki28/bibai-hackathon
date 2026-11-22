@@ -8,6 +8,7 @@ import {
   parseFinishInput,
   parseHelpRequestInput,
   parseJoinInput,
+  parseLocationInput,
   parseScoopsInput,
   parseThanksInput,
   parseUserIdInput,
@@ -45,12 +46,12 @@ const sendError = (res: Response, status: number, error: string): void => {
 };
 
 /** 依頼の結果を、操作した本人から見た形で返す。 */
-function sendResult(res: Response, result: Result<HelpRequest>, userId: string): void {
+function sendResult(res: Response, result: Result<HelpRequest>, userId: string, at: Date): void {
   if (!result.ok) {
     sendError(res, result.status, result.error);
     return;
   }
-  res.json({ success: true, data: toViewFor(result.value, userId) });
+  res.json({ success: true, data: toViewFor(result.value, userId, at) });
 }
 
 /** ?userId= を読む。なければ null、形がおかしければ undefined。 */
@@ -94,7 +95,7 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
       return;
     }
     const mine = await store.findMine(userId);
-    res.json({ success: true, data: mine ? toMemberView(mine, "elder") : null });
+    res.json({ success: true, data: mine ? toMemberView(mine, "elder", now()) : null });
   });
 
   // 若者が画面を閉じたあと、続きに戻るため: いま参加している雪かき(その人から見た形)か null
@@ -105,7 +106,7 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
       return;
     }
     const active = await store.findActive(userId, now());
-    res.json({ success: true, data: active ? toMemberView(active, "helper") : null });
+    res.json({ success: true, data: active ? toMemberView(active, "helper", now()) : null });
   });
 
   router.get("/api/help-requests/:id", async (req, res) => {
@@ -119,7 +120,7 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
       sendError(res, 404, NOT_FOUND);
       return;
     }
-    res.json({ success: true, data: toViewFor(request, userId) });
+    res.json({ success: true, data: toViewFor(request, userId, now()) });
   });
 
   // お疲れ様の画面用: この依頼で自分がもらったポイントの内訳(参加者だけ・終わった依頼だけ)
@@ -154,12 +155,13 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
         sendError(res, 400, INVALID_REQUEST_ID);
         return;
       }
-      const result = await action(id, req.body, now());
+      const at = now();
+      const result = await action(id, req.body, at);
       if (!result) {
         sendError(res, 400, INVALID_INPUT);
         return;
       }
-      sendResult(res, result, (req.body as { userId: string }).userId);
+      sendResult(res, result, (req.body as { userId: string }).userId, at);
     });
   };
 
@@ -200,6 +202,11 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
   post("scoops", async (id, body) => {
     const input = parseScoopsInput(body);
     return input ? store.recordScoops(id, input.userId, input.count) : null;
+  });
+  // 向かっている若者の現在地(参加者だけ・到着前だけ)。見えるのは依頼したお年寄り本人だけ(views.ts)
+  post("location", async (id, body, at) => {
+    const input = parseLocationInput(body);
+    return input ? store.recordLocation(id, input, at) : null;
   });
   post("thanks", async (id, body, at) => {
     const input = parseThanksInput(body);

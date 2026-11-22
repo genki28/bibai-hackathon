@@ -63,6 +63,34 @@ export function showPin(map, point, label) {
   return marker;
 }
 
+/**
+ * 人の印(丸いアイコン + 名前の札)を置く。名前は利用者が決めた文字なので、
+ * HTML の文字列ではなく要素(textContent)で渡す。
+ */
+export function showPersonMarker(map, point, name, emoji = "🏃") {
+  const L = window.L;
+  const icon = document.createElement("span");
+  icon.className = "person-marker-icon";
+  icon.textContent = emoji;
+  const label = document.createElement("span");
+  label.textContent = name;
+  const marker = L.marker([point.lat, point.lng], {
+    icon: L.divIcon({ className: "person-marker", html: icon, iconSize: [44, 44], iconAnchor: [22, 22] }),
+    keyboard: false,
+  }).addTo(map);
+  marker.bindTooltip(label, { permanent: true, direction: "top", offset: [0, -22], className: "person-label" });
+  return marker;
+}
+
+/** points がすべて見えるように地図を動かす(1 点だけならそこを真ん中に)。 */
+export function fitToPoints(map, points, maxZoom = DETAIL_ZOOM) {
+  if (points.length === 0) return;
+  if (points.length === 1) {
+    map.setView([points[0].lat, points[0].lng], maxZoom);
+    return;
+  }
+  map.fitBounds(points.map((p) => [p.lat, p.lng]), { padding: [48, 48], maxZoom });
+}
 
 /** 範囲を描くときの 2 つのモード。move = 地図を動かす、draw = タップで点を足す。 */
 export const AREA_MODE = Object.freeze({ move: "move", draw: "draw" });

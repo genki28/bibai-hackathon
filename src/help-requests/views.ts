@@ -1,10 +1,11 @@
 /**
  * 依頼を「だれに見せるか」で形を変える。
  * - 参加していない若者(一覧など): 名前・住所・正確な位置・ユーザー ID は見せない。位置はおおまか(約 1km)だけ
- * - 依頼した本人と参加した若者: すべて見せる
+ * - 依頼した本人と参加した若者: すべて見せる。ただし向かっている若者の現在地(helpers[].location)は
+ *   依頼したお年寄り本人だけに見せる。お年寄りにも、到着前で 30 分以内の位置だけを出す
  */
-import { findHelper, leaderOf, MAX_HELPERS } from "./model.js";
-import type { HelpRequest, HelpRequestStatus, SnowAmount } from "./model.js";
+import { findHelper, leaderOf, LOCATION_MAX_AGE_MINUTES, MAX_HELPERS, withoutLocation } from "./model.js";
+import type { Helper, HelpRequest, HelpRequestStatus, SnowAmount } from "./model.js";
 
 /** 位置がない依頼に使う、美唄市の中心あたり。 */
 export const BIBAI_CENTER = { lat: 43.33, lng: 141.853 } as const;
@@ -76,9 +77,31 @@ export function toPublicView(r: HelpRequest): PublicHelpRequest {
   };
 }
 
-export function toMemberView(r: HelpRequest, viewer: "elder" | "helper"): MemberHelpRequest {
+const MS_PER_MINUTE = 60_000;
+
+/** お年寄りに見せてよい位置か(向かっている途中で、30 分以内に届いた位置)。 */
+function isShowableLocation(r: HelpRequest, helper: Helper, now: Date): boolean {
+  if (!helper.location || helper.arrivedAt) return false;
+  if (r.status !== "accepted" && r.status !== "working") return false;
+  const ageMs = now.getTime() - new Date(helper.location.at).getTime();
+  return ageMs <= LOCATION_MAX_AGE_MINUTES * MS_PER_MINUTE;
+}
+
+/** 見る人に合わせて、参加者の現在地を残す / 消す。お年寄り以外にはいつも消す。 */
+function helpersFor(r: HelpRequest, viewer: "elder" | "helper", now: Date): readonly Helper[] {
+  return r.helpers.map((h) =>
+    viewer === "elder" && isShowableLocation(r, h, now) ? h : withoutLocation(h),
+  );
+}
+
+export function toMemberView(
+  r: HelpRequest,
+  viewer: "elder" | "helper",
+  now: Date,
+): MemberHelpRequest {
   return {
     ...r,
+    helpers: helpersFor(r, viewer, now),
     area: roughArea(r.address),
     capacity: MAX_HELPERS,
     leaderUserId: leaderOf(r)?.userId ?? null,
@@ -90,7 +113,8 @@ export function toMemberView(r: HelpRequest, viewer: "elder" | "helper"): Member
 export function toViewFor(
   r: HelpRequest,
   userId: string | null,
+  now: Date,
 ): PublicHelpRequest | MemberHelpRequest {
   const viewer = viewerOf(r, userId);
-  return viewer === "guest" ? toPublicView(r) : toMemberView(r, viewer);
+  return viewer === "guest" ? toPublicView(r) : toMemberView(r, viewer, now);
 }
