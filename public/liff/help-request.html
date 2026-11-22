@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>雪かきをおねがいする</title>
+    <!--
+      お年寄り向けの「助けを呼ぶ」フォームです。
+      見た目(このファイルの <style> と文章)は自由に変えて OK。
+      ただし、id="..." と name="amount" / value="..." は動きに使っているので変えないこと。
+      詳しくは docs/guides/help-request-form-for-gemini.md を見てください。
+    -->
+    <style>
+      :root {
+        --main: #e8590c;
+        --main-dark: #c2410c;
+        --text: #1f2933;
+        --sub: #52606d;
+        --bg: #fff8f1;
+        --card: #ffffff;
+      }
+      body {
+        margin: 0;
+        padding: 24px 16px;
+        font-family: system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", sans-serif;
+        font-size: 1.25rem;
+        line-height: 1.7;
+        color: var(--text);
+        background: var(--bg);
+      }
+      main {
+        max-width: 480px;
+        margin: 0 auto;
+        padding: 24px 20px;
+        border-radius: 16px;
+        background: var(--card);
+        text-align: center;
+      }
+      h1 {
+        margin: 0 0 16px;
+        font-size: 1.8rem;
+        line-height: 1.4;
+      }
+      .icon {
+        font-size: 4rem;
+        line-height: 1.2;
+      }
+      fieldset {
+        margin: 16px 0;
+        padding: 0;
+        border: 0;
+      }
+      legend {
+        margin-bottom: 8px;
+        color: var(--sub);
+        font-size: 1.1rem;
+      }
+      .amounts {
+        display: flex;
+        gap: 8px;
+      }
+      .amounts label {
+        flex: 1;
+        padding: 14px 4px;
+        border: 3px solid #e4e7eb;
+        border-radius: 12px;
+        font-size: 1.2rem;
+        cursor: pointer;
+      }
+      .amounts input {
+        position: absolute;
+        opacity: 0;
+      }
+      .amounts label:has(input:checked) {
+        border-color: var(--main);
+        background: #fff1e6;
+        font-weight: 700;
+      }
+      .amounts label:has(input:focus-visible) {
+        outline: 3px solid #1c7ed6;
+        outline-offset: 2px;
+      }
+      button {
+        width: 100%;
+        border: 0;
+        border-radius: 14px;
+        cursor: pointer;
+      }
+      .primary {
+        min-height: 88px;
+        margin-top: 16px;
+        font-size: 2rem;
+        font-weight: 700;
+        color: #fff;
+        background: var(--main);
+      }
+      .primary:active {
+        background: var(--main-dark);
+      }
+      .secondary {
+        min-height: 56px;
+        margin-top: 12px;
+        font-size: 1.2rem;
+        color: var(--text);
+        background: #e4e7eb;
+      }
+      .spinner {
+        width: 56px;
+        height: 56px;
+        margin: 16px auto;
+        border: 6px solid #ffe8d6;
+        border-top-color: var(--main);
+        border-radius: 50%;
+        animation: spin 0.9s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .spinner {
+          animation: none;
+        }
+      }
+      #error {
+        color: #b42318;
+        font-weight: 700;
+      }
+      .preview-note {
+        margin: 0 0 12px;
+        padding: 8px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        background: #fff4d6;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p id="preview-note" class="preview-note" hidden>
+        おためし表示中です。依頼は送られません。
+      </p>
+
+      <!-- 1. 最初の画面: 呼ぶかどうか聞く -->
+      <section id="step-ask">
+        <div class="icon" aria-hidden="true">⛄</div>
+        <h1>雪かきを<br />おねがいしますか?</h1>
+
+        <fieldset>
+          <legend>雪の多さ(えらばなくても大丈夫です)</legend>
+          <div class="amounts">
+            <label><input type="radio" name="amount" value="little" />すこし</label>
+            <label><input type="radio" name="amount" value="normal" checked />ふつう</label>
+            <label><input type="radio" name="amount" value="lots" />たくさん</label>
+          </div>
+        </fieldset>
+
+        <button id="call-button" class="primary" type="button">よぶ</button>
+        <button id="cancel-button" class="secondary" type="button">やめる</button>
+      </section>
+
+      <!-- 2. 送っている途中 -->
+      <section id="step-sending" hidden>
+        <div class="spinner" aria-hidden="true"></div>
+        <p role="status">おねがいしています…</p>
+      </section>
+
+      <!-- 3. 送れた -->
+      <section id="step-done" hidden>
+        <div class="icon" aria-hidden="true">✅</div>
+        <h1>おねがいしました</h1>
+        <p>だれかが来るときは、LINE でお知らせします。</p>
+        <button id="close-button" class="secondary" type="button">とじる</button>
+      </section>
+
+      <p id="error" role="alert" hidden></p>
+    </main>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script type="module" src="./help-request.js"></script>
+  </body>
+</html>

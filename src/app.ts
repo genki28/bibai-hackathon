@@ -4,6 +4,7 @@ import type { ErrorRequestHandler, Express, RequestHandler } from "express";
 import { fileURLToPath } from "node:url";
 import { createWebhookHandlers } from "./bot/webhook.js";
 import { isBotConfigured, isLiffConfigured } from "./config.js";
+import { createHelpRequestRouter } from "./help-requests/routes.js";
 import { createIdentityRouter } from "./identity/routes.js";
 import { createWeatherRouter } from "./weather/routes.js";
 import type { WeatherRouterOptions } from "./weather/routes.js";
@@ -78,6 +79,8 @@ export function createApp(
   app.use(createIdentityRouter());
   // 美唄の雪の予報(Open-Meteo)
   app.use(createWeatherRouter(weatherOptions));
+  // お年寄りからの雪かきの依頼
+  app.use(createHelpRequestRouter());
 
   app.get("/", (_req, res) => {
     res.redirect("/liff/");
