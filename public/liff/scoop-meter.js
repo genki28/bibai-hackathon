@@ -15,7 +15,7 @@ const SEND_INTERVAL_MS = 10_000;
 /** オンにしたのに、この時間センサーの値が 1 つも届かなければ「使えない / 許可が切れた」とみなす(ミリ秒)。 */
 const NO_SIGNAL_MS = 2500;
 const STORAGE_PREFIX = "scoop-meter:";
-const UNAVAILABLE_TEXT = "この端末ではスコップ計が使えません(画面の経過時間で記録します)";
+const UNAVAILABLE_TEXT = "この端末ではスコップ計が使えません";
 
 /** 端末に覚えている { count, isOn }。読めなければ 0 回・オフ。 */
 function loadSaved(requestId) {

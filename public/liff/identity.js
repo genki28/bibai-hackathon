@@ -49,7 +49,7 @@ const CHALLENGE_PAUSE_MS = 600;
 const REQUEST_ID_PATTERN = /^[0-9a-f-]{36}$/;
 
 const METHOD_LABELS = {
-  "face-match-demo": "顔の照合(デモ)",
+  "face-match-demo": "顔の照合",
   "mynumber-card-mock": "予備のデモボタン(何も確かめていません)",
 };
 

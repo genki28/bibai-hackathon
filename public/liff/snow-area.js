@@ -26,14 +26,14 @@ const START_SQUARE_SIZE_M = 15;
 const MODE_TEXT = {
   [AREA_MODE.move]: {
     badge: "✋ 地図を動かす",
-    hint: "点をつまんで動かせます。点をタップすると消えます。",
+    hint: "点をつまんで動かす・タップで消す",
   },
   [AREA_MODE.draw]: {
     badge: "✏️ 描いています",
-    hint: "地図をタップすると点が増えます。辺の真ん中の丸を引っぱっても増えます。",
+    hint: "地図をタップで点を追加",
   },
 };
-const EMPTY_HINT = "[四角で始める] を押すか、[範囲を描く] にして地図をタップしてください。";
+const EMPTY_HINT = "[四角で始める] か、地図をタップ";
 
 let areaM2 = 0;
 let pointCount = 0;

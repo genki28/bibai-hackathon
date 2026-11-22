@@ -27,9 +27,9 @@ const FAKE_STEP_M = 150;
 const STATUS = {
   sharing: "📍 位置を共有しています(到着するまで)",
   waitingFix: "📍 位置を読み込んでいます…",
-  off: "位置は共有していません(参加はそのまま続けられます)",
-  failed: "位置を取得できませんでした(参加はそのまま続けられます)",
-  unsupported: "この端末では位置を取得できませんでした(参加はそのまま続けられます)",
+  off: "位置は共有していません",
+  failed: "位置を取得できませんでした",
+  unsupported: "この端末では位置を取得できません",
 };
 
 function loadChoice() {
