@@ -96,6 +96,17 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
     res.json({ success: true, data: mine ? toMemberView(mine, "elder") : null });
   });
 
+  // 若者が画面を閉じたあと、続きに戻るため: いま参加している雪かき(その人から見た形)か null
+  router.get("/api/help-requests/active/:userId", async (req, res) => {
+    const { userId } = req.params;
+    if (!isValidUserId(userId)) {
+      sendError(res, 400, INVALID_USER_ID);
+      return;
+    }
+    const active = await store.findActive(userId, now());
+    res.json({ success: true, data: active ? toMemberView(active, "helper") : null });
+  });
+
   router.get("/api/help-requests/:id", async (req, res) => {
     const userId = readUserIdQuery(req.query.userId);
     if (!isValidRequestId(req.params.id) || userId === undefined) {

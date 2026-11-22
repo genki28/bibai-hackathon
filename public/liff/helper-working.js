@@ -1,5 +1,5 @@
 // 【若者】雪かき中の動き。開始時刻はサーバーにあるので、開き直しても経過時間は続きから出る。
-// 終わったら(リーダーが範囲に丸を付けたら)、自動でお疲れ様の画面へ進む。雪かきの様子はドット絵(pixel-snow.js)で描く。
+// 終わったら(リーダーが範囲に丸を付けたら)、自動でお疲れ様の画面へ進む。スリープなどから戻った瞬間にも読み直す(request-page.js)。雪かきの様子はドット絵(pixel-snow.js)で描く。
 // [雪かきを終える] は、リーダーなら範囲の画面へ。リーダー以外は「リーダーを待つ」表示にして、数秒ごとに読み直す。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
@@ -7,6 +7,7 @@ import { byId } from "./common.js";
 import { navigateTo, pageReady } from "./loading.js";
 import {
   fetchRequest,
+  onPageVisible,
   pageUrl,
   requestIdFromUrl,
   showError,
@@ -43,6 +44,8 @@ function startTimer(startedAt) {
   };
   tick();
   setInterval(tick, TICK_MS);
+  // スリープなどから戻った瞬間に、経過時間をすぐ合わせ直す(隠れている間はタイマーが遅れることがある)
+  onPageVisible(tick);
   return getElapsedMs;
 }
 

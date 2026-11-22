@@ -1,4 +1,5 @@
 // 【若者】参加した依頼の場所・詳細の動き。正確な住所と地図は、参加した人にだけ見せる。
+// スリープなどから戻った瞬間に読み直し、雪かきが始まっていれば雪かき中の画面へ進む。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId } from "./common.js";
@@ -6,6 +7,7 @@ import { navigateTo, pageReady } from "./loading.js";
 import { createMap, DETAIL_ZOOM, pointOf, showPin } from "./map.js";
 import {
   fetchRequest,
+  onPageVisible,
   pageUrl,
   postAction,
   requestIdFromUrl,
@@ -57,12 +59,28 @@ async function main() {
     return;
   }
   render(request);
+  // スリープなどから戻ったとき、ほかの人が雪かきを始めていたら雪かき中の画面へ(取り消されていればその表示)
+  const stopWatching = onPageVisible(async () => {
+    try {
+      const latest = await fetchRequest(id, userId);
+      if (stopIfUnavailable(latest)) {
+        stopWatching();
+        return;
+      }
+      if (latest.status === "working" || latest.status === "done") {
+        stopWatching();
+        navigateTo(pageUrl("helper-working.html", id), { replace: true });
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  });
 
   byId("leave-button").addEventListener("click", () =>
     runWithButton("leave-button", async () => {
       if (!confirm("この依頼への参加を取り消しますか?")) return;
       await postAction(id, "leave", { userId });
-      navigateTo("./go-help.html");
+      navigateTo("./go-help.html?list=1");
     }),
   );
   byId("arrive-button").addEventListener("click", () =>

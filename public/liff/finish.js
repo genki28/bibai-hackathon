@@ -13,6 +13,7 @@ import {
   showMessageOnly,
   stopIfUnavailable,
 } from "./request-page.js";
+import { markFinishSeen } from "./resume.js";
 import { userIdPromise } from "./template.js";
 
 /** 星 1 つあたりのポイント。src/help-requests/score.ts の POINTS_PER_STAR と同じ値。 */
@@ -77,6 +78,8 @@ async function main() {
     return;
   }
   const points = await loadPoints(id, userId, request);
+  // 見たことを覚えておき、「助けに行く」を開いたときに、もう一度ここへ移らないようにする
+  markFinishSeen(id);
   // スコアのカウントアップと紙吹雪が見えるように、出す直前に画面を見せる(仲間ゲージはあとから伸びる)
   pageReady();
   render(request, points);

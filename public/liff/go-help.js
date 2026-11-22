@@ -6,6 +6,7 @@ import { byId, callApi, isPreviewMode } from "./common.js";
 import { navigateTo, pageReady } from "./loading.js";
 import { createMap, ROUGH_ZOOM, showRoughArea } from "./map.js";
 import { el, postAction, showError } from "./request-page.js";
+import { resumeIfActive } from "./resume.js";
 import { profilePromise } from "./template.js";
 
 const PAGE_SIZE = 5;
@@ -158,10 +159,17 @@ byId("confirm-back-button").addEventListener("click", () => {
 });
 byId("confirm-button").addEventListener("click", onConfirm);
 
-// 一覧がそろってから画面を見せる
-loadRequests()
-  .catch((error) => {
+async function main() {
+  // 参加中の雪かきがあれば、一覧を見せずにその段階の画面へ移る(?list=1 なら移らない)
+  if (await resumeIfActive()) return;
+  try {
+    await loadRequests();
+  } catch (error) {
     console.error(error);
     byId("waiting-count").textContent = "依頼を読み込めませんでした。画面を開き直してください。";
-  })
-  .finally(pageReady);
+  }
+  // 一覧がそろってから画面を見せる
+  pageReady();
+}
+
+main();
