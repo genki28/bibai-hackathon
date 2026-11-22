@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>助けに行く</title>
+    <!--
+      【若者】助けに行くページ。一覧 → 大まかな地図 → 確認 → 本人確認(identity.html)→ 雪かき中(helper-working.html)。
+      ひな形です。灰色の点線の箱(.placeholder)に、デザインや中身を入れていきます。
+      ページ一覧と URL は docs/features/pages.md を見てください。
+    -->
+    <link rel="stylesheet" href="./template.css" />
+  </head>
+  <body class="for-helper">
+    <main>
+      <span class="badge">ひな形</span>
+      <!-- 1. 一覧 -->
+      <section id="step-list">
+        <h1>助けを待っている家</h1>
+        <p id="waiting-count" class="note">読み込み中です…</p>
+        <div class="placeholder">依頼の一覧(町名・雪の多さ・待っている時間)</div>
+        <button id="to-map-button" class="button" type="button">地図で見る</button>
+      </section>
+
+      <!-- 2. 大まかな地図で選ぶ -->
+      <section id="step-map" hidden>
+        <h1>場所</h1>
+        <div class="placeholder map">大まかなマップ(町名くらいの位置だけ見せる)</div>
+        <div class="placeholder">選んだ家の情報(町名・雪の多さ)</div>
+        <button id="choose-button" class="button" type="button">ここに行く</button>
+        <button id="back-to-list-button" class="button secondary" type="button">一覧にもどる</button>
+      </section>
+
+      <!-- 3. 行くか確認 -->
+      <section id="step-confirm" hidden>
+        <h1>ここに行きますか?</h1>
+        <div class="placeholder">選んだ家の情報</div>
+        <!-- 本人確認が終わったら「雪かき中」の画面へ -->
+        <a class="button" href="./identity.html?next=helper-working.html">本人確認へ進む</a>
+        <button id="cancel-choose-button" class="button secondary" type="button">やめる</button>
+      </section>
+    </main>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script type="module" src="./go-help.js"></script>
+  </body>
+</html>

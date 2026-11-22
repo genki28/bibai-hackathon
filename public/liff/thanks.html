@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ありがとうを送る</title>
+    <!--
+      【お年寄り】いいね機能。来てくれた人の名前と、星で評価する。
+      ひな形です。灰色の点線の箱(.placeholder)に、デザインや中身を入れていきます。
+      ページ一覧と URL は docs/features/pages.md を見てください。
+    -->
+    <link rel="stylesheet" href="./template.css" />
+  </head>
+  <body class="for-elder">
+    <main>
+      <span class="badge">ひな形</span>
+      <section id="step-form">
+        <h1>来てくれた人に<br />ありがとうを送る</h1>
+        <h2>来てくれた人</h2>
+        <div class="row"><span>(名前が入る)</span><span>👤</span></div>
+        <div class="row"><span>(名前が入る)</span><span>👤</span></div>
+        <h2>どうでしたか?</h2>
+        <div class="stars" role="radiogroup" aria-label="星で評価">
+          <!-- 選んだ星とその左が光るように、5 → 1 の順に書いて右から並べている(template.css) -->
+          <label aria-label="5"><input type="radio" name="stars" value="5" checked />★</label>
+          <label aria-label="4"><input type="radio" name="stars" value="4" />★</label>
+          <label aria-label="3"><input type="radio" name="stars" value="3" />★</label>
+          <label aria-label="2"><input type="radio" name="stars" value="2" />★</label>
+          <label aria-label="1"><input type="radio" name="stars" value="1" />★</label>
+        </div>
+        <button id="send-button" class="button" type="button">送る</button>
+      </section>
+
+      <section id="step-sent" hidden>
+        <h1>ありがとうを送りました</h1>
+        <p class="note">来てくれた人に届きます。</p>
+      </section>
+    </main>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script type="module" src="./thanks.js"></script>
+  </body>
+</html>

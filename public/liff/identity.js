@@ -24,9 +24,17 @@ const fetchStatus = (userId) => callApi(`/api/identity/${userId}`);
 
 const markVerified = (userId) => postJson("/api/identity/mock-verify", { userId });
 
+/** ?next=〇〇.html で次の画面が指定されていれば返す(同じフォルダの .html だけ許す)。 */
+function nextPage() {
+  const next = new URLSearchParams(location.search).get("next") ?? "";
+  return /^[a-z0-9-]+\.html$/.test(next) ? `./${next}` : null;
+}
+
 function showDone(status) {
   const date = new Date(status.verifiedAt);
   byId("verified-at").textContent = `確認日時: ${date.toLocaleString("ja-JP")}`;
+  const next = nextPage();
+  byId("next-button").hidden = next === null;
   showStep("done");
 }
 
@@ -50,6 +58,10 @@ async function main() {
   byId("cancel-button").addEventListener("click", () => showStep("intro"));
   byId("scan-button").addEventListener("click", () => verify(userId));
   byId("reset-button").addEventListener("click", () => showStep("intro"));
+  byId("next-button").addEventListener("click", () => {
+    const next = nextPage();
+    if (next) location.href = next;
+  });
 
   if (status.verified) {
     showDone(status);
