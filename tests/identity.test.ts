@@ -4,6 +4,12 @@ import { afterEach, expect, test } from "vitest";
 import { createApp } from "../src/app.js";
 import type { AppConfig } from "../src/config.js";
 import { createIdentityStore, isValidUserId } from "../src/identity/store.js";
+import {
+  INVALID_LIVENESS_MESSAGE,
+  INVALID_METHOD_MESSAGE,
+  INVALID_USER_ID_MESSAGE,
+  parseVerifyRequest,
+} from "../src/identity/validate.js";
 
 const CONFIG: AppConfig = {
   channelSecret: "",
@@ -63,12 +69,13 @@ test("確認していない人は未確認、確認した人は確認日時つ�
   const after = await store.getStatus(USER_ID);
 
   // Assert
-  expect(before).toEqual({ verified: false, verifiedAt: null, method: null });
+  expect(before).toEqual({ verified: false, verifiedAt: null, method: null, liveness: null });
   expect(saved).toEqual(after);
   expect(after).toEqual({
     verified: true,
     verifiedAt: "2026-11-22T10:00:00.000Z",
     method: "mynumber-card-mock",
+    liveness: false,
   });
 });
 
@@ -84,7 +91,7 @@ test("GET /api/identity/:userId は確認前なら未確認を返す", async () 
   expect(response.status).toBe(200);
   expect(body).toEqual({
     success: true,
-    data: { verified: false, verifiedAt: null, method: null },
+    data: { verified: false, verifiedAt: null, method: null, liveness: null },
   });
 });
 
@@ -136,4 +143,91 @@ test("壊れた JSON を送ると 400 を返す", async () => {
   // Assert
   expect(response.status).toBe(400);
   expect((await response.json()).success).toBe(false);
+});
+
+function postFaceVerify(baseUrl: string, body: unknown): Promise<Response> {
+  return fetch(`${baseUrl}/api/identity/verify`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+test("顔の照合の結果を、方式とライブネスつきで保存できる", async () => {
+  // Arrange
+  const store = createIdentityStore();
+  const now = new Date("2026-11-23T09:00:00Z");
+
+  // Act
+  const saved = await store.markVerified(USER_ID, now, { method: "face-match-demo", liveness: true });
+
+  // Assert
+  expect(saved).toEqual({
+    verified: true,
+    verifiedAt: "2026-11-23T09:00:00.000Z",
+    method: "face-match-demo",
+    liveness: true,
+  });
+  expect(await store.getStatus(USER_ID)).toEqual(saved);
+});
+
+test("送られてきた本人確認の結果は、決まった形のときだけ受け付ける", () => {
+  // Arrange
+  const good = { userId: USER_ID, method: "face-match-demo", liveness: false };
+  const bad = [
+    [null, INVALID_USER_ID_MESSAGE],
+    ["文字", INVALID_USER_ID_MESSAGE],
+    [{ ...good, userId: "U123" }, INVALID_USER_ID_MESSAGE],
+    [{ ...good, method: "passport" }, INVALID_METHOD_MESSAGE],
+    [{ ...good, method: undefined }, INVALID_METHOD_MESSAGE],
+    [{ ...good, liveness: "true" }, INVALID_LIVENESS_MESSAGE],
+    [{ userId: USER_ID, method: "face-match-demo" }, INVALID_LIVENESS_MESSAGE],
+  ] as const;
+
+  // Act
+  const accepted = parseVerifyRequest({ ...good, image: "data:image/png;base64,xxx" });
+
+  // Assert
+  // 余計な項目(画像など)は受け取っても捨てて、決まった 3 つだけを返す
+  expect(accepted).toEqual({ ok: true, value: good });
+  bad.forEach(([body, error]) => expect(parseVerifyRequest(body)).toEqual({ ok: false, error }));
+});
+
+test("POST /api/identity/verify で顔の照合の結果が保存され、取得にも反映される", async () => {
+  // Arrange
+  const baseUrl = await startApp();
+
+  // Act
+  const postResponse = await postFaceVerify(baseUrl, {
+    userId: USER_ID,
+    method: "face-match-demo",
+    liveness: true,
+  });
+  const postBody = await postResponse.json();
+  const getBody = await (await fetch(`${baseUrl}/api/identity/${USER_ID}`)).json();
+
+  // Assert
+  expect(postResponse.status).toBe(200);
+  expect(postBody.data).toMatchObject({ verified: true, method: "face-match-demo", liveness: true });
+  expect(getBody.data).toEqual(postBody.data);
+});
+
+test("POST /api/identity/verify は許可していない方式やおかしな liveness を 400 で断る", async () => {
+  // Arrange
+  const baseUrl = await startApp();
+
+  // Act
+  const badMethod = await postFaceVerify(baseUrl, { userId: USER_ID, method: "admin", liveness: true });
+  const badLiveness = await postFaceVerify(baseUrl, {
+    userId: USER_ID,
+    method: "face-match-demo",
+    liveness: 1,
+  });
+  const status = await (await fetch(`${baseUrl}/api/identity/${USER_ID}`)).json();
+
+  // Assert
+  expect(badMethod.status).toBe(400);
+  expect(await badMethod.json()).toEqual({ success: false, error: INVALID_METHOD_MESSAGE });
+  expect(badLiveness.status).toBe(400);
+  expect(status.data.verified).toBe(false);
 });

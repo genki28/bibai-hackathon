@@ -1,6 +1,7 @@
 import express from "express";
 import type { Response, Router } from "express";
 import { isValidUserId } from "../identity/store.js";
+import type { Referral } from "../invites/model.js";
 import { countCommunity } from "./community.js";
 import {
   isValidRequestId,
@@ -10,8 +11,10 @@ import {
   parseThanksInput,
   parseUserIdInput,
 } from "./inputs.js";
+import { canFinish } from "./leader.js";
 import type { HelpRequest, Result } from "./model.js";
 import { buildRanking, isRankingPeriod } from "./ranking.js";
+import { pointsForRequest } from "./request-points.js";
 import { DEFAULT_SNOW_DEPTH_M } from "./score.js";
 import type { GetSnowDepthM } from "./snow-depth.js";
 import { createHelpRequestStore } from "./store.js";
@@ -27,6 +30,8 @@ export type HelpRequestRouterOptions = {
   readonly store?: HelpRequestStore;
   readonly getSnowDepthM?: GetSnowDepthM;
   readonly now?: () => Date;
+  /** 招待の記録(勧誘ポイントの集計用)。渡さなければ招待なしとして数える。 */
+  readonly listReferrals?: () => Promise<readonly Referral[]>;
 };
 
 /** 書き込み API の中身。入力がおかしければ null を返す(→ 400)。 */
@@ -61,6 +66,7 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
   const store = options.store ?? createHelpRequestStore();
   const getSnowDepthM = options.getSnowDepthM ?? (async () => DEFAULT_SNOW_DEPTH_M);
   const now = options.now ?? (() => new Date());
+  const listReferrals = options.listReferrals ?? (async () => []);
   const router = express.Router();
   router.use("/api/help-requests", express.json());
 
@@ -102,6 +108,30 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
     res.json({ success: true, data: toViewFor(request, userId) });
   });
 
+  // お疲れ様の画面用: この依頼で自分がもらったポイントの内訳(参加者だけ・終わった依頼だけ)
+  router.get("/api/help-requests/:id/points", async (req, res) => {
+    const userId = readUserIdQuery(req.query.userId);
+    if (!isValidRequestId(req.params.id) || !userId) {
+      sendError(res, 400, userId ? INVALID_REQUEST_ID : INVALID_USER_ID);
+      return;
+    }
+    const request = await store.findById(req.params.id);
+    if (!request) {
+      sendError(res, 404, NOT_FOUND);
+      return;
+    }
+    if (viewerOf(request, userId) !== "helper") {
+      sendError(res, 403, "この依頼に参加していません。");
+      return;
+    }
+    if (request.status !== "done") {
+      sendError(res, 409, "雪かきがまだ終わっていません。");
+      return;
+    }
+    const [finished, referrals] = await Promise.all([store.listFinished(), listReferrals()]);
+    res.json({ success: true, data: pointsForRequest(request, userId, finished, referrals) });
+  });
+
   /** POST /api/help-requests/:id/{name} を登録する。入力がおかしければ 400。 */
   const post = (name: string, action: Action): void => {
     router.post(`/api/help-requests/:id/${name}`, async (req, res) => {
@@ -132,15 +162,16 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
   });
   post("leave", withUserId((id, userId) => store.leave(id, userId)));
   post("arrive", withUserId(store.arrive));
+  // 到着した人ならだれでも開始できる。開始した瞬間にリーダーがランダムに決まる
   post("start", withUserId(store.start));
   post("cancel", withUserId(store.cancel));
   post("finish", async (id, body, at) => {
     const input = parseFinishInput(body);
     if (!input) return null;
-    // 先に依頼の有無と権限を見てから、天気予報を問い合わせる
+    // 先に依頼の有無と権限(リーダーだけ)を見てから、天気予報を問い合わせる
     const request = await store.findById(id);
-    const isHelper = request !== null && viewerOf(request, input.userId) === "helper";
-    const snowDepthM = isHelper && request.status === "working" ? await getSnowDepthM() : 0;
+    const canAsk = request !== null && request.status === "working" && canFinish(request, input.userId);
+    const snowDepthM = canAsk ? await getSnowDepthM() : 0;
     return store.finish(id, input, snowDepthM, at);
   });
   post("thanks", async (id, body, at) => {
@@ -155,8 +186,8 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
       sendError(res, 400, userId === undefined ? INVALID_USER_ID : "期間(period)は daily か total を指定してください。");
       return;
     }
-    const finished = await store.listFinished();
-    res.json({ success: true, data: buildRanking(finished, period, now(), userId) });
+    const [finished, referrals] = await Promise.all([store.listFinished(), listReferrals()]);
+    res.json({ success: true, data: buildRanking(finished, period, now(), userId, referrals) });
   });
 
   // 仲間ゲージ(美唄の仲間を 2 倍に)。計算は community.ts

@@ -1,5 +1,6 @@
 // 【若者】雪かき中の動き。開始時刻はサーバーにあるので、開き直しても経過時間は続きから出る。
-// だれかが先に終えたら、自動でお疲れ様の画面へ進む。雪かきの様子はドット絵(pixel-snow.js)で描く。
+// 終わったら(リーダーが範囲に丸を付けたら)、自動でお疲れ様の画面へ進む。雪かきの様子はドット絵(pixel-snow.js)で描く。
+// [雪かきを終える] は、リーダーなら範囲の画面へ。リーダー以外は「リーダーを待つ」表示にして、数秒ごとに読み直す。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId } from "./common.js";
@@ -17,7 +18,7 @@ import { userIdPromise } from "./template.js";
 import { digLevel, formatElapsed, levelProgress } from "./pixel-game.js";
 import { startPixelSnow } from "./pixel-snow.js";
 
-const POLL_INTERVAL_MS = 5000;
+const POLL_INTERVAL_MS = 3000;
 const TICK_MS = 1000;
 /** 次のレベルまでの進み具合を見せるマスの数。 */
 const LEVEL_BAR_CELLS = 10;
@@ -45,9 +46,9 @@ function startTimer(startedAt) {
   return getElapsedMs;
 }
 
-/** 依頼の参加者を、ドット絵に並べる形にする(参加した順。先頭がリーダー)。 */
+/** 依頼の参加者を、ドット絵に並べる形にする(参加した順。リーダーには王冠)。 */
 function crewOf(request, userId) {
-  const leaderId = request.leaderUserId ?? request.helpers[0]?.userId;
+  const leaderId = request.leaderUserId;
   const crew = request.helpers.map((helper) => ({
     id: helper.userId,
     name: helper.displayName,
@@ -60,6 +61,32 @@ function crewOf(request, userId) {
 
 function showHelperNames(request) {
   byId("helper-names").textContent = `いっしょに: ${request.helpers.map((h) => h.displayName).join("、")}`;
+}
+
+const leaderNameOf = (request) =>
+  request.helpers.find((h) => h.userId === request.leaderUserId)?.displayName ?? "リーダー";
+
+/** 自分が範囲に丸を付けて終われるか(リーダー。リーダーの記録がない古い依頼はだれでも)。 */
+const canFinish = (request, userId) => !request.leaderUserId || request.leaderUserId === userId;
+
+/** 自分の役目を出す。 */
+function showLeaderRole(request, userId) {
+  const role = byId("leader-role");
+  if (!request.leaderUserId) {
+    role.textContent = "";
+    return;
+  }
+  role.textContent =
+    request.leaderUserId === userId
+      ? "👑 あなたがリーダー! 終わったら範囲に丸を付けてね"
+      : `👑 リーダーは ${leaderNameOf(request)} さん。終わったらリーダーが範囲に丸を付けます`;
+}
+
+/** 「リーダーが範囲に丸を付けています」の表示にする(終わったら読み直しでお疲れ様へ進む)。 */
+function showLeaderWait(request) {
+  byId("leader-wait-text").textContent = `リーダー(${leaderNameOf(request)}さん)が範囲に丸を付けています。少し待ってね`;
+  byId("work-view").hidden = true;
+  byId("leader-wait").hidden = false;
 }
 
 /** ドット絵の雪かきを動かす。画像が読み込めないなどで動かなければ、絵を隠す(経過時間とボタンは使える)。 */
@@ -98,14 +125,26 @@ async function main() {
   if (moveIfNeeded(request, id)) return;
   const scenePromise = startScene(startTimer(request.startedAt), crewOf(request, userId));
   showHelperNames(request);
+  showLeaderRole(request, userId);
+  let latestRequest = request;
   byId("finish-button").addEventListener("click", () => {
-    navigateTo(pageUrl("snow-area.html", id));
+    if (canFinish(latestRequest, userId)) {
+      navigateTo(pageUrl("snow-area.html", id));
+      return;
+    }
+    showLeaderWait(latestRequest);
   });
+  // 範囲の画面から戻されたとき(?wait=1)は、最初から「リーダーを待つ」表示
+  if (new URLSearchParams(location.search).has("wait") && !canFinish(request, userId)) {
+    showLeaderWait(request);
+  }
   // 数秒ごとに読み直す。終わっていれば次の画面へ。途中で人が増えたら、絵にも登場させる
   startPolling(async () => {
     const latest = await fetchRequest(id, userId);
     if (moveIfNeeded(latest, id)) return true;
+    latestRequest = latest;
     showHelperNames(latest);
+    showLeaderRole(latest, userId);
     (await scenePromise)?.setCrew(crewOf(latest, userId));
     return false;
   }, POLL_INTERVAL_MS);

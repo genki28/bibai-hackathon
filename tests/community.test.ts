@@ -32,15 +32,18 @@ afterEach(async () => {
 
 /** 終わった依頼 2 件(若者 B は両方に参加)と、参加者のいる終わっていない依頼 1 件を作る。 */
 async function sampleRequests(): Promise<readonly HelpRequest[]> {
-  const store = createHelpRequestStore();
+  // 乱数 0 → 到着した人のうち先頭(A)がリーダー
+  const store = createHelpRequestStore(undefined, { random: () => 0 });
   const first = await store.create({ userId: ELDER_1, amount: "normal" }, NOW);
   await store.join(first.id, { userId: HELPER_A, displayName: "ゆきお" }, NOW);
   await store.join(first.id, { userId: HELPER_B, displayName: "あおい" }, NOW);
+  await store.arrive(first.id, HELPER_A, NOW);
   await store.start(first.id, HELPER_A, NOW);
   await store.finish(first.id, { userId: HELPER_A, areaM2: 0 }, 0, NOW);
 
   const second = await store.create({ userId: ELDER_1, amount: "lots" }, NOW);
   await store.join(second.id, { userId: HELPER_B, displayName: "あおい" }, NOW);
+  await store.arrive(second.id, HELPER_B, NOW);
   await store.start(second.id, HELPER_B, NOW);
   await store.finish(second.id, { userId: HELPER_B, areaM2: 0 }, 0, NOW);
 

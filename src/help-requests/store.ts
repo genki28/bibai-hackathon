@@ -11,6 +11,7 @@ import type { FinishInput, JoinInput } from "./inputs.js";
 import { createMemoryHelpRequestRepository, ONGOING_STATUSES } from "./repository.js";
 import type { HelpRequestRepository } from "./repository.js";
 import * as transitions from "./transitions.js";
+import type { RandomSource } from "./leader.js";
 
 export { parseHelpRequestInput } from "./inputs.js";
 export type { HelpRequest, HelpRequestInput, HelpRequestStatus, SnowAmount } from "./model.js";
@@ -32,6 +33,7 @@ export type HelpRequestStore = {
   readonly join: (id: string, input: JoinInput, now: Date) => Promise<Result<HelpRequest>>;
   readonly leave: (id: string, userId: string) => Promise<Result<HelpRequest>>;
   readonly arrive: (id: string, userId: string, now: Date) => Promise<Result<HelpRequest>>;
+  /** 雪かきを始める(到着した人ならだれでも)。このときリーダーがランダムに決まる。 */
   readonly start: (id: string, userId: string, now: Date) => Promise<Result<HelpRequest>>;
   readonly finish: (
     id: string,
@@ -70,6 +72,7 @@ function newRequest(input: HelpRequestInput, now: Date): HelpRequest {
     status: "waiting",
     createdAt: now.toISOString(),
     helpers: [],
+    leaderUserId: null,
     startedAt: null,
     finishedAt: null,
     cancelledAt: null,
@@ -102,9 +105,16 @@ async function applyChange(
   return TOO_BUSY;
 }
 
+export type HelpRequestStoreOptions = {
+  /** リーダーを選ぶときの乱数(テストで差し替える)。ふだんは Math.random。 */
+  readonly random?: RandomSource;
+};
+
 export function createHelpRequestStore(
   repo: HelpRequestRepository = createMemoryHelpRequestRepository(),
+  options: HelpRequestStoreOptions = {},
 ): HelpRequestStore {
+  const random = options.random ?? Math.random;
   const update = (id: string, change: Change) => applyChange(repo, id, change);
 
   const findWaiting = async (userId: string): Promise<HelpRequest | null> => {
@@ -138,7 +148,7 @@ export function createHelpRequestStore(
     join: (id, input, now) => update(id, (r) => transitions.join(r, input, now)),
     leave: (id, userId) => update(id, (r) => transitions.leave(r, userId)),
     arrive: (id, userId, now) => update(id, (r) => transitions.arrive(r, userId, now)),
-    start: (id, userId, now) => update(id, (r) => transitions.start(r, userId, now)),
+    start: (id, userId, now) => update(id, (r) => transitions.start(r, userId, now, random)),
     finish: (id, input, snowDepthM, now) =>
       update(id, (r) => transitions.finish(r, input, snowDepthM, now)),
     cancel: (id, userId, now) => update(id, (r) => transitions.cancel(r, userId, now)),

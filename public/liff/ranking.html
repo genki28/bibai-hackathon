@@ -7,7 +7,8 @@
     <!--
       【若者】ランキング。「デイリー(日本時間の今日)/ 総合」を切り替えて、ポイントの多い順に出す。
       上位 3 人は金・銀・銅の表彰台、自分の順位は光る帯。いちばん上に「仲間ゲージ」(美唄の仲間を 2 倍に)。
-      ポイント = 雪かき(作業時間・雪の重さ)+ 評価(星)。再会ボーナス・勧誘ポイントは未実装(docs/features/04-ranking.md)。
+      ポイント = 雪かき(作業時間・雪の重さ)+ 評価(星)+ 勧誘(友だちを誘う)+ 再会ボーナス(docs/features/04-ranking.md)。
+      自分の順位の下に内訳。[友だちを誘う] で招待リンクを LINE の友だちに送る(LINE の外ではリンクをコピー)。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
     <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
@@ -168,9 +169,16 @@
         <button id="total-button" type="button" aria-pressed="false">総合</button>
       </div>
       <p id="my-rank" aria-live="polite"></p>
+      <p id="my-breakdown" class="note center" hidden></p>
       <div id="ranking-list">
         <p class="note center">読み込み中です…</p>
       </div>
+      <section class="card center" aria-labelledby="invite-title">
+        <h2 id="invite-title">友だちを誘う</h2>
+        <p class="note">誘った友だちが初めて雪かきを終えると +500 pt(友だちにも +200 pt)。</p>
+        <button id="invite-button" class="button" type="button">💌 友だちを誘う</button>
+        <p id="invite-status" class="note" aria-live="polite" hidden></p>
+      </section>
       <p id="error" class="error" role="alert" hidden></p>
     </main>
     <nav class="tab-bar" aria-label="若者のメニュー">

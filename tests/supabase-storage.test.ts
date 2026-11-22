@@ -31,6 +31,7 @@ const SAMPLE: HelpRequest = {
   status: "done",
   createdAt: "2026-11-23T07:00:00.000Z",
   helpers: [{ userId: HELPER_A, displayName: "A", joinedAt: "2026-11-23T07:01:00.000Z", arrivedAt: null }],
+  leaderUserId: HELPER_A,
   startedAt: "2026-11-23T07:05:00.000Z",
   finishedAt: "2026-11-23T07:35:00.000Z",
   cancelledAt: null,
@@ -53,8 +54,24 @@ test("依頼を表の行に変えて戻すと、もとと同じになる(列名�
   const back = fromRow(row);
 
   // Assert
-  expect(row).toMatchObject({ user_id: ELDER_ID, created_at: SAMPLE.createdAt, thanked_at: SAMPLE.thankedAt });
+  expect(row).toMatchObject({
+    user_id: ELDER_ID,
+    leader_user_id: HELPER_A,
+    created_at: SAMPLE.createdAt,
+    thanked_at: SAMPLE.thankedAt,
+  });
   expect(back).toEqual(SAMPLE);
+});
+
+test("リーダーの列がない古い行は、リーダーなし(null)として読む", () => {
+  // Arrange
+  const { leader_user_id: _omitted, ...oldRow } = toRow(SAMPLE);
+
+  // Act
+  const request = fromRow(oldRow);
+
+  // Assert
+  expect(request.leaderUserId).toBeNull();
 });
 
 test("Postgres の時刻の形(+00:00 など)を、プログラムと同じ形にそろえる", () => {
@@ -85,11 +102,29 @@ test("表から読んだ行の状態や必要な列がおかしければ、エ�
 
 test("本人確認と役割の行を読み替える。行がなければ未確認・役割なし", () => {
   // Arrange & Act & Assert
-  expect(toIdentityStatus(null)).toEqual({ verified: false, verifiedAt: null, method: null });
+  expect(toIdentityStatus(null)).toEqual({
+    verified: false,
+    verifiedAt: null,
+    method: null,
+    liveness: null,
+  });
   expect(toIdentityStatus({ verified_at: "2026-11-22 10:00:00+00" })).toEqual({
     verified: true,
     verifiedAt: "2026-11-22T10:00:00.000Z",
     method: "mynumber-card-mock",
+    liveness: false,
+  });
+  expect(
+    toIdentityStatus({
+      verified_at: "2026-11-22 10:00:00+00",
+      method: "face-match-demo",
+      liveness: true,
+    }),
+  ).toEqual({
+    verified: true,
+    verifiedAt: "2026-11-22T10:00:00.000Z",
+    method: "face-match-demo",
+    liveness: true,
   });
   expect(toRole({ role: "helper" })).toBe("helper");
   expect(toRole({ role: "admin" })).toBeNull();

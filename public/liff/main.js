@@ -5,6 +5,8 @@ import { fetchAppConfig, resolveOwnProfile } from "./common.js";
 import { pageReady } from "./loading.js";
 import "./reset-menu-button.js";
 import "./test-mode.js";
+// 招待リンク(?invite=)で開かれたら、だれに誘われたかを記録する
+import "./invite-accept.js";
 
 const byId = (id) => document.getElementById(id);
 

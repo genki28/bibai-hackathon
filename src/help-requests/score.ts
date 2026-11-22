@@ -5,10 +5,20 @@
 
 /** 作業 1 分あたりのポイント。 */
 export const POINTS_PER_MINUTE = 100;
+/** ポイントに数える作業時間の上限(分)。長く放っておくだけで増えないように。 */
+export const MAX_WORK_MINUTES_FOR_POINTS = 120;
 /** 雪 1 kg あたりのポイント。 */
-export const POINTS_PER_SNOW_KG = 10;
+export const POINTS_PER_SNOW_KG = 2;
+/** ポイントに数える雪の重さの上限(kg)。範囲を大きく描くだけで跳ね上がらないように。 */
+export const MAX_SNOW_KG_FOR_POINTS = 2000;
 /** 星 1 つあたりのポイント(いいねのときに加算)。 */
 export const POINTS_PER_STAR = 100;
+/** 勧誘ポイント: 誘った人が初めて雪かきを終えたとき、誘った人に入る(1 人につき 1 回)。 */
+export const RECRUIT_POINTS = 500;
+/** はじめての雪かきボーナス: 招待リンクから来た人が初めて雪かきを終えたとき、その人に入る。 */
+export const FIRST_FINISH_BONUS_POINTS = 200;
+/** 再会ボーナス: 前の別の依頼でも一緒だった参加者 1 人につき(依頼ごと)。 */
+export const REUNION_POINTS_PER_PARTNER = 150;
 /** 新雪の重さの目安(kg/㎥)。 */
 export const SNOW_DENSITY_KG_PER_M3 = 100;
 /** 積雪の深さが取れなかったときに使う値(m)。 */
@@ -42,9 +52,14 @@ export function calculateCalories(minutes: number): number {
   return Math.round(SNOW_SHOVELING_METS * DEFAULT_BODY_WEIGHT_KG * hours * CALORIE_FACTOR);
 }
 
-/** 雪かきのポイント = 作業分数 × 100 + 雪の重さ kg × 10。 */
+/**
+ * 雪かきのポイント = 作業分数(上限 120 分)× 100 + 雪の重さ kg(上限 2,000kg)× 2。
+ * いちばん多くて 12,000 + 4,000 = 16,000 pt。
+ */
 export function calculateWorkPoints(minutes: number, snowKg: number): number {
-  return Math.round(minutes * POINTS_PER_MINUTE + snowKg * POINTS_PER_SNOW_KG);
+  const countedMinutes = Math.min(Math.max(0, minutes), MAX_WORK_MINUTES_FOR_POINTS);
+  const countedKg = Math.min(Math.max(0, snowKg), MAX_SNOW_KG_FOR_POINTS);
+  return Math.round(countedMinutes * POINTS_PER_MINUTE + countedKg * POINTS_PER_SNOW_KG);
 }
 
 /** 評価のポイント = 星 × 100。 */

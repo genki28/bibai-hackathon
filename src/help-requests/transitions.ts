@@ -5,6 +5,8 @@
 import { fail, findHelper, isJoinable, isOpen, leaderOf, MAX_HELPERS, succeed } from "./model.js";
 import type { Helper, HelpRequest, Ratings, Result } from "./model.js";
 import type { FinishInput, JoinInput } from "./inputs.js";
+import { canFinish, canStart, pickLeader } from "./leader.js";
+import type { RandomSource } from "./leader.js";
 import {
   calculateCalories,
   calculateSnowKg,
@@ -48,18 +50,32 @@ export function arrive(r: HelpRequest, userId: string, now: Date): Result<HelpRe
   return succeed({ ...r, helpers });
 }
 
-/** 雪かきを始める(リーダーだけ)。開始時刻を残す。 */
-export function start(r: HelpRequest, userId: string, now: Date): Result<HelpRequest> {
+/**
+ * 雪かきを始める(到着した参加者ならだれでも)。開始時刻を残し、
+ * その時点の参加者からランダムにリーダーを 1 人決めて残す(到着済みの人を優先)。
+ */
+export function start(
+  r: HelpRequest,
+  userId: string,
+  now: Date,
+  random: RandomSource,
+): Result<HelpRequest> {
   if (!findHelper(r, userId)) return NOT_HELPER;
-  if (leaderOf(r)?.userId !== userId) return fail(403, "開始できるのはリーダーだけです。");
   if (r.status === "working") return succeed(r);
   if (r.status !== "accepted") return fail(409, "この依頼は、いまは開始できません。");
-  return succeed({ ...r, status: "working", startedAt: now.toISOString() });
+  if (!canStart(r, userId)) return fail(403, "到着してから開始してください。");
+  const leader = pickLeader(r.helpers, random);
+  return succeed({
+    ...r,
+    status: "working",
+    startedAt: now.toISOString(),
+    leaderUserId: leader?.userId ?? null,
+  });
 }
 
 /**
- * 雪かきを終える。作業時間・雪の重さ・カロリー・ポイントを計算して残す。
- * ほかの人がもう終えていたら、その結果をそのまま返す。
+ * 雪かきを終える(範囲に丸を付けたリーダーだけ)。作業時間・雪の重さ・カロリー・ポイントを計算して残す。
+ * もう終わっていたら、その結果をそのまま返す。
  */
 export function finish(
   r: HelpRequest,
@@ -70,6 +86,10 @@ export function finish(
   if (!findHelper(r, input.userId)) return NOT_HELPER;
   if (r.status === "done") return succeed(r);
   if (r.status !== "working" || !r.startedAt) return fail(409, "雪かきが始まっていません。");
+  if (!canFinish(r, input.userId)) {
+    const leaderName = leaderOf(r)?.displayName ?? "リーダー";
+    return fail(403, `範囲に丸を付けて終われるのはリーダー(${leaderName}さん)だけです。`);
+  }
   const minutes = elapsedMinutes(r.startedAt, now);
   const snowKg = calculateSnowKg(input.areaM2, snowDepthM);
   const result = {

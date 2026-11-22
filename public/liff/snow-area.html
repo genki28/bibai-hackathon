@@ -8,7 +8,8 @@
       【若者】雪かきをした範囲を地図に描く(snow-area.html?id=依頼ID)。点を結んだ形の面積を出す。
       [地図を動かす]/[範囲を描く] を切り替え、描くモードのときだけ地図をタップすると点が増える。
       点はつかんで動かせる・タップで消える。辺の真ん中のつまみを引っぱると点が増える。[四角で始める] もある。
-      [雪かき終了!] で終了(API)→ お疲れ様(finish.html)。
+      [雪かき終了!] で終了(API)→ お疲れ様(finish.html)。範囲を付けて終了できるのはリーダーだけ
+      (リーダー以外が開いたら、雪かき中の画面の「リーダーを待つ」表示へ移る)。面積は 300 ㎡ まで。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
     <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
@@ -116,6 +117,7 @@
           <p id="mode-badge" class="mode-badge" aria-hidden="true"></p>
         </div>
         <p id="area-size" class="big-number">0 ㎡</p>
+        <p id="area-limit" class="note center">300 ㎡ まで</p>
         <button id="square-button" class="button" type="button">⬜ 四角で始める</button>
         <div class="button-row">
           <button id="undo-button" class="button secondary" type="button">1 つ戻す</button>

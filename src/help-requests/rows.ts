@@ -1,7 +1,7 @@
 /**
  * Supabase の表(help_requests)の 1 行 ⇔ プログラムの依頼(HelpRequest)の変換(純粋関数)。
  * 表の列名は snake_case(user_id)、プログラムは camelCase(userId)なので、ここで読み替える。
- * 表の作り方は supabase/migrations/0001_init.sql。
+ * 表の作り方は supabase/migrations/0001_init.sql(leader_user_id は 0002_leader_and_points.sql)。
  */
 import type { Helper, HelpRequest, HelpRequestStatus, Ratings, SnowAmount, WorkResult } from "./model.js";
 import type { Versioned } from "./repository.js";
@@ -20,6 +20,7 @@ export type HelpRequestRow = {
   readonly status: HelpRequestStatus;
   readonly created_at: string;
   readonly helpers: readonly Helper[];
+  readonly leader_user_id: string | null;
   readonly started_at: string | null;
   readonly finished_at: string | null;
   readonly cancelled_at: string | null;
@@ -77,6 +78,7 @@ export function toRow(r: HelpRequest): HelpRequestRow {
     status: r.status,
     created_at: r.createdAt,
     helpers: r.helpers,
+    leader_user_id: r.leaderUserId,
     started_at: r.startedAt,
     finished_at: r.finishedAt,
     cancelled_at: r.cancelledAt,
@@ -101,6 +103,7 @@ export function fromRow(row: RawRow): HelpRequest {
     status: requireOneOf<HelpRequestStatus>(row, "status", STATUSES),
     createdAt: normalizeTimestamp(requireText(row, "created_at")) ?? "",
     helpers: Array.isArray(row.helpers) ? (row.helpers as readonly Helper[]) : [],
+    leaderUserId: textOrNull(row.leader_user_id),
     startedAt: normalizeTimestamp(row.started_at),
     finishedAt: normalizeTimestamp(row.finished_at),
     cancelledAt: normalizeTimestamp(row.cancelled_at),

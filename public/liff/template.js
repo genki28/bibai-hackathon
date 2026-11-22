@@ -9,6 +9,8 @@ import "./loading.js";
 import { resolveProfile } from "./common.js";
 import "./reset-menu-button.js";
 import "./test-mode.js";
+// 招待リンク(?invite=)で開かれたら、だれに誘われたかを記録する
+import "./invite-accept.js";
 
 /** この画面を開いている人のユーザー ID(LINE の外では仮の ID)。ページ用の .js から使える。 */
 export const profilePromise = resolveProfile();

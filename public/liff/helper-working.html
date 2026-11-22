@@ -6,7 +6,9 @@
     <title>雪かき中</title>
     <!--
       【若者】雪かき中(helper-working.html?id=依頼ID)。経過時間は、サーバーに残した開始時刻から計算するので、
-      画面を閉じて開き直しても続きから表示される。[雪かきを終える] で範囲の画面(snow-area.html)へ。
+      画面を閉じて開き直しても続きから表示される。[雪かきを終える] を押すと、リーダーは範囲の画面(snow-area.html)へ。
+      リーダー以外は「リーダー(〇〇さん)が範囲に丸を付けています」の表示になり、終わったら自動でお疲れ様の画面へ
+      (?wait=1 が付いていると、最初からその表示)。リーダーは開始したときにランダムで決まり、ドット絵でも王冠が付く。
       雪かきの様子はドット絵(pixel-snow.js が Canvas に描く。背景と主人公は ChatGPT で作った画像 images/working-*.png)。参加者の人数ぶん主人公が並ぶ。タップするとコンボの演出が出る(見た目だけで、スコアには入らない)。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
@@ -137,6 +139,26 @@
           3px 3px 0 var(--night-top),
           6px 6px 0 rgba(139, 92, 246, 0.55);
       }
+      .leader-role {
+        margin: 6px 0 10px;
+        font-weight: 800;
+        color: var(--gold);
+      }
+      .leader-wait-crown {
+        margin: 0;
+        font-size: 3rem;
+        animation: wait-bob 1.6s ease-in-out infinite;
+      }
+      @keyframes wait-bob {
+        50% {
+          transform: translateY(-6px);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .leader-wait-crown {
+          animation: none;
+        }
+      }
       .elapsed-label {
         margin: 0;
         font-family: var(--font-display);
@@ -152,21 +174,30 @@
         <p class="kicker">RAID IN PROGRESS</p>
         <h1>雪かき中!</h1>
       </header>
-      <div class="pixel-hud">
-        <p id="dig-level" class="pixel-level"><small>雪かきレベル</small>Lv.1</p>
-        <div id="level-bar" class="pixel-bar" aria-hidden="true"></div>
-      </div>
-      <div class="pixel-stage">
-        <div class="pixel-frame">
-          <canvas id="pixel-canvas" width="362" height="272" aria-hidden="true"></canvas>
-          <div id="crew-labels" class="crew-labels" aria-hidden="true"></div>
+      <div id="work-view">
+        <div class="pixel-hud">
+          <p id="dig-level" class="pixel-level"><small>雪かきレベル</small>Lv.1</p>
+          <div id="level-bar" class="pixel-bar" aria-hidden="true"></div>
         </div>
+        <div class="pixel-stage">
+          <div class="pixel-frame">
+            <canvas id="pixel-canvas" width="362" height="272" aria-hidden="true"></canvas>
+            <div id="crew-labels" class="crew-labels" aria-hidden="true"></div>
+          </div>
+        </div>
+        <p class="elapsed-label center">経過時間</p>
+        <p id="elapsed" class="big-number" role="timer">--:--</p>
+        <p id="helper-names" class="note center"></p>
+        <p class="note center">絵をタップすると、雪をすばやく投げられます。連続でコンボ!</p>
+        <p id="leader-role" class="leader-role center" aria-live="polite"></p>
+        <button id="finish-button" class="button" type="button">雪かきを終える</button>
       </div>
-      <p class="elapsed-label center">経過時間</p>
-      <p id="elapsed" class="big-number" role="timer">--:--</p>
-      <p id="helper-names" class="note center"></p>
-      <p class="note center">絵をタップすると、雪をすばやく投げられます。連続でコンボ!</p>
-      <button id="finish-button" class="button" type="button">雪かきを終える</button>
+      <section id="leader-wait" class="card center" aria-live="polite" hidden>
+        <p class="leader-wait-crown" aria-hidden="true">👑</p>
+        <h2 id="leader-wait-title">少し待ってね</h2>
+        <p id="leader-wait-text"></p>
+        <p class="note">終わったら、自動でお疲れ様の画面に進みます。</p>
+      </section>
       <p id="error" class="error" role="alert" hidden></p>
     </main>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>

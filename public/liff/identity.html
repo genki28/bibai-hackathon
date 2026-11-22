@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>本人確認(デモ)</title>
     <!--
-      本人確認(マイナンバーカード)のデモ画面。若者が「助けに行く」で参加した後に通るので、若者のトーン(夜空)にする。
-      ⚠ 実際のカードの読み取りはしない。デモの注意書き(.demo-banner)は必ず残すこと。
+      本人確認のデモ画面: 身分証の顔写真と、その場の自撮りを「スマホの中だけ」で照合する。
+      若者が「助けに行く」で参加した後に通るので、若者のトーン(夜空)にする。
+      ⚠ 身分証が本物かどうかは確かめていない。デモの注意書き(.demo-banner)は必ず残すこと。
+      画像・顔の特徴の数値はサーバーへ送らない。送るのは結果だけ(identity.js)。
       デザインは docs/design.md を見てください。
     -->
     <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
@@ -16,6 +18,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
     />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <link rel="stylesheet" href="./template.css" />
     <style>
       .demo-banner {
@@ -31,7 +34,11 @@
         text-align: center;
       }
       .step p {
-        font-size: 1.1rem;
+        font-size: 1.05rem;
+      }
+      .step .note {
+        font-size: 0.9rem;
+        opacity: 0.85;
       }
       .icon {
         display: grid;
@@ -68,9 +75,85 @@
           transform: rotate(360deg);
         }
       }
+      /* 同意の中身・身分証の撮り方の注意 */
+      .promise-list,
+      .tips {
+        margin: 12px 0;
+        padding: 12px 14px 12px 32px;
+        border-radius: 14px;
+        text-align: left;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .warning {
+        margin: 12px 0;
+        padding: 12px 14px;
+        border: 2px solid var(--gold);
+        border-radius: 14px;
+        text-align: left;
+        font-weight: 700;
+        color: #ffe7a8;
+        background: rgba(255, 201, 77, 0.14);
+      }
+      /* <label> をボタンの見た目にして、中の <input type="file"> は隠す(押すとカメラが開く) */
+      .file-button input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .file-button:focus-within {
+        outline: 3px solid var(--gold);
+        outline-offset: 3px;
+      }
+      /* 自撮りの映像。鏡のように左右を反転して見せる */
+      .camera {
+        position: relative;
+        width: 100%;
+        max-width: 360px;
+        margin: 8px auto;
+        aspect-ratio: 3 / 4;
+        overflow: hidden;
+        border-radius: 20px;
+        background: #000;
+        box-shadow:
+          0 0 0 2px rgba(79, 209, 255, 0.6),
+          0 0 30px rgba(79, 209, 255, 0.35);
+      }
+      .camera video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scaleX(-1);
+      }
+      .camera .face-guide {
+        position: absolute;
+        inset: 12% 18%;
+        border: 3px dashed rgba(244, 248, 255, 0.7);
+        border-radius: 50%;
+        pointer-events: none;
+      }
+      .challenge {
+        margin: 12px 0 4px;
+        font-family: var(--font-display);
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: var(--gold);
+      }
+      .challenge-count {
+        font-size: 0.9rem;
+        color: var(--ice);
+      }
       #step-done .icon {
         background: radial-gradient(circle, rgba(255, 201, 77, 0.45), rgba(255, 201, 77, 0.1) 70%);
         box-shadow: 0 0 34px rgba(255, 201, 77, 0.5);
+      }
+      #step-failed .icon,
+      #step-unavailable .icon {
+        background: radial-gradient(circle, rgba(255, 138, 143, 0.35), rgba(139, 92, 246, 0.12) 70%);
+        box-shadow: 0 0 30px rgba(255, 138, 143, 0.3);
       }
       #error {
         color: var(--error);
@@ -92,8 +175,8 @@
           <h1>本人確認</h1>
         </header>
         <p class="demo-banner">
-          これはデモ用の画面です。実際のカードの読み取りや本人確認は行いません。
-          カードの情報やマイナンバーは送信・保存されません。
+          これはデモ用の本人確認です。身分証の顔写真と自撮りの顔が似ているかを、このスマホの中だけで確かめます
+          (身分証が本物かどうかは確かめていません)。本番では国の認定を受けた本人確認サービスを使います。
         </p>
 
         <section id="step-loading" class="step">
@@ -101,29 +184,101 @@
           <p role="status">読み込み中です…</p>
         </section>
 
+        <!-- 1. 同意 -->
         <section id="step-intro" class="step" hidden>
           <div class="icon" aria-hidden="true">🪪</div>
-          <p>マイナンバーカードで<br />本人確認をします</p>
-          <button id="start-button" class="button" type="button">確認をはじめる</button>
+          <p><strong>身分証の顔写真と、いまの自撮りで<br />本人確認をします</strong></p>
+          <ul class="promise-list">
+            <li>画像は保存しません。この端末の中で顔の照合だけに使い、終わったら消します</li>
+            <li>サーバーへ送るのは「確認できたかどうか」だけです</li>
+            <li>使える身分証: 運転免許証、またはマイナンバーカードの表面(顔写真の面)</li>
+          </ul>
+          <button id="agree-button" class="button" type="button">同意して始める</button>
         </section>
 
-        <section id="step-scan" class="step" hidden>
-          <div class="icon card-anim" aria-hidden="true">📱🪪</div>
-          <p>マイナンバーカードを<br />スマホの背面に重ねてください</p>
-          <button id="scan-button" class="button" type="button">スキャンする(デモ)</button>
-          <button id="cancel-button" class="button secondary" type="button">やめる</button>
+        <!-- 顔の照合の準備(ライブラリとモデルの読み込み) -->
+        <section id="step-preparing" class="step" hidden>
+          <div class="spinner" aria-hidden="true"></div>
+          <p role="status">顔の照合の準備をしています…</p>
+          <p class="note">はじめてのときは、読み込みに 30 秒〜1 分ほどかかることがあります。</p>
         </section>
 
+        <!-- 準備に失敗したとき(予備のデモボタン) -->
+        <section id="step-unavailable" class="step" hidden>
+          <div class="icon" aria-hidden="true">⚠️</div>
+          <p><strong>この端末では顔の照合が使えません</strong></p>
+          <p class="note">通信の状態がよくないか、この端末のブラウザが対応していない可能性があります。</p>
+          <button id="retry-load-button" class="button secondary" type="button">もう一度読み込む</button>
+          <button id="demo-verify-button" class="button" type="button">確認済みにする(デモ)</button>
+          <p class="note">「確認済みにする(デモ)」は発表用の予備です。何も確かめずに確認済みになります。</p>
+        </section>
+
+        <!-- 2. 身分証の表面を撮る -->
+        <section id="step-id" class="step" hidden>
+          <div class="icon card-anim" aria-hidden="true">🪪</div>
+          <p><strong>身分証の「顔写真の面」を撮ってください</strong></p>
+          <p class="warning">
+            ⚠ マイナンバーカードは、マイナンバー(12 桁の番号)が書いてある<strong>裏面は撮らないでください</strong>。
+            顔写真のある表面だけを使います。
+          </p>
+          <ul class="tips">
+            <li>運転免許証、またはマイナンバーカードの表面</li>
+            <li>カードを画面いっぱいに写す</li>
+            <li>光が反射して顔写真が白くならないように</li>
+          </ul>
+          <label class="button file-button">
+            身分証を撮る
+            <input id="id-photo-input" type="file" accept="image/*" capture="environment" />
+          </label>
+        </section>
+
+        <!-- 3. 生きた本人かの確認(前のカメラの映像) -->
+        <section id="step-liveness" class="step" hidden>
+          <p class="challenge-count" id="challenge-count"></p>
+          <p class="challenge" id="challenge-text" role="status" aria-live="polite"></p>
+          <div class="camera">
+            <video id="camera-video" autoplay muted playsinline></video>
+            <div class="face-guide" aria-hidden="true"></div>
+          </div>
+          <p class="note" id="camera-hint">顔を丸の中に入れてください</p>
+          <button id="liveness-cancel-button" class="button secondary" type="button">やめる</button>
+        </section>
+
+        <!-- 3'. カメラ映像が使えないとき: 自撮り写真 1 枚(ライブネス確認なし) -->
+        <section id="step-selfie" class="step" hidden>
+          <div class="icon" aria-hidden="true">🤳</div>
+          <p><strong>自撮りを 1 枚撮ってください</strong></p>
+          <p class="note">
+            この端末ではカメラの映像が使えないため、写真 1 枚で確かめます
+            (まばたきなどの「生きた本人か」の確認はしません。結果にもそう記録します)。
+          </p>
+          <label class="button file-button">
+            自撮りを撮る
+            <input id="selfie-photo-input" type="file" accept="image/*" capture="user" />
+          </label>
+        </section>
+
+        <!-- 4. 照合中 -->
         <section id="step-checking" class="step" hidden>
           <div class="spinner" aria-hidden="true"></div>
-          <p role="status">確認しています…</p>
+          <p role="status" id="checking-text">確認しています…</p>
         </section>
 
+        <!-- 4'. 一致しなかった / 顔が見つからない -->
+        <section id="step-failed" class="step" hidden>
+          <div class="icon" aria-hidden="true">🙈</div>
+          <p><strong id="failed-title">確認できませんでした</strong></p>
+          <p id="failed-message"></p>
+          <button id="retry-button" class="button" type="button">もう一度ためす</button>
+        </section>
+
+        <!-- 6. 完了 -->
         <section id="step-done" class="step" hidden>
           <div class="icon" aria-hidden="true">✅</div>
           <p><strong>本人確認完了!</strong></p>
           <p id="auto-next-note" hidden>自動で画面遷移します。</p>
           <p id="verified-at"></p>
+          <p class="note" id="verified-method"></p>
           <!-- 「助けに行く」から来たときは、1.5 秒ほどで次の画面へ自動で進む。押しても進める(?next=〇〇.html&id=依頼ID) -->
           <button id="next-button" class="button" type="button" hidden>次へ進む</button>
           <button id="reset-button" class="button secondary" type="button">もう一度ためす</button>
