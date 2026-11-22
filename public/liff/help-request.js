@@ -8,11 +8,12 @@
 //   id="preview-note" … おためし表示の注意書き
 //   name="amount" の選択肢(value は "little" / "normal" / "lots")
 
-import { byId, closeScreen, isPreviewMode, postJson, resolveUserId, wait } from "./common.js";
+import { byId, callApi, closeScreen, isPreviewMode, postJson, resolveUserId, wait } from "./common.js";
 import "./reset-menu-button.js";
 
 const STEPS = ["ask", "sending", "done"];
 const PREVIEW_DELAY_MS = 1000;
+const WAITING_PAGE = "./help-waiting.html";
 
 function showStep(name) {
   STEPS.forEach((step) => {
@@ -45,7 +46,12 @@ async function onCall(userIdPromise) {
   showStep("sending");
   try {
     await sendRequest(userIdPromise);
-    showStep("done");
+    if (isPreviewMode()) {
+      showStep("done");
+      return;
+    }
+    // 送れたら待機画面へ
+    location.href = WAITING_PAGE;
   } catch (error) {
     console.error(error);
     showStep("ask");
@@ -53,11 +59,21 @@ async function onCall(userIdPromise) {
   }
 }
 
+/** すでに助けを呼んでいる人は、フォームではなく待機画面を出す。 */
+async function goToWaitingIfAlreadyCalled(userIdPromise) {
+  const userId = await userIdPromise;
+  const mine = await callApi(`/api/help-requests/mine/${userId}`);
+  if (mine) location.replace(WAITING_PAGE);
+}
+
 function main() {
   byId("preview-note").hidden = !isPreviewMode();
   // ユーザー ID は裏で先に取っておく(ボタンを押したときに待たせないため)
   const userIdPromise = isPreviewMode() ? Promise.resolve("") : resolveUserId();
   userIdPromise.catch((error) => console.error(error));
+  if (!isPreviewMode()) {
+    goToWaitingIfAlreadyCalled(userIdPromise).catch((error) => console.error(error));
+  }
 
   byId("call-button").addEventListener("click", () => onCall(userIdPromise));
   byId("cancel-button").addEventListener("click", closeScreen);

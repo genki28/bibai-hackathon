@@ -72,8 +72,8 @@ function buildMenus(liffId: string): Record<MenuKey, messagingApi.RichMenuReques
       area(800, 400, changeRoleAction),
     ]),
     helper: menu("helper", [
-      area(0, 400, openLiff(liffId, "助けに行く")),
-      area(400, 400, openLiff(liffId, "ランキング")),
+      area(0, 400, openLiff(liffId, "助けに行く", "go-help.html")),
+      area(400, 400, openLiff(liffId, "ランキング", "ranking.html")),
       area(800, 400, changeRoleAction),
     ]),
   };

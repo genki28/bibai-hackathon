@@ -121,3 +121,30 @@ test("POST /api/help-requests は入力がおかしいと 400 と日本語のエ
     error: "依頼の内容が正しくありません。",
   });
 });
+
+test("その人の「待っている」依頼を探す。なければ null", () => {
+  // Arrange
+  const store = createHelpRequestStore();
+  const otherId = `U${"f".repeat(32)}`;
+  const created = store.create({ userId: ELDER_ID, amount: "normal" }, NOW);
+
+  // Act & Assert
+  expect(store.findWaiting(ELDER_ID)).toEqual(created);
+  expect(store.findWaiting(otherId)).toBeNull();
+});
+
+test("GET /api/help-requests/mine/:userId は自分の待っている依頼を返し、なければ null を返す", async () => {
+  // Arrange
+  const baseUrl = await startApp();
+
+  // Act
+  const before = await (await fetch(`${baseUrl}/api/help-requests/mine/${ELDER_ID}`)).json();
+  await postRequest(baseUrl, { userId: ELDER_ID });
+  const after = await (await fetch(`${baseUrl}/api/help-requests/mine/${ELDER_ID}`)).json();
+  const invalid = await fetch(`${baseUrl}/api/help-requests/mine/not-a-user`);
+
+  // Assert
+  expect(before).toEqual({ success: true, data: null });
+  expect(after.data).toMatchObject({ userId: ELDER_ID, status: "waiting" });
+  expect(invalid.status).toBe(400);
+});

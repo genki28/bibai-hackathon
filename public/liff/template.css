@@ -1,0 +1,125 @@
+/*
+ * ひな形ページ共通の見た目。デザインが決まったら、各ページの <style> で上書きするか、この中を書き換える。
+ * 灰色の点線の箱(.placeholder)は「ここに〇〇が入る予定」という印。
+ */
+:root {
+  --elder: #e8590c;
+  --helper: #1c7ed6;
+  --text: #1f2933;
+  --sub: #52606d;
+  --line: #e4e7eb;
+  --bg: #f4f6f8;
+  --card: #ffffff;
+}
+body {
+  margin: 0;
+  padding: 16px 16px 72px; /* 下は「メニューを最初に戻す」ボタンのぶん空ける */
+  font-family: system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--text);
+  background: var(--bg);
+}
+main {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--card);
+}
+h1 {
+  margin: 0 0 12px;
+  font-size: 1.4rem;
+  text-align: center;
+}
+h2 {
+  margin: 16px 0 8px;
+  font-size: 1.05rem;
+}
+.badge {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: #7a4b00;
+  background: #fff4d6;
+}
+.placeholder {
+  display: grid;
+  place-items: center;
+  min-height: 72px;
+  margin: 8px 0;
+  padding: 12px;
+  border: 2px dashed #cbd2d9;
+  border-radius: 10px;
+  color: var(--sub);
+  font-size: 0.9rem;
+  text-align: center;
+}
+.placeholder.map {
+  min-height: 200px;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--line);
+}
+.button {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 52px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  color: #fff;
+  background: var(--accent, var(--helper));
+  cursor: pointer;
+}
+.button.secondary {
+  color: var(--text);
+  background: var(--line);
+}
+.button.danger {
+  background: #c92a2a;
+}
+.for-elder {
+  --accent: var(--elder);
+}
+.for-helper {
+  --accent: var(--helper);
+}
+.note {
+  color: var(--sub);
+  font-size: 0.85rem;
+}
+.stars {
+  display: flex;
+  flex-direction: row-reverse; /* HTML は 5 → 1 の順。右から並べて、見た目は 1 → 5 にする */
+  justify-content: center;
+  gap: 4px;
+  font-size: 2rem;
+}
+.stars label {
+  cursor: pointer;
+}
+.stars input {
+  position: absolute;
+  opacity: 0;
+}
+.stars label {
+  color: #cbd2d9;
+}
+/* 選んだ星と、その左(HTML では後ろ)の星を光らせる */
+.stars label:has(input:checked),
+.stars label:has(input:checked) ~ label {
+  color: #f59f00;
+}

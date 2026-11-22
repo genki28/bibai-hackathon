@@ -25,6 +25,8 @@ export type HelpRequestStore = {
   /** 依頼を登録する。同じ人の「待っている」依頼があれば、新しく作らずそれを返す。 */
   readonly create: (input: HelpRequestInput, now: Date) => HelpRequest;
   readonly listWaiting: () => readonly HelpRequest[];
+  /** その人の「待っている」依頼。なければ null。 */
+  readonly findWaiting: (userId: string) => HelpRequest | null;
 };
 
 const SNOW_AMOUNTS: readonly SnowAmount[] = ["little", "normal", "lots"];
@@ -46,10 +48,14 @@ export function createHelpRequestStore(): HelpRequestStore {
   const listWaiting = (): readonly HelpRequest[] =>
     requests.filter((r) => r.status === "waiting");
 
+  const findWaiting = (userId: string): HelpRequest | null =>
+    listWaiting().find((r) => r.userId === userId) ?? null;
+
   return {
     listWaiting,
+    findWaiting,
     create: (input, now) => {
-      const existing = listWaiting().find((r) => r.userId === input.userId);
+      const existing = findWaiting(input.userId);
       if (existing) return existing;
       const created: HelpRequest = {
         ...input,
