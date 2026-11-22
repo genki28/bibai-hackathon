@@ -1,8 +1,10 @@
 // 【お年寄り】助けを呼んだ後の待機画面の動き。
 // 自分の依頼を数秒ごとに読み直して、受注状況を出す。取り消しは本当に保存する(API)。
+// 向かっている人がいる間は、その人の現在地と到着の目安も出す(elder-live-map.js)。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId, callApi, isPreviewMode } from "./common.js";
+import { createElderLiveMap } from "./elder-live-map.js";
 import { pageReady } from "./loading.js";
 import { pageUrl, postAction, showError, startPolling } from "./request-page.js";
 import { userIdPromise } from "./template.js";
@@ -19,6 +21,7 @@ const STATUS_VIEWS = {
 };
 
 let stopPolling = () => {};
+const liveMap = createElderLiveMap();
 
 const names = (request) => request.helpers.map((h) => `${h.displayName} さん`).join("、");
 
@@ -58,10 +61,20 @@ function render(request) {
   byId("thanks-link").href = pageUrl("thanks.html", request.id);
 }
 
+/** 受注状況と、来てくれる人の現在地を出す(地図が出せなくても受注状況は出す)。 */
+function renderAll(request) {
+  render(request);
+  try {
+    liveMap.update(request);
+  } catch (error) {
+    console.error("現在地の地図を出せませんでした", error);
+  }
+}
+
 async function refresh(userId) {
   const request = await callApi(`/api/help-requests/mine/${userId}`);
   showError("");
-  render(request);
+  renderAll(request);
   return false;
 }
 
@@ -74,6 +87,7 @@ async function onCancel() {
     const request = await callApi(`/api/help-requests/mine/${userId}`);
     if (request) await postAction(request.id, "cancel", { userId });
     stopPolling();
+    liveMap.update(null);
     byId("step-waiting").hidden = true;
     byId("step-cancelled").hidden = false;
   } catch (error) {
@@ -84,10 +98,26 @@ async function onCancel() {
   }
 }
 
+function previewRequest(status, helpers) {
+  return { id: "", status, amount: "normal", createdAt: new Date().toISOString(), lat: 43.33, lng: 141.853, helpers };
+}
+
+/** おためし表示用: 2 人が向かっていて(1 人は位置の共有なし)、1 人が着いた様子。 */
+function previewLiveRequest() {
+  const at = new Date(Date.now() - 60_000).toISOString();
+  return previewRequest("accepted", [
+    { displayName: "雪野 太郎", arrivedAt: null, location: { lat: 43.334, lng: 141.848, accuracy: 20, at } },
+    { displayName: "美唄 花子", arrivedAt: null },
+    { displayName: "北 一郎", arrivedAt: at },
+  ]);
+}
+
 async function main() {
   byId("cancel-button").addEventListener("click", onCancel);
   if (isPreviewMode()) {
-    render({ id: "", status: "waiting", amount: "normal", createdAt: new Date().toISOString(), helpers: [] });
+    // ?preview=live なら、向かっている人がいるときの見た目(現在地の地図)を見せる
+    const isLive = new URLSearchParams(location.search).get("preview") === "live";
+    renderAll(isLive ? previewLiveRequest() : previewRequest("waiting", []));
     pageReady();
     return;
   }
