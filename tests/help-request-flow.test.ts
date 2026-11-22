@@ -176,14 +176,29 @@ test("全員が参加をやめると募集中に戻り、リーダーがやめ�
   expect(afterAllLeft.status).toBe("waiting");
 });
 
-test("雪かきが始まったら参加も、参加の取り消しもできない", async () => {
+test("雪かきが始まったあとでも途中から参加でき、状態は雪かき中のまま", async () => {
+  // Arrange
+  const { store, id } = await setUp();
+  await store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
+  await store.start(id, HELPER_A, NOW);
+
+  // Act
+  const joined = valueOf(await store.join(id, { userId: HELPER_B, displayName: "B" }, NOW));
+  const open = await store.listOpen();
+
+  // Assert
+  expect(joined.status).toBe("working");
+  expect(joined.helpers.map((h) => h.userId)).toEqual([HELPER_A, HELPER_B]);
+  expect(open.map((r) => r.id)).toContain(id);
+});
+
+test("雪かきが始まったら、参加の取り消しはできない", async () => {
   // Arrange
   const { store, id } = await setUp();
   await store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
   await store.start(id, HELPER_A, NOW);
 
   // Act & Assert
-  expect(await store.join(id, { userId: HELPER_B, displayName: "B" }, NOW)).toMatchObject({ status: 409 });
   expect(await store.leave(id, HELPER_A)).toMatchObject({ status: 409 });
 });
 
