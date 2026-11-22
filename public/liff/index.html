@@ -59,16 +59,19 @@
         color: var(--sub);
       }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&amp;family=Zen+Kaku+Gothic+New:wght@400;500;700&amp;display=swap" />
+    <script src="./design-theme.js"></script>
     <link rel="stylesheet" href="./snow-ui.css" />
+    <link rel="stylesheet" href="./snow-pixel.css" />
   </head>
   <body class="for-helper">
     <main>
-      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム"><span class="brand-mark" aria-hidden="true">＊</span> ユキカキ・レイド</a><span>北海道 美唄</span></div>
+      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム">ユキカキ・レイド</a><span>美唄</span></div>
       <header class="hero">
-        <p class="kicker">YUKIKAKI RAID</p>
-        <img class="town-scene" src="./images/snow-town.svg" alt="雪のまちで、仲間と一緒に雪かき" />
-        <h1>雪の日が、<br />誰かとつながる日に。</h1>
-        <p class="hero-sub">みんなで雪かき、美唄の仲間を <strong>×2</strong> に</p>
+        <h1>美唄の冬を、<br />一緒に。</h1>
+        <p class="hero-sub">雪かきを、頼む。手伝う。</p>
       </header>
       <nav class="home-actions" aria-label="やりたいことを選ぶ">
         <a class="button" href="./go-help.html">雪かきに参加する</a>
@@ -90,7 +93,7 @@
         <a class="button secondary" href="./identity.html">本人確認(デモ)へ</a>
       </details>
       <section class="card weather" aria-labelledby="weather-title">
-        <h2 id="weather-title">❄ 美唄の雪の予報</h2>
+        <h2 id="weather-title">美唄の雪予報</h2>
         <p id="weather-text">読み込み中です…</p>
         <p class="weather-note">データ: Open-Meteo</p>
       </section>

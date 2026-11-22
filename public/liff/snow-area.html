@@ -92,20 +92,23 @@
         margin: 4px 0 0;
       }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&amp;family=Zen+Kaku+Gothic+New:wght@400;500;700&amp;display=swap" />
+    <script src="./design-theme.js"></script>
     <link rel="stylesheet" href="./snow-ui.css" />
+    <link rel="stylesheet" href="./snow-pixel.css" />
   </head>
   <body class="for-helper">
     <main>
-      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム"><span class="brand-mark" aria-hidden="true">＊</span> ユキカキ・レイド</a><span>北海道 美唄</span></div>
+      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム">ユキカキ・レイド</a><span>美唄</span></div>
       <header class="page-head">
-        <p class="kicker">MAP THE AREA</p>
-        <h1>きれいにした場所を<br />記録しよう。</h1>
-        <p class="head-description">地図に範囲を描いて、今回の成果を残そう。</p>
+        <h1>作業範囲を記録</h1>
       </header>
       <div class="card">
         <div class="toggle" role="group" aria-label="地図の操作の切り替え">
-          <button id="mode-move" type="button" aria-pressed="true">✋ 地図を動かす</button>
-          <button id="mode-draw" type="button" aria-pressed="false">✏️ 範囲を描く</button>
+          <button id="mode-move" type="button" aria-pressed="true">地図を動かす</button>
+          <button id="mode-draw" type="button" aria-pressed="false">範囲を描く</button>
         </div>
         <p id="area-hint" class="note center area-hint" aria-live="polite"></p>
         <div id="map-wrap" class="map-wrap">

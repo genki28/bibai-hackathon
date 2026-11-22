@@ -71,7 +71,7 @@ function renderListItem(request) {
   party.append(renderPartyPips(request.helperCount, request.capacity), `参加 ${request.helperCount}/${request.capacity}人`);
   const meta = el("span", undefined, "quest-meta");
   meta.append(party, el("span", `雪 ${amount} ・ ${timeAgo(request.createdAt)}`));
-  button.append(el("span", "協力クエスト", "quest-tag"), el("span", request.area, "quest-title"), difficulty, meta);
+  button.append(el("span", "募集中", "quest-tag"), el("span", request.area, "quest-title"), difficulty, meta);
   button.addEventListener("click", () => showPlace(request));
   const item = el("li");
   item.append(button);
@@ -83,11 +83,11 @@ function renderList() {
   const pageCount = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
   page = Math.min(page, pageCount - 1);
   const shown = items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-  byId("waiting-count").textContent = `${items.length} 件の雪かきが募集中`;
+  byId("waiting-count").replaceChildren(el("strong", String(items.length)), el("span", "件 募集中"));
   byId("request-list").replaceChildren(...shown.map(renderListItem));
   if (!shown.length) {
     const empty = el("li", undefined, "empty-state");
-    empty.append(el("strong", "いま、このエリアの募集はありません"), el("p", "また雪が降ったら、あなたの出番。エリアを変えると、ほかの募集も確認できます。"));
+    empty.append(el("strong", "募集中の雪かきはありません"), el("p", "エリアを変えるか、後でもう一度ご確認ください。"));
     byId("request-list").append(empty);
   }
   byId("prev-button").disabled = page === 0;
@@ -156,7 +156,7 @@ byId("back-button").addEventListener("click", () => {
 byId("go-button").addEventListener("click", () => {
   const amount = AMOUNT_LABELS[selected.amount] ?? "-";
   byId("confirm-summary").textContent =
-    `📍 ${selected.area} ・ 雪 ${amount} ${"❄".repeat(DIFFICULTY[selected.amount] ?? 1)} ・ 参加 ${selected.helperCount}/${selected.capacity}人`;
+    `${selected.area} ・ 雪 ${amount} ・ 参加 ${selected.helperCount}/${selected.capacity}人`;
   byId("confirm-overlay").hidden = false;
 });
 byId("confirm-back-button").addEventListener("click", () => {

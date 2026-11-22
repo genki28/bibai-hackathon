@@ -12,7 +12,6 @@ import { resumeIfActive } from "./resume.js";
 import { userIdPromise } from "./template.js";
 
 const PERIODS = ["daily", "total"];
-const MEDALS = { 1: "👑", 2: "🥈", 3: "🥉" };
 const PODIUM_SIZE = 3;
 /** 称号(ポイントがこれ以上で名乗れる。値は仮。docs/design.md の「バッジ」)。多い順に並べる。 */
 const TITLES = [
@@ -34,9 +33,9 @@ function nameWithMe(entry, className) {
 /** 表彰台の 1 枚。place は台の位置(1 = 真ん中の高い台)。 */
 function renderPodiumCard(entry, place) {
   const card = el("div", undefined, `podium-card place-${place}${entry.isMe ? " is-me" : ""}`);
+  card.setAttribute("aria-label", `${entry.rank}位 ${entry.displayName}`);
   card.append(
-    el("span", MEDALS[entry.rank] ?? "⭐", "podium-medal"),
-    el("span", `${entry.rank} 位`, "note"),
+    el("span", String(entry.rank).padStart(2, "0"), "podium-medal"),
     nameWithMe(entry, "podium-name"),
     el("p", formatPoints(entry.points), "podium-points"),
     el("span", titleOf(entry.points), "badge"),
@@ -57,16 +56,19 @@ function renderRow(entry) {
 function render(entries) {
   const list = byId("ranking-list");
   if (entries.length === 0) {
-    list.replaceChildren(el("p", "まだだれもポイントを持っていません。一番乗りをねらおう!", "note center"));
+    list.replaceChildren(el("p", "雪かきが完了すると、順位が表示されます。", "note center"));
   } else {
     const podium = el("div", undefined, "podium");
     podium.append(...entries.slice(0, PODIUM_SIZE).map((entry, i) => renderPodiumCard(entry, i + 1)));
     list.replaceChildren(podium, ...entries.slice(PODIUM_SIZE).map(renderRow));
   }
   const me = entries.find((e) => e.isMe);
-  byId("my-rank").textContent = me
-    ? `あなたは ${me.rank} 位 ・ ${formatPoints(me.points)} ・ 称号「${titleOf(me.points)}」`
-    : "雪かきをすると、ここに順位が出ます。";
+  const myRank = byId("my-rank");
+  if (me) {
+    myRank.replaceChildren(el("span", "あなた"), el("strong", `${me.rank}位`, "my-position"), el("span", formatPoints(me.points), "my-points"));
+  } else {
+    myRank.textContent = "あなたの順位は、初回の雪かき後に表示されます。";
+  }
   renderBreakdown(me?.breakdown);
 }
 
@@ -74,6 +76,7 @@ function render(entries) {
 function renderBreakdown(breakdown) {
   const text = byId("my-breakdown");
   text.hidden = !breakdown;
+  byId("breakdown-details").hidden = !breakdown;
   if (!breakdown) return;
   const parts = [
     ["雪かき", breakdown.work],

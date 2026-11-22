@@ -159,15 +159,18 @@
         color: var(--sub);
       }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&amp;family=Zen+Kaku+Gothic+New:wght@400;500;700&amp;display=swap" />
+    <script src="./design-theme.js"></script>
     <link rel="stylesheet" href="./snow-ui.css" />
+    <link rel="stylesheet" href="./snow-pixel.css" />
   </head>
   <body class="for-helper">
     <main>
-      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム"><span class="brand-mark" aria-hidden="true">＊</span> ユキカキ・レイド</a><span>北海道 美唄</span></div>
+      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム">ユキカキ・レイド</a><span>美唄</span></div>
       <header class="page-head">
-        <p class="kicker">RAID IN PROGRESS</p>
-        <h1>力を合わせて、雪かき中。</h1>
-        <p class="head-description">ひとかきずつ、まちが歩きやすくなる。</p>
+        <h1>雪かき中</h1>
       </header>
       <div id="work-view">
         <div class="pixel-hud">
@@ -184,14 +187,14 @@
         <p id="elapsed" class="big-number" role="timer">--:--</p>
         <p id="helper-names" class="note center"></p>
         <p id="leader-role" class="leader-role center" aria-live="polite"></p>
-        <p class="rest-note">自分のペースで。疲れたらひと休み。</p>
+        <p class="rest-note">疲れたら、ひと休み。</p>
         <button id="finish-button" class="button" type="button">雪かきを終える</button>
       </div>
       <section id="leader-wait" class="card center" aria-live="polite" hidden>
         <p class="leader-wait-crown" aria-hidden="true">👑</p>
         <h2 id="leader-wait-title">少し待ってね</h2>
         <p id="leader-wait-text"></p>
-        <p class="note">終わったら、自動でお疲れ様の画面に進みます。</p>
+        <p class="note">完了すると、自動で結果が表示されます。</p>
       </section>
       <p id="error" class="error" role="alert" hidden></p>
     </main>

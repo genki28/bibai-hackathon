@@ -1,0 +1,137 @@
+/* 比較用のドット絵案。指定のない通常画面には適用しない。 */
+html[data-design="pixel"] {
+  --font-body: "DotGothic16", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --font-pixel: var(--font-body);
+  --font-number: var(--font-pixel);
+  --rule: #cbd6e0;
+  --radius: 0;
+  --radius-small: 0;
+}
+html[data-design="pixel"] body {
+  background: #fff;
+  border-top: 4px solid var(--ink);
+}
+html[data-design="pixel"] .brand-line { min-height: 68px; border-bottom: 2px solid var(--ink); }
+html[data-design="pixel"] .brand-line a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-pixel);
+  font-weight: 400;
+  letter-spacing: .02em;
+}
+html[data-design="pixel"] .brand-line a::before {
+  content: "";
+  width: 20px;
+  height: 24px;
+  background: var(--vermillion);
+  mask: url("./images/pixel-shovel.svg") center / contain no-repeat;
+}
+html[data-design="pixel"] body h1,
+html[data-design="pixel"] .quest-title,
+html[data-design="pixel"] .clear-banner {
+  font-family: var(--font-pixel);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+html[data-design="pixel"] .page-head { margin-top: 28px; }
+html[data-design="pixel"] :is(#step-list .page-head, .hero)::after {
+  content: "";
+  display: block;
+  aspect-ratio: 3 / 1;
+  margin-top: 24px;
+  background: url("./images/pixel-town.svg") center / cover;
+  image-rendering: pixelated;
+  border-bottom: 2px solid var(--ink);
+}
+html[data-design="pixel"] .hero h1 { font-size: clamp(2rem, 9vw, 3rem); }
+html[data-design="pixel"] .button,
+html[data-design="pixel"] body.for-elder .button {
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+html[data-design="pixel"] .button:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+html[data-design="pixel"] .button:disabled { box-shadow: none; }
+html[data-design="pixel"] .button.danger,
+html[data-design="pixel"] body.for-elder .button.danger { border: 0; box-shadow: none; }
+html[data-design="pixel"] :is(select, .map-box, .pixel-stage, .demo-banner, .promise-list, .tips, .icon, .avatar) { border-radius: 0; }
+html[data-design="pixel"] select { border: 2px solid var(--rule); }
+html[data-design="pixel"] .pick-list .quest-card { padding: 20px 0; border-top: 2px solid var(--ink); }
+html[data-design="pixel"] .quest-tag { color: var(--vermillion); }
+html[data-design="pixel"] .quest-tag::before { content: ""; display: inline-block; width: 6px; height: 6px; margin: 0 8px 2px 0; background: currentColor; }
+html[data-design="pixel"] .quest-title { font-size: 1.25rem; }
+html[data-design="pixel"] .quest-difficulty { display: none; }
+html[data-design="pixel"] #waiting-count strong { font-size: 2.5rem; font-weight: 400; }
+html[data-design="pixel"] .tab-bar { border-top: 2px solid var(--ink); gap: 20px; }
+html[data-design="pixel"] .tab-bar a { gap: 6px; font-size: .875rem; flex-direction: row; }
+html[data-design="pixel"] .tab-bar a::before {
+  content: "";
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  background: currentColor;
+  mask: url("./images/pixel-shovel.svg") center / contain no-repeat;
+}
+html[data-design="pixel"] .tab-bar a[href*="ranking"]::before { mask-image: url("./images/pixel-cup.svg"); }
+html[data-design="pixel"] .tab-bar a[aria-current="page"] { border-top-color: transparent; }
+html[data-design="pixel"] .podium { gap: 8px; align-items: end; }
+html[data-design="pixel"] .podium-card { border-bottom: 4px solid var(--ink); background: var(--wash); }
+html[data-design="pixel"] .podium-card.place-1 { border-inline: 0; border-top: 4px solid var(--vermillion); }
+html[data-design="pixel"] .podium-medal { font-size: 2rem; }
+html[data-design="pixel"] .place-1 .podium-medal { font-size: 3rem; }
+html[data-design="pixel"] .podium-points { font-size: 1rem; overflow-wrap: anywhere; }
+html[data-design="pixel"] .my-position { font-size: 1.5rem; }
+html[data-design="pixel"] .my-points { font-size: 1.125rem; }
+html[data-design="pixel"] .gauge-bar { height: 8px; }
+html[data-design="pixel"] .gauge-fill { background: repeating-linear-gradient(90deg, var(--ink) 0 8px, transparent 8px 10px); }
+html[data-design="pixel"] .gauge-numbers strong { font-size: 1.5rem; }
+html[data-design="pixel"] .party-member.arrived .avatar { border-bottom: 3px solid var(--vermillion); }
+html[data-design="pixel"] #gather-count { font-size: 3.5rem; }
+html[data-design="pixel"] .pixel-stage { border: 3px solid var(--ink); }
+html[data-design="pixel"] #elapsed { font-size: clamp(2.5rem, 13vw, 4rem); }
+html[data-design="pixel"] .clear-banner { font-size: 3.5rem; }
+html[data-design="pixel"] .clear-banner::before {
+  content: "";
+  display: block;
+  margin: 0 auto 20px;
+  width: 48px;
+  height: 48px;
+  background: var(--vermillion);
+  mask: url("./images/pixel-cup.svg") center / contain no-repeat;
+}
+html[data-design="pixel"] .score-card { border-radius: 0; box-shadow: 4px 4px 0 var(--rule); }
+html[data-design="pixel"] .score { font-size: clamp(2rem, 10vw, 3.5rem); }
+html[data-design="pixel"] .stats .row > span:last-child { font-size: 1.375rem; }
+html[data-design="pixel"] .overlay .dialog { border: 3px solid var(--ink); border-radius: 0; }
+/* 全体を同じ書体に揃え、お年寄り側は文字と行間を大きくする。 */
+html[data-design="pixel"] body.for-elder { font-size: 1.25rem; line-height: 1.9; }
+html[data-design="pixel"] body.for-elder h1 { font-family: var(--font-body); font-weight: 400; }
+html[data-design="pixel"] .elder-steps li::before { border-width: 2px; border-radius: 0; }
+html[data-design="pixel"] .elder-status-panel { border: 2px solid var(--rule); padding: 24px 20px; }
+html[data-design="pixel"] .elder-status-panel::before {
+  content: "";
+  display: block;
+  aspect-ratio: 3 / 1;
+  margin: -24px -20px 24px;
+  background: url("./images/pixel-town.svg") center / cover;
+  image-rendering: pixelated;
+}
+html[data-design="pixel"] #request-status { font-size: 1.375rem; }
+html[data-design="pixel"] .helper-rating { border-block-width: 2px; }
+@media (max-width: 360px) {
+  html[data-design="pixel"] .brand-line a { gap: 8px; font-size: .875rem; }
+  html[data-design="pixel"] .tab-bar { gap: 12px; padding-inline: 12px; }
+  html[data-design="pixel"] .tab-bar a { font-size: .8125rem; }
+  html[data-design="pixel"] .podium-name { font-size: .8125rem; }
+  html[data-design="pixel"] .podium-points { font-size: .875rem; }
+}
+
+/* この書体は400のみ。擬似的な太字でドットの形をつぶさない。 */
+html[data-design="pixel"] body,
+html[data-design="pixel"] body :is(h1, h2, p, span, strong, a, button, label, select, .big-number, .member-name, .gather-label) { font-weight: 400; }
+
+html[data-design="pixel"] body :is(#gather-count, #elapsed, #waiting-count strong, #request-status, #request-helpers, .score, .gauge-numbers strong, .podium-medal, .podium-points, .my-position, .my-points, .rank-number, .rank-points) { font-weight: 400; }
+html[data-design="pixel"] :is(.area-handle, .mode-badge) { border-radius: 0; }
+
+html[data-design="pixel"] .area-midpoint::after { border-radius: 0; }

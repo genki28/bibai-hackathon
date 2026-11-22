@@ -116,21 +116,23 @@
         margin: 2px 0;
       }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&amp;family=Zen+Kaku+Gothic+New:wght@400;500;700&amp;display=swap" />
+    <script src="./design-theme.js"></script>
     <link rel="stylesheet" href="./snow-ui.css" />
+    <link rel="stylesheet" href="./snow-pixel.css" />
   </head>
   <body class="for-helper has-tab-bar">
     <main>
-      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム"><span class="brand-mark" aria-hidden="true">＊</span> ユキカキ・レイド</a><span>北海道 美唄</span></div>
+      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム">ユキカキ・レイド</a><span>美唄</span></div>
       <!-- 1. 依頼の一覧(クエスト掲示板) -->
       <section id="step-list">
         <header class="page-head">
-          <p class="kicker">QUEST BOARD</p>
-          <h1>今日の雪を、<br />みんなの達成感に。</h1>
-          <p class="head-description">近くの雪かきに参加して、仲間とクリアしよう。</p>
-          <img class="town-scene" src="./images/snow-town.svg" alt="" />
+          <h1>雪かきに参加</h1>
         </header>
         <p id="waiting-count" class="center">読み込み中です…</p>
-        <label for="area-select" class="note">エリアで絞り込む</label>
+        <label for="area-select" class="note">エリア</label>
         <select id="area-select">
           <option value="">すべてのエリア</option>
         </select>
@@ -145,12 +147,11 @@
       <!-- 2. 場所(大まかな地図。正確な位置は参加した後だけ見せる) -->
       <section id="step-place" hidden>
         <header class="page-head">
-          <p class="kicker">QUEST INFO</p>
-          <h1>クエストの場所</h1>
+          <h1>雪かきの場所</h1>
         </header>
         <div class="card place-info">
           <div id="rough-map" class="map-box"></div>
-          <p class="note center">※ 正確な場所は、参加した後に表示されます</p>
+          <p class="note center">正確な場所は参加後に表示します</p>
           <p id="place-postal" class="center"></p>
           <p id="place-address" class="center"></p>
           <p id="place-detail" class="note center"></p>
@@ -167,11 +168,9 @@
     <!-- 3. 確認の小窓(レイドの参加画面風) -->
     <div id="confirm-overlay" class="overlay" hidden>
       <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
-        <p class="kicker">JOIN THE RAID</p>
-        <p class="mission-emblem" aria-hidden="true">＊</p>
-        <h2 id="confirm-title">このクエストに参加しますか?</h2>
+        <h2 id="confirm-title">この雪かきに参加しますか？</h2>
         <p id="confirm-summary"></p>
-        <p class="note">参加すると本人確認に進みます。仲間と一緒に雪かきしよう!</p>
+        <p class="note">参加後、本人確認に進みます。</p>
         <div class="button-row">
           <button id="confirm-back-button" class="button secondary" type="button">やめておく</button>
           <button id="confirm-button" class="button" type="button">参加する</button>

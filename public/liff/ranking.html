@@ -147,22 +147,28 @@
         backdrop-filter: blur(12px);
       }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&amp;family=Zen+Kaku+Gothic+New:wght@400;500;700&amp;display=swap" />
+    <script src="./design-theme.js"></script>
     <link rel="stylesheet" href="./snow-ui.css" />
+    <link rel="stylesheet" href="./snow-pixel.css" />
   </head>
   <body class="for-helper has-tab-bar">
     <main>
-      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム"><span class="brand-mark" aria-hidden="true">＊</span> ユキカキ・レイド</a><span>北海道 美唄</span></div>
+      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム">ユキカキ・レイド</a><span>美唄</span></div>
       <header class="page-head">
-        <p class="kicker">YUKIKAKI RAID</p>
-        <h1>まちの雪かきヒーロー</h1>
-        <p class="head-description">ひとかきの積み重ねが、美唄の力になる。</p>
+        <h1>ランキング</h1>
       </header>
       <div class="toggle" role="group" aria-label="期間">
         <button id="daily-button" type="button" aria-pressed="true">今日</button>
         <button id="total-button" type="button" aria-pressed="false">これまで</button>
       </div>
       <p id="my-rank" aria-live="polite"></p>
-      <p id="my-breakdown" class="note center" hidden></p>
+      <details id="breakdown-details" class="quiet-details" hidden>
+        <summary>ポイントの内訳</summary>
+        <p id="my-breakdown" class="note" hidden></p>
+      </details>
       <div id="ranking-list">
         <p class="note center">読み込み中です…</p>
       </div>
@@ -170,9 +176,8 @@
         <p class="note center">仲間ゲージを読み込み中です…</p>
       </section>
       <section class="card center" aria-labelledby="invite-title">
-        <p class="section-label">FRIEND BONUS</p>
-        <h2 id="invite-title">次は、友だちと一緒に。</h2>
-        <p class="note">誘った友だちが初めて雪かきを終えると +500 pt(友だちにも +200 pt)。</p>
+        <h2 id="invite-title">友だちと参加しよう</h2>
+        <p class="note">友だちの初回完了で、あなたに500pt。友だちにも200pt。</p>
         <button id="invite-button" class="button" type="button">友だちを誘う</button>
         <p id="invite-status" class="note" aria-live="polite" hidden></p>
       </section>
