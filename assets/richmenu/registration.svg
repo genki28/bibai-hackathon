@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="405" viewBox="0 0 1200 405">
+  <rect width="1200" height="405" fill="#06C755"/>
+  <rect x="24" y="24" width="1152" height="357" rx="36" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="6"/>
+  <text x="600" y="200" text-anchor="middle" font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, sans-serif" font-weight="700" font-size="104" fill="#ffffff">利用者登録</text>
+  <text x="600" y="290" text-anchor="middle" font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, sans-serif" font-size="44" fill="#ffffff" fill-opacity="0.9">ここを押してはじめる</text>
+</svg>

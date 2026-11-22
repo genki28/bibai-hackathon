@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="405" viewBox="0 0 1200 405">
+  <rect width="1200" height="405" fill="#ffffff"/>
+  <rect x="16" y="16" width="376" height="373" rx="32" fill="#1C7ED6"/>
+  <text x="204" y="190" text-anchor="middle" font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, sans-serif" font-weight="700" font-size="60" fill="#ffffff">助けに</text>
+  <text x="204" y="262" text-anchor="middle" font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, sans-serif" font-weight="700" font-size="60" fill="#ffffff">行く</text>
+  <rect x="408" y="16" width="376" height="373" rx="32" fill="#F59F00"/>
+  <text x="596" y="226" text-anchor="middle" font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, sans-serif" font-weight="700" font-size="56" fill="#ffffff">ランキング</text>
+  <rect x="800" y="16" width="384" height="373" rx="32" fill="#E4E7EB"/>
+  <text x="992" y="190" text-anchor="middle" font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, sans-serif" font-weight="700" font-size="52" fill="#1F2933">登録の</text>
+  <text x="992" y="255" text-anchor="middle" font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, sans-serif" font-weight="700" font-size="52" fill="#1F2933">変更</text>
+</svg>

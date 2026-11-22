@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="405" viewBox="0 0 1200 405">
+  <rect width="1200" height="405" fill="#ffffff"/>
+  <rect x="16" y="16" width="768" height="373" rx="32" fill="#E8590C"/>
+  <text x="400" y="215" text-anchor="middle" font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, sans-serif" font-weight="700" font-size="120" fill="#ffffff">たすけて</text>
+  <text x="400" y="300" text-anchor="middle" font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, sans-serif" font-size="44" fill="#ffffff" fill-opacity="0.95">雪かきをおねがいする</text>
+  <rect x="800" y="16" width="384" height="373" rx="32" fill="#E4E7EB"/>
+  <text x="992" y="190" text-anchor="middle" font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, sans-serif" font-weight="700" font-size="52" fill="#1F2933">登録の</text>
+  <text x="992" y="255" text-anchor="middle" font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, sans-serif" font-weight="700" font-size="52" fill="#1F2933">変更</text>
+</svg>
