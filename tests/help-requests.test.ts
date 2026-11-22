@@ -12,6 +12,7 @@ const CONFIG: AppConfig = {
   port: 0,
   supabaseUrl: "",
   supabaseSecretKey: "",
+  testMode: false,
 };
 // テスト用の架空のユーザー ID
 const ELDER_ID = `U${"d".repeat(32)}`;

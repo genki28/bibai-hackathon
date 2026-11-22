@@ -22,6 +22,8 @@ export type IdentityStatus = {
 export type IdentityStore = {
   readonly getStatus: (userId: string) => Promise<IdentityStatus>;
   readonly markVerified: (userId: string, now: Date) => Promise<IdentityStatus>;
+  /** 確認の結果を消す(テスト用のデータを消すとき用)。 */
+  readonly remove: (userId: string) => Promise<void>;
 };
 
 export const NOT_VERIFIED: IdentityStatus = {
@@ -50,6 +52,9 @@ export function createIdentityStore(): IdentityStore {
       const status = verifiedStatus(now);
       records = new Map([...records, [userId, status]]);
       return status;
+    },
+    remove: async (userId) => {
+      records = new Map([...records].filter(([id]) => id !== userId));
     },
   };
 }

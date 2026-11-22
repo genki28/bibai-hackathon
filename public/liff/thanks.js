@@ -3,6 +3,7 @@
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId } from "./common.js";
+import { pageReady } from "./loading.js";
 import { el, fetchRequest, postAction, requestIdFromUrl, showError } from "./request-page.js";
 import { userIdPromise } from "./template.js";
 
@@ -90,7 +91,9 @@ async function main() {
   byId("send-button").addEventListener("click", () => onSend(id, userId, request.helpers));
 }
 
-main().catch((error) => {
-  console.error(error);
-  showError(`読み込めませんでした: ${error.message}`);
-});
+main()
+  .catch((error) => {
+    console.error(error);
+    showError(`読み込めませんでした: ${error.message}`);
+  })
+  .finally(pageReady);

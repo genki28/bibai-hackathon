@@ -12,6 +12,7 @@ const CONFIG: AppConfig = {
   port: 0,
   supabaseUrl: "",
   supabaseSecretKey: "",
+  testMode: false,
 };
 // テスト用の架空のユーザー ID(LINE のユーザー ID と同じ形: U + 英数字 32 文字)
 const USER_ID = `U${"a".repeat(32)}`;

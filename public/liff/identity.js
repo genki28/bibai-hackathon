@@ -3,7 +3,9 @@
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId, callApi, postJson, resolveUserId, wait } from "./common.js";
+import { navigateTo, pageReady } from "./loading.js";
 import "./reset-menu-button.js";
+import "./test-mode.js";
 
 const STEPS = ["loading", "intro", "scan", "checking", "done"];
 const CHECKING_DELAY_MS = 1500;
@@ -47,7 +49,7 @@ function showDone(status) {
   byId("auto-next-note").hidden = next === null;
   showStep("done");
   // 次の画面が決まっていれば、少し待ってから自動で進む
-  if (next) setTimeout(() => location.assign(next), AUTO_NEXT_DELAY_MS);
+  if (next) setTimeout(() => navigateTo(next), AUTO_NEXT_DELAY_MS);
 }
 
 async function verify(userId) {
@@ -72,7 +74,7 @@ async function main() {
   byId("reset-button").addEventListener("click", () => showStep("intro"));
   byId("next-button").addEventListener("click", () => {
     const next = nextPage();
-    if (next) location.href = next;
+    if (next) navigateTo(next);
   });
 
   if (status.verified) {
@@ -82,8 +84,10 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error);
-  showStep("intro");
-  showError(`エラーが起きました: ${error instanceof Error ? error.message : String(error)}`);
-});
+main()
+  .catch((error) => {
+    console.error(error);
+    showStep("intro");
+    showError(`エラーが起きました: ${error instanceof Error ? error.message : String(error)}`);
+  })
+  .finally(pageReady);

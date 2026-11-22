@@ -15,6 +15,7 @@ const CONFIG: AppConfig = {
   port: 0,
   supabaseUrl: "",
   supabaseSecretKey: "",
+  testMode: false,
 };
 
 type Calls = { verified: string[]; unlinked: string[] };

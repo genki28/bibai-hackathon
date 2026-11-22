@@ -2,6 +2,7 @@
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId } from "./common.js";
+import { navigateTo, pageReady } from "./loading.js";
 import {
   el,
   fetchRequest,
@@ -59,7 +60,7 @@ async function refresh(id, userId) {
   const request = await fetchRequest(id, userId);
   if (stopIfUnavailable(request)) return true;
   if (request.status === "working" || request.status === "done") {
-    location.replace(pageUrl("helper-working.html", id));
+    navigateTo(pageUrl("helper-working.html", id), { replace: true });
     return true;
   }
   showError("");
@@ -71,6 +72,7 @@ async function main() {
   const id = requestIdFromUrl();
   if (!id) {
     showMessageOnly("依頼が分かりません", "「助けに行く」から、行きたい依頼を選んでください。");
+    pageReady();
     return;
   }
   const userId = await userIdPromise;
@@ -79,19 +81,24 @@ async function main() {
     button.disabled = true;
     try {
       await postAction(id, "start", { userId });
-      location.replace(pageUrl("helper-working.html", id));
+      navigateTo(pageUrl("helper-working.html", id), { replace: true });
     } catch (error) {
       console.error(error);
       showError(`開始できませんでした: ${error.message}`);
       button.disabled = false;
     }
   });
-  startPolling(() => refresh(id, userId), POLL_INTERVAL_MS, (error) =>
-    showError(`更新できませんでした: ${error.message}`),
+  // 1 回目の参加者一覧がそろったら画面を見せる
+  startPolling(
+    () => refresh(id, userId),
+    POLL_INTERVAL_MS,
+    (error) => showError(`更新できませんでした: ${error.message}`),
+    pageReady,
   );
 }
 
 main().catch((error) => {
   console.error(error);
+  pageReady();
   showError(`読み込めませんでした: ${error.message}`);
 });

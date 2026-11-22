@@ -34,5 +34,9 @@ export function createSupabaseIdentityStore(client: SupabaseClient): IdentitySto
       throwIfError(error, "本人確認の結果を保存する");
       return status;
     },
+    remove: async (userId) => {
+      const { error } = await client.from(TABLE).delete().eq("user_id", userId);
+      throwIfError(error, "本人確認の結果を消す");
+    },
   };
 }

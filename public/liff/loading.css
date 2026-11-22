@@ -1,0 +1,109 @@
+/*
+ * 画面の切り替えのクッション(ローディング)の見た目。動きは loading.js。
+ * - <html> に .page-ready が付くまで、main を隠して「読み込み中」の覆いを出す
+ *   (CSS は head で読むので、最初の描画から隠れる = 準備できていない中身がちらつかない)
+ * - 若者の画面は夜空、お年寄りの画面(body.for-elder / help-request.html)は明るい雪景色
+ * - template.css の最初で @import している。template.css を読まない help-request.html には loading.js が足す
+ * 覆いは html::before(背景と文字)と html::after(くるくる回る雪の結晶)で作る(HTML を足さなくてよいように)。
+ */
+
+html:not(.page-ready) main {
+  visibility: hidden;
+}
+
+html::before,
+html::after {
+  position: fixed;
+  z-index: 1500; /* 確認の小窓(1100)・紙吹雪(1200)・下のタブ・「メニューを最初に戻す」ボタンより上 */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.25s ease,
+    visibility 0.25s ease;
+}
+
+/* 背景と「読み込み中…」の文字 */
+html::before {
+  content: "読み込み中…";
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 120px;
+  box-sizing: border-box;
+  font: 800 1.05rem/1.4 "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  color: #f4f8ff;
+  background:
+    radial-gradient(ellipse 70% 32% at 18% 6%, rgba(79, 209, 255, 0.25), transparent 70%),
+    radial-gradient(ellipse 65% 30% at 85% 14%, rgba(139, 92, 246, 0.3), transparent 70%),
+    linear-gradient(180deg, #0b1026 0%, #1b2a5c 100%);
+}
+
+/* くるくる回る雪の結晶(\FE0E = 絵文字ではなく文字として出して、色を付けられるようにする) */
+html::after {
+  content: "❄\FE0E";
+  top: 50%;
+  left: 50%;
+  font-size: 64px;
+  line-height: 1;
+  color: #4fd1ff;
+  text-shadow: 0 0 18px rgba(79, 209, 255, 0.8);
+  transform: translate(-50%, -75%);
+}
+
+/* 読み込み中は覆いを出す(下の画面を押せないようにする)。速く終わったときにちらつかないよう、少し待ってから浮かび上がる */
+html:not(.page-ready)::before,
+html:not(.page-ready)::after {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+html:not(.page-ready)::before {
+  animation: loading-appear 0.35s ease-out both;
+}
+html:not(.page-ready)::after {
+  animation:
+    loading-appear 0.35s ease-out both,
+    loading-spin 2.4s linear infinite;
+}
+
+/* お年寄りの画面: 明るい雪景色・やさしい色 */
+html:has(> body.for-elder)::before,
+html[data-loading-tone="elder"]::before {
+  font-size: 1.3rem;
+  color: #1f2933;
+  background: linear-gradient(180deg, #fff8f1 0%, #eaf4ff 100%);
+}
+html:has(> body.for-elder)::after,
+html[data-loading-tone="elder"]::after {
+  color: #7fb2e5;
+  text-shadow: none;
+}
+
+@keyframes loading-appear {
+  0%,
+  40% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes loading-spin {
+  from {
+    transform: translate(-50%, -75%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -75%) rotate(360deg);
+  }
+}
+
+/* 端末で「動きを減らす」設定の人には、回さない */
+@media (prefers-reduced-motion: reduce) {
+  html:not(.page-ready)::before,
+  html:not(.page-ready)::after {
+    animation: none;
+  }
+}

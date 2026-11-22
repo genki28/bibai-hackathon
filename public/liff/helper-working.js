@@ -3,6 +3,7 @@
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId } from "./common.js";
+import { navigateTo, pageReady } from "./loading.js";
 import {
   fetchRequest,
   pageUrl,
@@ -60,11 +61,11 @@ function startTimer(startedAt) {
 function moveIfNeeded(request, id) {
   if (stopIfUnavailable(request)) return true;
   if (request.status === "done") {
-    location.replace(pageUrl("finish.html", id));
+    navigateTo(pageUrl("finish.html", id), { replace: true });
     return true;
   }
   if (request.status !== "working") {
-    location.replace(pageUrl("helper-gather.html", id));
+    navigateTo(pageUrl("helper-gather.html", id), { replace: true });
     return true;
   }
   return false;
@@ -82,12 +83,14 @@ async function main() {
   startTimer(request.startedAt);
   byId("helper-names").textContent = `いっしょに: ${request.helpers.map((h) => h.displayName).join("、")}`;
   byId("finish-button").addEventListener("click", () => {
-    location.href = pageUrl("snow-area.html", id);
+    navigateTo(pageUrl("snow-area.html", id));
   });
   startPolling(async () => moveIfNeeded(await fetchRequest(id, userId), id), POLL_INTERVAL_MS);
 }
 
-main().catch((error) => {
-  console.error(error);
-  showError(`読み込めませんでした: ${error.message}`);
-});
+main()
+  .catch((error) => {
+    console.error(error);
+    showError(`読み込めませんでした: ${error.message}`);
+  })
+  .finally(pageReady);
