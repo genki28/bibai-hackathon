@@ -6,6 +6,7 @@
 // - 1 本の requestAnimationFrame のループで描く。画面が見えていないとき(document.hidden)は止める
 // - 雪がしんしんと降り、ときどきマガンの群れが横切る。全員が 差す → 持ち上げる → 振りかぶる → 投げる をくり返す(人ごとに少しずらす)
 // - 経過時間で真ん中の雪の山が減り、投げた雪は外側(それぞれの後ろ)に積もる
+// - 雪山ボス(raid.js から setBoss)があるときは、真ん中の山がボスになる。目が付き、体力に合わせて小さくなる。倒すと「BOSS CLEAR!」
 // - タップすると、自分がすばやく 1 回投げて「+1」、続けるとコンボ(画面には説明を出さない隠し機能)。タップの回数はスコアにもサーバーにも送らない(見た目だけ)
 // - 「動きを減らす」設定の人には、雪・鳥・登場の歩きを止め、タップの演出も控えめにする
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
@@ -62,6 +63,10 @@ const FEET_Y = 236;
 
 /** 雪の山: 真ん中の大きな山と、玄関(背景の x≈315〜330, 下≈155)の前の小さな山。大きさは残りの割合で最小〜最大。 */
 const CENTER_MOUND = Object.freeze({ centerX: CENTER_X, baseY: 239, minHalfWidth: 8, maxHalfWidth: 32, minHeight: 3, maxHeight: 40 });
+/** 雪山ボス(体力が満タンのとき大きく、減るほど小さく)。 */
+const BOSS_MOUND = Object.freeze({ centerX: CENTER_X, baseY: 239, minHalfWidth: 8, maxHalfWidth: 46, minHeight: 3, maxHeight: 62 });
+const BOSS_EYE = Object.freeze({ gap: 6, size: 3, minHeight: 14 });
+const WIN_MS = 2600;
 const DOOR_MOUND = Object.freeze({ centerX: 318, baseY: 172, minHalfWidth: 4, maxHalfWidth: 16, minHeight: 2, maxHeight: 13 });
 /** 投げた雪が積もる、左右の外側の山(雪かきが進むほど大きくなる)。右は右側に人がいるときだけ。 */
 const THROWN_MOUNDS = Object.freeze({
@@ -91,7 +96,7 @@ const CHEER_MS = 1200;
 const LEVEL_UP_MS = 1800;
 const JOIN_MS = 1400;
 const MIN_COMBO_TO_SHOW = 2;
-const TEXT_SCALE = Object.freeze({ plusOne: 2, combo: 3, cheer: 6, levelUp: 4, join: 2 });
+const TEXT_SCALE = Object.freeze({ plusOne: 2, combo: 3, cheer: 6, levelUp: 4, join: 2, win: 5 });
 
 /** 画像を読み込む(読み込めたら終わる、失敗したらエラー)。 */
 function loadImage(url) {
@@ -206,6 +211,8 @@ export async function startPixelSnow(canvas, { getElapsedMs, crew: firstCrew, la
   let shownLevel = digLevel(getElapsedMs());
   let frameId = 0;
   let lastDrawAt = 0;
+  /** 雪山ボスの残り体力の割合(null ならボスなし)と、倒したか。 */
+  let boss = null;
 
   const addPopup = (popup) => {
     popups = [...popups, popup];
@@ -293,7 +300,7 @@ export async function startPixelSnow(canvas, { getElapsedMs, crew: firstCrew, la
     addPopup({ text: "LEVEL UP!", x: textLeft("LEVEL UP!", scale, W / 2), y: 118, color: COLORS.gold, scale, born: now, lifeMs: LEVEL_UP_MS, rise: 16 });
   }
 
-  function drawPiles(ctx, elapsedMs) {
+  function drawPiles(ctx, elapsedMs, now) {
     const remaining = pileRemaining(elapsedMs);
     drawMound(ctx, DOOR_MOUND.centerX, DOOR_MOUND.baseY, moundSize(remaining, DOOR_MOUND));
     const moved = (1 - remaining) / (1 - PILE_MIN_REMAINING);
@@ -304,7 +311,28 @@ export async function startPixelSnow(canvas, { getElapsedMs, crew: firstCrew, la
         drawMound(ctx, mound.centerX, mound.baseY, moundSize(moved, mound));
       });
     }
+    if (boss) {
+      drawBoss(ctx, now);
+      return;
+    }
     drawMound(ctx, CENTER_MOUND.centerX, CENTER_MOUND.baseY, moundSize(remaining, CENTER_MOUND));
+  }
+
+  /** 雪山ボス: 体力に合わせた大きさの山に、目を描く(ときどきまばたき)。倒したら小さな山だけ。 */
+  function drawBoss(ctx, now) {
+    const size = moundSize(boss.isDefeated ? 0 : boss.ratio, BOSS_MOUND);
+    drawMound(ctx, BOSS_MOUND.centerX, BOSS_MOUND.baseY, size);
+    if (boss.isDefeated || size.height < BOSS_EYE.minHeight) return;
+    const isBlinking = !isReduced && Math.floor(now / 150) % 20 === 0;
+    const eyeY = Math.round(BOSS_MOUND.baseY - size.height * 0.55);
+    const eyeH = isBlinking ? 1 : BOSS_EYE.size + 1;
+    ctx.fillStyle = COLORS.outline;
+    [-1, 1].forEach((side) => {
+      const eyeX = Math.round(BOSS_MOUND.centerX + side * BOSS_EYE.gap - BOSS_EYE.size / 2);
+      ctx.fillRect(eyeX, eyeY, BOSS_EYE.size, eyeH);
+    });
+    // 体力が半分を切ったら、困った口
+    if (boss.ratio < 0.5) ctx.fillRect(BOSS_MOUND.centerX - 3, eyeY + 7, 6, 1);
   }
 
   /** 参加者を、奥(外側)の人から順に描く。投げるコマに入ったら雪の粒を飛ばす。 */
@@ -340,7 +368,7 @@ export async function startPixelSnow(canvas, { getElapsedMs, crew: firstCrew, la
     const ctx = buffer.ctx;
     ctx.drawImage(background, 0, 0);
     if (!isReduced) drawFlock(ctx, geese, ms, level);
-    drawPiles(ctx, elapsedMs);
+    drawPiles(ctx, elapsedMs, now);
     drawCrew(ctx, now);
     drawParticles(ctx, particles, now);
     drawSnowfall(ctx, flakes, ms / 1000);
@@ -412,6 +440,17 @@ export async function startPixelSnow(canvas, { getElapsedMs, crew: firstCrew, la
 
   return {
     setCrew: (people) => setCrew(people),
+    /** 雪山ボスの体力を合わせる。倒した瞬間に「BOSS CLEAR!」。 */
+    setBoss(view) {
+      const now = performance.now();
+      const wasDefeated = boss?.isDefeated ?? true;
+      if (boss && !wasDefeated && view.isDefeated) {
+        const scale = TEXT_SCALE.win;
+        addPopup({ text: "BOSS CLEAR!", x: textLeft("BOSS CLEAR!", scale, W / 2), y: 90, color: COLORS.gold, scale, born: now, lifeMs: WIN_MS, rise: 10 });
+      }
+      boss = { ratio: view.ratio, isDefeated: view.isDefeated };
+      if (isReduced) drawScene(now);
+    },
     /** スコップ計で 1 回すくったとき: 自分が雪を投げる(コンボ・「+1」は出さない)。 */
     throwOnce() {
       const now = performance.now();

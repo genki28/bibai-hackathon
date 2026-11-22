@@ -67,10 +67,10 @@ async function askPermission() {
  * @param {{
  *   requestId: string,
  *   send: (count: number, options?: { keepalive?: boolean }) => Promise<unknown>,
- *   onScoop?: () => void,
+ *   onScoop?: (count: number) => void,
  *   isTestMode?: boolean,
- * }} options send はサーバーに回数を送る処理、onScoop は 1 回すくうたびに呼ぶ(ドット絵で雪を投げる)
- * @returns {{ flush: () => Promise<void> }} flush は「いまの回数をすぐ送る」(雪かきを終えるとき用)
+ * }} options send はサーバーに回数を送る処理、onScoop は 1 回すくうたびに今の回数で呼ぶ(雪を投げる・音・ボス)
+ * @returns {{ flush: () => Promise<void>, count: () => number }} flush は「いまの回数をすぐ送る」(雪かきを終えるとき用)
  */
 export function startScoopMeter({ requestId, send, onScoop = () => {}, isTestMode = false }) {
   const saved = loadSaved(requestId);
@@ -108,7 +108,7 @@ export function startScoopMeter({ requestId, send, onScoop = () => {}, isTestMod
     counter.classList.remove("is-bump");
     void counter.offsetWidth; // アニメーションをやり直すため
     counter.classList.add("is-bump");
-    onScoop();
+    onScoop(state.count);
   }
 
   const onMotion = (event) => {
@@ -186,5 +186,5 @@ export function startScoopMeter({ requestId, send, onScoop = () => {}, isTestMod
   });
   sendNow();
 
-  return { flush: () => sendNow() };
+  return { flush: () => sendNow(), count: () => state.count };
 }

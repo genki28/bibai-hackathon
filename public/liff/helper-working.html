@@ -11,6 +11,8 @@
       (?wait=1 が付いていると、最初からその表示)。リーダーは開始したときにランダムで決まり、ドット絵でも王冠が付く。
       雪かきの様子はドット絵(pixel-snow.js が Canvas に描く。背景と主人公は ChatGPT で作った画像 images/working-*.png)。参加者の人数ぶん主人公が並ぶ。タップするとコンボの演出が出る隠し機能(画面には説明を出さない。見た目だけで、スコアには入らない)。
       スコップ計(scoop-meter.js): スマホの揺れで、すくった回数を数える。すくうたびに自分のキャラクターが雪を投げる(ポイントには入れない)。
+      雪山ボス(raid.js / boss-raid.js): みんなのすくった回数でボスの体力を削る。音の実況(sound-coach.js)で「ザクッ」と節目のことばを鳴らす。
+      スコップ計をオンにすると、雪かき中は画面が消えないようにする(wake-lock.js)。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
     <link rel="stylesheet" href="./template.css" />
@@ -206,6 +208,52 @@
         letter-spacing: 0.2em;
         color: var(--sub);
       }
+      /* 雪山ボス(raid.js) */
+      .boss-card {
+        margin: 8px 0;
+        padding: 8px 10px;
+        background: var(--night-top);
+        box-shadow: 0 0 0 3px #ff6b6b;
+      }
+      .boss-line {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        margin: 0 0 4px;
+        font-family: var(--font-display);
+        font-weight: 800;
+        color: var(--snow);
+      }
+      #boss-hp {
+        color: #ff8a8a;
+      }
+      .boss-bar {
+        height: 14px;
+        padding: 2px;
+        background: rgba(255, 107, 107, 0.15);
+        box-shadow: 0 0 0 2px #ff6b6b;
+      }
+      #boss-bar-fill {
+        height: 100%;
+        width: 100%;
+        background: #ff6b6b;
+        transition: width 0.4s steps(6);
+      }
+      #boss-status {
+        margin: 4px 0 0;
+        font-size: 0.75rem;
+        color: var(--sub);
+      }
+      .boss-card.is-defeated {
+        box-shadow: 0 0 0 3px var(--gold);
+      }
+      .boss-card.is-defeated #boss-hp,
+      .boss-card.is-defeated #boss-status {
+        color: var(--gold);
+      }
+      #sound-toggle {
+        margin-top: 10px;
+      }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -225,6 +273,11 @@
           <p id="dig-level" class="pixel-level"><small>雪かきレベル</small>Lv.1</p>
           <div id="level-bar" class="pixel-bar" aria-hidden="true"></div>
         </div>
+        <section id="boss-card" class="boss-card" aria-label="雪山ボス">
+          <p class="boss-line"><span>⛰ 雪山ボス</span><span id="boss-hp">- / -</span></p>
+          <div class="boss-bar" aria-hidden="true"><div id="boss-bar-fill"></div></div>
+          <p id="boss-status" aria-live="polite"></p>
+        </section>
         <div class="pixel-stage">
           <div class="pixel-frame">
             <canvas id="pixel-canvas" width="362" height="272" aria-hidden="true"></canvas>
@@ -239,7 +292,7 @@
         <section id="scoop-meter" class="card scoop-card" aria-label="スコップ計">
           <button id="scoop-on" class="button secondary" type="button">📱 スコップ計をオンにする</button>
           <p id="scoop-unavailable" class="note" role="status" hidden></p>
-          <p id="scoop-guide" class="note" hidden>スマホを上着のポケットに入れて雪かきしてね</p>
+          <p id="scoop-guide" class="note" hidden>スマホをポケットに入れて雪かき。音で知らせるよ</p>
           <div id="scoop-live" hidden>
             <p class="scoop-label">すくった回数</p>
             <p class="scoop-numbers" aria-live="polite">
@@ -247,6 +300,7 @@
             </p>
           </div>
           <button id="scoop-fake" class="button secondary" type="button" hidden>🧪 揺れをまねる</button>
+          <button id="sound-toggle" class="button secondary" type="button" aria-pressed="true">🔊 音の実況: オン</button>
         </section>
         <button id="finish-button" class="button" type="button">雪かきを終える</button>
       </div>
