@@ -1,6 +1,8 @@
 // LIFF 画面の動き。画面を変えたいときは index.html とこのファイルを書き換えてください。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
+import "./reset-menu-button.js";
+
 const byId = (id) => document.getElementById(id);
 
 function showStatus(message, isError = false) {

@@ -82,8 +82,9 @@ function createDefaultDeps(credentials: BotCredentials): WebhookDeps {
  */
 export function createWebhookHandlers(
   credentials: BotCredentials,
-  deps: WebhookDeps = createDefaultDeps(credentials),
+  overrides: Partial<WebhookDeps> = {},
 ): RequestHandler[] {
+  const deps: WebhookDeps = { ...createDefaultDeps(credentials), ...overrides };
   const verifySignature = middleware({
     channelSecret: credentials.channelSecret,
   });

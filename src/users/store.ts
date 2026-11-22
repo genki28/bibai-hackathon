@@ -8,6 +8,8 @@ import type { Role } from "./roles.js";
 export type RoleStore = {
   readonly getRole: (userId: string) => Role | null;
   readonly setRole: (userId: string, role: Role) => void;
+  /** 登録を取り消す(メニューを最初に戻すとき)。 */
+  readonly clearRole: (userId: string) => void;
 };
 
 export function createRoleStore(): RoleStore {
@@ -17,6 +19,9 @@ export function createRoleStore(): RoleStore {
     getRole: (userId) => roles.get(userId) ?? null,
     setRole: (userId, role) => {
       roles = new Map([...roles, [userId, role]]);
+    },
+    clearRole: (userId) => {
+      roles = new Map([...roles].filter(([id]) => id !== userId));
     },
   };
 }
