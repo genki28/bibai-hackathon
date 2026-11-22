@@ -8,6 +8,7 @@
       【お年寄り】助けを呼んだ後の待機画面。リッチメニューの「たすけて」を押したとき、すでに呼んでいればこの画面になる。
       受注状況を数秒ごとに更新する: お待ちください → 受注が完了しました(向かってくる人の名前)→ 雪かき中です → 終わったら「いいねを送る」。
       向かっている人がいる間は、地図にその人の現在地と「あと約〇分」を出す(elder-live-map.js)。
+      [来た人のスマホを聞く] で、若者のスマホが鳴らす音の合言葉を聞き取り、その人を到着にする(elder-sound-arrive.js)。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md(お年寄りのトーン)を見てください。
     -->
     <link rel="stylesheet" href="./template.css" />
@@ -93,6 +94,28 @@
       }
       #step-cancelled {
         text-align: center;
+      }
+      /* 来た人のスマホを聞く(elder-sound-arrive.js)。聞こえている間は棒が伸びる */
+      .sound-level {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+        height: 28px;
+        margin: 10px 0 0;
+      }
+      .sound-level span {
+        width: 8px;
+        height: 8px;
+        align-self: center;
+        background: var(--ice);
+        transition: height 0.15s;
+      }
+      .sound-level.is-hearing span {
+        height: 26px;
+        background: var(--gold);
+      }
+      .sound-level.is-hearing span:nth-child(2) {
+        height: 18px;
       }
       /* 来てくれる人の現在地(elder-live-map.js)。お年寄り向けに地図も文字も大きく */
       .live-section {
@@ -197,6 +220,12 @@
           <h2>いま来てくれている人</h2>
           <div id="live-map" role="img" aria-label="来てくれる人の現在地の地図"></div>
           <ul id="live-list" class="live-list" aria-live="polite"></ul>
+        </section>
+        <section id="sound-section" class="card center sound-section" aria-label="来た人のスマホを聞く" hidden>
+          <button id="sound-listen" class="button" type="button">📡 来た人のスマホを聞く</button>
+          <p id="sound-level" class="sound-level" aria-hidden="true" hidden><span></span><span></span><span></span></p>
+          <p id="sound-status" role="status"></p>
+          <button id="sound-fake" class="button secondary" type="button" hidden>🧪 合言葉をまねる</button>
         </section>
         <p id="request-detail" class="note center"></p>
         <a id="thanks-link" class="button" href="./thanks.html" hidden>ありがとうを伝える</a>

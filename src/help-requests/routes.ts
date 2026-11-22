@@ -2,6 +2,7 @@ import express from "express";
 import type { Response, Router } from "express";
 import { isValidUserId } from "../identity/store.js";
 import type { Referral } from "../invites/model.js";
+import { arrivalCodeFor, helperForCode, isArrivalCodeInput } from "./arrival-code.js";
 import { countCommunity } from "./community.js";
 import {
   isValidRequestId,
@@ -14,6 +15,7 @@ import {
   parseUserIdInput,
 } from "./inputs.js";
 import { canFinish } from "./leader.js";
+import { fail } from "./model.js";
 import type { HelpRequest, Result } from "./model.js";
 import { buildRanking, isRankingPeriod } from "./ranking.js";
 import { pointsForRequest } from "./request-points.js";
@@ -36,6 +38,8 @@ export type HelpRequestRouterOptions = {
   readonly listReferrals?: () => Promise<readonly Referral[]>;
   /** 参加の取り消しに成功したあとに呼ぶ(本人確認を取り消して、次に参加するときにもう一度確認させる)。 */
   readonly onLeave?: (userId: string) => Promise<void>;
+  /** 音の合言葉を作るための秘密(サーバーだけが知っている値)。空なら手元用の値を使う。 */
+  readonly arrivalCodeSecret?: string;
 };
 
 /** 書き込み API の中身。入力がおかしければ null を返す(→ 400)。 */
@@ -186,6 +190,42 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
     }),
   );
   post("arrive", withUserId(store.arrive));
+  // 音の合言葉で到着(スマホを近づける)。若者のスマホが鳴らした合言葉を、お年寄りのスマホが聞き取って送る
+  const arrivalCodeSecret = options.arrivalCodeSecret ?? "";
+  post("arrive-by-sound", async (id, body, at) => {
+    const userId = parseUserIdInput(body);
+    const code = (body as { code?: unknown } | null)?.code;
+    if (!userId || !isArrivalCodeInput(code)) return null;
+    const request = await store.findById(id);
+    if (!request) return fail(404, NOT_FOUND);
+    if (viewerOf(request, userId) !== "elder") return fail(403, "合言葉を聞き取れるのは、依頼した人だけです。");
+    const helperId = helperForCode(id, request.helpers, arrivalCodeSecret, code);
+    if (!helperId) return fail(400, "合言葉が違います。");
+    return store.arrive(id, helperId, at);
+  });
+  // 自分の合言葉を受け取る(参加した若者本人だけ)
+  router.get("/api/help-requests/:id/arrival-code", async (req, res) => {
+    const { id } = req.params;
+    const userId = readUserIdQuery(req.query.userId);
+    if (!userId) {
+      sendError(res, 400, INVALID_USER_ID);
+      return;
+    }
+    if (!isValidRequestId(id)) {
+      sendError(res, 400, INVALID_REQUEST_ID);
+      return;
+    }
+    const request = await store.findById(id);
+    if (!request) {
+      sendError(res, 404, NOT_FOUND);
+      return;
+    }
+    if (viewerOf(request, userId) !== "helper") {
+      sendError(res, 403, "合言葉は、参加した人だけが受け取れます。");
+      return;
+    }
+    res.json({ success: true, data: { code: arrivalCodeFor(id, userId, arrivalCodeSecret) } });
+  });
   // 到着した人ならだれでも開始できる。開始した瞬間にリーダーがランダムに決まる
   post("start", withUserId(store.start));
   post("cancel", withUserId(store.cancel));

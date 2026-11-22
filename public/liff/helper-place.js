@@ -1,9 +1,11 @@
 // 【若者】参加した依頼の場所・詳細の動き。正確な住所と地図は、参加した人にだけ見せる。
 // スリープなどから戻った瞬間に読み直し、雪かきが始まっていれば雪かき中の画面へ進む。
 // 開いている間は、共有を選んだ人の現在地をお年寄りに送る(location-share.js)。到着・取り消しで止める。
+// 音の合言葉(helper-sound-code.js)をお年寄りのスマホが聞き取ったら、[到着しました] を押さなくても到着になる。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId, fetchAppConfig } from "./common.js";
+import { startSoundCode } from "./helper-sound-code.js";
 import { startLocationShare } from "./location-share.js";
 import { navigateTo, pageReady } from "./loading.js";
 import { createMap, DETAIL_ZOOM, pointOf, showPin } from "./map.js";
@@ -91,6 +93,15 @@ async function main() {
   }
   render(request);
   const sharing = await startSharing(id, userId, request);
+  byId("sound-card").hidden = Boolean(request.helpers.find((h) => h.userId === userId)?.arrivedAt);
+  const soundCode = startSoundCode({
+    requestId: id,
+    userId,
+    onArrived: () => {
+      sharing.stop();
+      navigateTo(pageUrl("helper-gather.html", id));
+    },
+  });
   // スリープなどから戻ったとき、ほかの人が雪かきを始めていたら雪かき中の画面へ(取り消されていればその表示)
   const stopWatching = onPageVisible(async () => {
     try {
@@ -115,6 +126,7 @@ async function main() {
       if (!confirm("この依頼への参加を取り消しますか?")) return;
       await postAction(id, "leave", { userId });
       sharing.stop();
+      soundCode.stop();
       navigateTo("./go-help.html?list=1");
     }),
   );
@@ -122,6 +134,7 @@ async function main() {
     runWithButton("arrive-button", async () => {
       await postAction(id, "arrive", { userId });
       sharing.stop();
+      soundCode.stop();
       navigateTo(pageUrl("helper-gather.html", id));
     }),
   );

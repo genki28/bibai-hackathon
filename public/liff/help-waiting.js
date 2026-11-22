@@ -1,10 +1,12 @@
 // 【お年寄り】助けを呼んだ後の待機画面の動き。
 // 自分の依頼を数秒ごとに読み直して、受注状況を出す。取り消しは本当に保存する(API)。
 // 向かっている人がいる間は、その人の現在地と到着の目安も出す(elder-live-map.js)。
+// 来た人のスマホが鳴らす音の合言葉を聞き取って、その人を到着にできる(elder-sound-arrive.js)。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
-import { byId, callApi, isPreviewMode } from "./common.js";
+import { byId, callApi, fetchAppConfig, isPreviewMode } from "./common.js";
 import { createElderLiveMap } from "./elder-live-map.js";
+import { createElderSoundArrive } from "./elder-sound-arrive.js";
 import { pageReady } from "./loading.js";
 import { pageUrl, postAction, showError, startPolling } from "./request-page.js";
 import { userIdPromise } from "./template.js";
@@ -22,6 +24,7 @@ const STATUS_VIEWS = {
 
 let stopPolling = () => {};
 const liveMap = createElderLiveMap();
+let soundArrive = { update: () => {} };
 
 const names = (request) => request.helpers.map((h) => `${h.displayName} さん`).join("、");
 
@@ -69,6 +72,7 @@ function renderAll(request) {
   } catch (error) {
     console.error("現在地の地図を出せませんでした", error);
   }
+  soundArrive.update(request);
 }
 
 async function refresh(userId) {
@@ -76,6 +80,15 @@ async function refresh(userId) {
   showError("");
   renderAll(request);
   return false;
+}
+
+/** テスト用の設定(testMode)がオンか。読めなければオフ。 */
+async function isTestMode() {
+  try {
+    return (await fetchAppConfig()).testMode;
+  } catch {
+    return false;
+  }
 }
 
 async function onCancel() {
@@ -88,6 +101,7 @@ async function onCancel() {
     if (request) await postAction(request.id, "cancel", { userId });
     stopPolling();
     liveMap.update(null);
+    soundArrive.update(null);
     byId("step-waiting").hidden = true;
     byId("step-cancelled").hidden = false;
   } catch (error) {
@@ -122,6 +136,7 @@ async function main() {
     return;
   }
   const userId = await userIdPromise;
+  soundArrive = createElderSoundArrive({ userId, isTestMode: await isTestMode(), onChange: renderAll });
   // 1 回目の様子がそろったら画面を見せる
   stopPolling = startPolling(
     () => refresh(userId),
