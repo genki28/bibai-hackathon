@@ -3,11 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>本人確認(デモ)</title>
+    <title>本人確認</title>
     <!--
       本人確認のデモ画面: 身分証の顔写真と、その場の自撮りを「スマホの中だけ」で照合する。
       若者が「助けに行く」で参加した後に通るので、若者のトーン(夜空)にする。
-      ⚠ 身分証が本物かどうかは確かめていない。デモの注意書き(.demo-banner)は必ず残すこと。
+      ⚠ 身分証が本物かどうかは確かめていない。発表では、デモであることを口頭で伝える。
       画像・顔の特徴の数値はサーバーへ送らない。送るのは結果だけ(identity.js)。
       デザインは docs/design.md を見てください。
     -->
@@ -173,10 +173,6 @@
         <header class="page-head">
           <h1>本人確認</h1>
         </header>
-        <p class="demo-banner">
-          これはデモ用の本人確認です。身分証の顔写真と自撮りの顔が似ているかを、このスマホの中だけで確かめます
-          (身分証が本物かどうかは確かめていません)。本番では国の認定を受けた本人確認サービスを使います。
-        </p>
         <section id="step-loading" class="step">
           <div class="spinner" aria-hidden="true"></div>
           <p role="status">読み込み中です…</p>
@@ -185,11 +181,10 @@
         <!-- 1. 同意 -->
         <section id="step-intro" class="step" hidden>
           <div class="icon" aria-hidden="true">🪪</div>
-          <p><strong>身分証の顔写真と、いまの自撮りで<br />本人確認をします</strong></p>
+          <p><strong>身分証と自撮りで、本人確認</strong></p>
           <ul class="promise-list">
-            <li>画像は保存しません。この端末の中で顔の照合だけに使い、終わったら消します</li>
-            <li>サーバーへ送るのは「確認できたかどうか」だけです</li>
-            <li>使える身分証: 運転免許証、またはマイナンバーカードの表面(顔写真の面)</li>
+            <li>画像は保存しません(この端末の中だけで照合)</li>
+            <li>運転免許証 / マイナンバーカードの表面</li>
           </ul>
           <button id="agree-button" class="button" type="button">同意して始める</button>
         </section>
@@ -197,32 +192,27 @@
         <!-- 顔の照合の準備(ライブラリとモデルの読み込み) -->
         <section id="step-preparing" class="step" hidden>
           <div class="spinner" aria-hidden="true"></div>
-          <p role="status">顔の照合の準備をしています…</p>
-          <p class="note">はじめてのときは、読み込みに 30 秒〜1 分ほどかかることがあります。</p>
+          <p role="status">準備中…</p>
+          <p class="note">初回は 1 分ほどかかります</p>
         </section>
 
         <!-- 準備に失敗したとき(予備のデモボタン) -->
         <section id="step-unavailable" class="step" hidden>
           <div class="icon" aria-hidden="true">⚠️</div>
-          <p><strong>この端末では顔の照合が使えません</strong></p>
-          <p class="note">通信の状態がよくないか、この端末のブラウザが対応していない可能性があります。</p>
+          <p><strong>顔の照合が使えません</strong></p>
+          <p class="note">通信の状態を確かめて、もう一度読み込んでください。</p>
           <button id="retry-load-button" class="button secondary" type="button">もう一度読み込む</button>
           <button id="demo-verify-button" class="button" type="button">確認済みにする(デモ)</button>
-          <p class="note">「確認済みにする(デモ)」は発表用の予備です。何も確かめずに確認済みになります。</p>
         </section>
 
         <!-- 2. 身分証の表面を撮る -->
         <section id="step-id" class="step" hidden>
           <div class="icon card-anim" aria-hidden="true">🪪</div>
-          <p><strong>身分証の「顔写真の面」を撮ってください</strong></p>
-          <p class="warning">
-            ⚠ マイナンバーカードは、マイナンバー(12 桁の番号)が書いてある<strong>裏面は撮らないでください</strong>。
-            顔写真のある表面だけを使います。
-          </p>
+          <p><strong>身分証の顔写真の面を撮る</strong></p>
+          <p class="warning">⚠ マイナンバーカードの<strong>裏面(番号の面)は撮らない</strong></p>
           <ul class="tips">
-            <li>運転免許証、またはマイナンバーカードの表面</li>
-            <li>カードを画面いっぱいに写す</li>
-            <li>光が反射して顔写真が白くならないように</li>
+            <li>画面いっぱいに写す</li>
+            <li>光の反射に注意</li>
           </ul>
           <label class="button file-button">
             身分証を撮る
@@ -245,11 +235,7 @@
         <!-- 3'. カメラ映像が使えないとき: 自撮り写真 1 枚(ライブネス確認なし) -->
         <section id="step-selfie" class="step" hidden>
           <div class="icon" aria-hidden="true">🤳</div>
-          <p><strong>自撮りを 1 枚撮ってください</strong></p>
-          <p class="note">
-            この端末ではカメラの映像が使えないため、写真 1 枚で確かめます
-            (まばたきなどの「生きた本人か」の確認はしません。結果にもそう記録します)。
-          </p>
+          <p><strong>自撮りを 1 枚撮る</strong></p>
           <label class="button file-button">
             自撮りを撮る
             <input id="selfie-photo-input" type="file" accept="image/*" capture="user" />
@@ -274,7 +260,7 @@
         <section id="step-done" class="step" hidden>
           <div class="icon" aria-hidden="true">✅</div>
           <p><strong>本人確認完了!</strong></p>
-          <p id="auto-next-note" hidden>自動で画面遷移します。</p>
+          <p id="auto-next-note" hidden>次の画面へ進みます…</p>
           <p id="verified-at"></p>
           <p class="note" id="verified-method"></p>
           <!-- 「助けに行く」から来たときは、1.5 秒ほどで次の画面へ自動で進む。押しても進める(?next=〇〇.html&id=依頼ID) -->

@@ -52,7 +52,7 @@ function render(request, userId) {
   const hasArrived = Boolean(me?.arrivedAt);
   byId("start-button").hidden = !hasArrived;
   byId("leader-note").textContent = hasArrived
-    ? "準備ができたら始めましょう。開始時に、作業範囲を記録するリーダーが決まります。"
+    ? "そろったら始めよう。リーダーは開始時に決まります。"
     : "到着を知らせると、雪かきを始められます。";
 }
 

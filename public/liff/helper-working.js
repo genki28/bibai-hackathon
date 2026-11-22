@@ -83,13 +83,13 @@ function showLeaderRole(request, userId) {
   }
   role.textContent =
     request.leaderUserId === userId
-      ? "あなたがリーダーです。終了時に作業範囲を記録します。"
-      : `範囲の記録は、リーダーの ${leaderNameOf(request)} さんが行います。`;
+      ? "👑 あなたがリーダー(終わったら範囲を記録)"
+      : `👑 リーダー: ${leaderNameOf(request)} さん`;
 }
 
 /** 「リーダーが範囲に丸を付けています」の表示にする(終わったら読み直しでお疲れ様へ進む)。 */
 function showLeaderWait(request) {
-  byId("leader-wait-text").textContent = `リーダー(${leaderNameOf(request)}さん)が範囲に丸を付けています。少し待ってね`;
+  byId("leader-wait-text").textContent = `${leaderNameOf(request)} さんが範囲を記録中…`;
   byId("work-view").hidden = true;
   byId("leader-wait").hidden = false;
 }
