@@ -1,5 +1,6 @@
 /**
- * 美唄の雪の予報を見て、大雪なら友だち全員に LINE で知らせるスクリプト。
+ * 美唄の雪の予報を見て、明日の朝までに大雪になりそうなら友だち全員に LINE で知らせるスクリプト。
+ * 毎日夕方(17 時)に動かす想定。
  *
  * 使い方:
  *   npm run notify:weather                    … 送らずに、送る予定の文面を表示するだけ(おためし)
@@ -39,7 +40,7 @@ async function main(): Promise<void> {
   const isForced = process.argv.includes("--force");
   const summary = summarizeSnow(parseForecast(await fetchBibaiForecast()), new Date());
   console.log(
-    `美唄の予報: これから24時間の降雪 ${summary.snowfallNext24hCm}cm / いまの積雪 約${summary.currentSnowDepthCm}cm`,
+    `美唄の予報: 明日のお昼までの降雪 ${summary.snowfallUntilTomorrowNoonCm}cm / 明日の朝の積雪 約${summary.tomorrowMorningDepthCm}cm`,
   );
 
   const message = chooseMessage(summary, isForced);

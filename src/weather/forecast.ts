@@ -9,9 +9,12 @@ const FORECAST_URL =
   `?latitude=${BIBAI.latitude}&longitude=${BIBAI.longitude}` +
   "&hourly=snowfall,snow_depth&timezone=Asia%2FTokyo&forecast_days=2";
 
-/** これ以上降りそうなら「大雪」として若者に知らせる(24 時間の合計、cm)。 */
+/** 明日のお昼までにこれ以上降りそうなら「大雪」として若者に知らせる(cm)。 */
 export const HEAVY_SNOW_THRESHOLD_CM = 10;
-const HOURS_AHEAD = 24;
+/** 「明日の朝」として積雪の深さを見る時刻(雪かきを始めるころ)。 */
+const TOMORROW_MORNING_HOUR = "07";
+/** ここより後(お昼以降)の雪は見ない。 */
+const TOMORROW_NOON_HOUR = "12";
 const HOUR_MS = 3_600_000;
 const JST_OFFSET_MS = 9 * HOUR_MS;
 
@@ -22,8 +25,8 @@ export type HourlySnow = {
 };
 
 export type SnowSummary = {
-  readonly snowfallNext24hCm: number;
-  readonly currentSnowDepthCm: number;
+  readonly snowfallUntilTomorrowNoonCm: number;
+  readonly tomorrowMorningDepthCm: number;
   readonly isHeavySnow: boolean;
 };
 
@@ -62,20 +65,30 @@ function toJstHour(date: Date): string {
   return `${new Date(date.getTime() + JST_OFFSET_MS).toISOString().slice(0, 13)}:00`;
 }
 
+/** 日本時間で「明日」の日付("YYYY-MM-DD")。 */
+function toJstTomorrow(now: Date): string {
+  return toJstHour(new Date(now.getTime() + 24 * HOUR_MS)).slice(0, 10);
+}
+
 const roundToTenth = (value: number): number => Math.round(value * 10) / 10;
 
-/** いまから 24 時間の降雪量の合計と、いまの積雪の深さをまとめる。 */
+/**
+ * 夕方に「明日の朝どのくらい積もっているか」を知らせるためのまとめ。
+ * いまから明日のお昼までに降る量と、明日の朝(7 時)の積雪の深さを出す。お昼以降は見ない。
+ */
 export function summarizeSnow(hours: readonly HourlySnow[], now: Date): SnowSummary {
+  const tomorrow = toJstTomorrow(now);
   const from = toJstHour(now);
-  const to = toJstHour(new Date(now.getTime() + HOURS_AHEAD * HOUR_MS));
-  const upcoming = hours.filter((h) => h.time >= from && h.time < to);
-  const snowfallNext24hCm = roundToTenth(
+  const until = `${tomorrow}T${TOMORROW_NOON_HOUR}:00`;
+  const morning = `${tomorrow}T${TOMORROW_MORNING_HOUR}:00`;
+  const upcoming = hours.filter((h) => h.time >= from && h.time < until);
+  const snowfallUntilTomorrowNoonCm = roundToTenth(
     upcoming.reduce((sum, h) => sum + h.snowfallCm, 0),
   );
   return {
-    snowfallNext24hCm,
-    currentSnowDepthCm: upcoming[0]?.snowDepthCm ?? 0,
-    isHeavySnow: snowfallNext24hCm >= HEAVY_SNOW_THRESHOLD_CM,
+    snowfallUntilTomorrowNoonCm,
+    tomorrowMorningDepthCm: hours.find((h) => h.time === morning)?.snowDepthCm ?? 0,
+    isHeavySnow: snowfallUntilTomorrowNoonCm >= HEAVY_SNOW_THRESHOLD_CM,
   };
 }
 
@@ -83,18 +96,18 @@ export function summarizeSnow(hours: readonly HourlySnow[], now: Date): SnowSumm
 export function buildWeatherMessage(summary: SnowSummary): string | null {
   if (!summary.isHeavySnow) return null;
   return [
-    `❄ これから24時間で、美唄に${summary.snowfallNext24hCm}cmの雪が降りそうです。`,
-    `いまの積雪は約${summary.currentSnowDepthCm}cmです。`,
-    "雪かきの出番です。助けを待っている人がいたら、ぜひ行ってみてください!",
+    `❄ 明日の朝、美唄は積雪 約${summary.tomorrowMorningDepthCm}cm になりそうです。`,
+    `(明日のお昼までに ${summary.snowfallUntilTomorrowNoonCm}cm 降る予想)`,
+    "明日は雪かきの出番です。助けを待っている人がいたら、ぜひ行ってみてください!",
   ].join("\n");
 }
 
-/** 通知が届くかを試すための文面。大雪でなくても、今の予報をテストと分かる形で伝える。 */
+/** 通知が届くかを試すための文面。大雪でなくても、明日の予報をテストと分かる形で伝える。 */
 export function buildTestWeatherMessage(summary: SnowSummary): string {
   return [
     "【テスト送信】雪かきアプリの天気通知のテストです。",
-    `これから24時間の美唄の降雪: ${summary.snowfallNext24hCm}cm`,
-    `いまの積雪: 約${summary.currentSnowDepthCm}cm`,
+    `明日の朝の美唄の積雪: 約${summary.tomorrowMorningDepthCm}cm`,
+    `明日のお昼までの降雪: ${summary.snowfallUntilTomorrowNoonCm}cm`,
   ].join("\n");
 }
 
