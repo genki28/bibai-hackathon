@@ -89,6 +89,15 @@ export function buildWeatherMessage(summary: SnowSummary): string | null {
   ].join("\n");
 }
 
+/** 通知が届くかを試すための文面。大雪でなくても、今の予報をテストと分かる形で伝える。 */
+export function buildTestWeatherMessage(summary: SnowSummary): string {
+  return [
+    "【テスト送信】雪かきアプリの天気通知のテストです。",
+    `これから24時間の美唄の降雪: ${summary.snowfallNext24hCm}cm`,
+    `いまの積雪: 約${summary.currentSnowDepthCm}cm`,
+  ].join("\n");
+}
+
 /** Open-Meteo から美唄の予報を取ってくる(そのままの形で返す)。 */
 export const fetchBibaiForecast: FetchForecast = async () => {
   const response = await fetch(FORECAST_URL);

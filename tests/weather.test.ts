@@ -4,6 +4,7 @@ import { afterEach, expect, test } from "vitest";
 import { createApp } from "../src/app.js";
 import type { AppConfig } from "../src/config.js";
 import {
+  buildTestWeatherMessage,
   buildWeatherMessage,
   parseForecast,
   summarizeSnow,
@@ -106,6 +107,19 @@ test("大雪のときだけ若者向けの通知文を作る", () => {
   expect(heavyMessage).toContain("15cm");
   expect(heavyMessage).toContain("美唄");
   expect(lightMessage).toBeNull();
+});
+
+test("テスト送信用の文面は、大雪でなくてもテストと分かる形で今の予報を伝える", () => {
+  // Arrange
+  const light: SnowSummary = { snowfallNext24hCm: 0.1, currentSnowDepthCm: 6, isHeavySnow: false };
+
+  // Act
+  const message = buildTestWeatherMessage(light);
+
+  // Assert
+  expect(message.startsWith("【テスト送信】")).toBe(true);
+  expect(message).toContain("0.1cm");
+  expect(message).toContain("約6cm");
 });
 
 test("GET /api/weather は美唄の雪のまとめと通知文を返す", async () => {
