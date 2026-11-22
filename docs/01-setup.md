@@ -49,6 +49,44 @@ git config --global user.email "GitHubに登録したメールアドレス"
 
 ## 追加で必要になるもの
 
-(技術スタックが決まったら、ここに追記します)
+LINE Bot + LIFF を Node.js で作ることに決まったので、次の準備も 1 回だけ行います。
+
+1. **Node.js(バージョン 22 以上)を入れる。** https://nodejs.org から「LTS」と書かれた方をダウンロードしてインストールします。
+   入ったかどうかは、ターミナルで次を打つと確認できます(`v22` 以上の数字が出れば OK)。
+
+   ```bash
+   node -v
+   ```
+
+2. **必要な部品(ライブラリ)を入れる。** `bibai-hackathon` フォルダの中で次を実行します。
+
+   ```bash
+   npm install
+   ```
+
+3. **`.env` ファイルを作る。** `.env.example` をコピーして、名前を `.env` に変えます(Claude に「.env.example をコピーして .env を作って」と頼んでも OK)。
+
+   Mac の場合:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Windows(PowerShell)の場合:
+
+   ```powershell
+   Copy-Item .env.example .env
+   ```
+
+4. **`.env` に値を入れる。** 入れる値の取り方は [LINE の準備](04-line-setup.md) を見てください。
+   `.env` は秘密の値を入れるファイルで、Git には入りません。チャットや画面共有で中身を見せないようにしましょう。
+
+5. **動かしてみる。** 値が空のままでも起動できます。
+
+   ```bash
+   npm run dev
+   ```
+
+   ブラウザで http://localhost:3000/liff/ を開いて画面が出れば成功です。止めるときはターミナルで `Ctrl + C` を押します。
 
 次は [作業の流れ](02-workflow.md) へ。
