@@ -46,11 +46,15 @@ const changeRoleAction: messagingApi.Action = {
   displayText: "登録の変更",
 };
 
-/** 各機能の画面はまだないので、いまは LIFF のトップを開く(画面ができたら差し替える)。 */
-const openLiff = (liffId: string, label: string): messagingApi.Action => ({
+/**
+ * LIFF の画面を開く。page を付けると、LIFF のエンドポイント URL の後ろにつながる
+ * (例: page = "help-request.html" → /liff/help-request.html)。
+ * 画面がまだない機能は page なし(= LIFF のトップ)。
+ */
+const openLiff = (liffId: string, label: string, page = ""): messagingApi.Action => ({
   type: "uri",
   label,
-  uri: `https://liff.line.me/${liffId}`,
+  uri: page ? `https://liff.line.me/${liffId}/${page}` : `https://liff.line.me/${liffId}`,
 });
 
 function buildMenus(liffId: string): Record<MenuKey, messagingApi.RichMenuRequest> {
@@ -64,7 +68,7 @@ function buildMenus(liffId: string): Record<MenuKey, messagingApi.RichMenuReques
   return {
     registration: menu("registration", [area(0, WIDTH, registerAction)]),
     elder: menu("elder", [
-      area(0, 800, openLiff(liffId, "たすけて")),
+      area(0, 800, openLiff(liffId, "たすけて", "help-request.html")),
       area(800, 400, changeRoleAction),
     ]),
     helper: menu("helper", [
