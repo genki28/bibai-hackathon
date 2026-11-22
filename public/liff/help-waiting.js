@@ -12,8 +12,8 @@ const AMOUNT_LABELS = { little: "すこし", normal: "ふつう", lots: "たく�
 
 /** 状態ごとの見出しとアイコン。 */
 const STATUS_VIEWS = {
-  waiting: { icon: "⏳", text: "お待ちください" },
-  accepted: { icon: "🙌", text: "受注が完了しました" },
+  waiting: { icon: "⏳", text: "お手伝いする人を\n探しています" },
+  accepted: { icon: "🙌", text: "お手伝いする人が\n向かっています" },
   working: { icon: "⛄", text: "雪かき中です" },
   done: { icon: "🎉", text: "雪かきが終わりました" },
 };
@@ -31,6 +31,13 @@ function helpersText(request) {
 function render(request) {
   // 進みぐあいの表示(help-waiting.html の .elder-steps)の色分けに使う
   document.body.dataset.status = request?.status ?? "none";
+  byId("waiting-title").textContent = request ? "おねがいを\n受け付けました" : "雪かきの\nおねがい状況";
+  const steps = document.querySelector(".elder-steps");
+  steps.hidden = !request;
+  steps.querySelectorAll("li").forEach((step) => {
+    if (step.dataset.step === request?.status) step.setAttribute("aria-current", "step");
+    else step.removeAttribute("aria-current");
+  });
   if (!request) {
     byId("status-icon").textContent = "🏠";
     byId("request-status").textContent = "いまは、おねがいしている雪かきはありません。";

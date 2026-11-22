@@ -12,13 +12,6 @@
       雪かきの様子はドット絵(pixel-snow.js が Canvas に描く。背景と主人公は ChatGPT で作った画像 images/working-*.png)。参加者の人数ぶん主人公が並ぶ。タップするとコンボの演出が出る隠し機能(画面には説明を出さない。見た目だけで、スコアには入らない)。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
-    <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
-    />
     <link rel="stylesheet" href="./template.css" />
     <style>
       /* ドット絵の雪かき(pixel-snow.js が Canvas に描く。画像ファイルは使わない) */
@@ -166,12 +159,15 @@
         color: var(--sub);
       }
     </style>
+    <link rel="stylesheet" href="./snow-ui.css" />
   </head>
   <body class="for-helper">
     <main>
+      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム"><span class="brand-mark" aria-hidden="true">＊</span> ユキカキ・レイド</a><span>北海道 美唄</span></div>
       <header class="page-head">
         <p class="kicker">RAID IN PROGRESS</p>
-        <h1>雪かき中!</h1>
+        <h1>力を合わせて、雪かき中。</h1>
+        <p class="head-description">ひとかきずつ、まちが歩きやすくなる。</p>
       </header>
       <div id="work-view">
         <div class="pixel-hud">
@@ -188,6 +184,7 @@
         <p id="elapsed" class="big-number" role="timer">--:--</p>
         <p id="helper-names" class="note center"></p>
         <p id="leader-role" class="leader-role center" aria-live="polite"></p>
+        <p class="rest-note">自分のペースで。疲れたらひと休み。</p>
         <button id="finish-button" class="button" type="button">雪かきを終える</button>
       </div>
       <section id="leader-wait" class="card center" aria-live="polite" hidden>

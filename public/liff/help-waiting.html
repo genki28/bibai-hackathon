@@ -9,13 +9,6 @@
       受注状況を数秒ごとに更新する: お待ちください → 受注が完了しました(向かってくる人の名前)→ 雪かき中です → 終わったら「いいねを送る」。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md(お年寄りのトーン)を見てください。
     -->
-    <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
-    />
     <link rel="stylesheet" href="./template.css" />
     <style>
       /* やさしい冬のトーン。状態のアイコンを大きな丸に入れる */
@@ -95,26 +88,33 @@
         text-align: center;
       }
     </style>
+    <link rel="stylesheet" href="./snow-ui.css" />
   </head>
   <body class="for-elder">
     <main>
+      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム"><span class="brand-mark" aria-hidden="true">＊</span> ユキカキ・レイド</a><span>北海道 美唄</span></div>
       <!-- 待っている間 -->
       <section id="step-waiting">
-        <h1>おねがいしました</h1>
+        <p class="elder-eyebrow">美唄の雪かき おたすけサービス</p>
+        <h1 id="waiting-title">雪かきの<br />おねがい状況</h1>
+        <p class="elder-intro">いまの様子を、こちらでお知らせします。</p>
         <ol class="elder-steps" aria-label="進みぐあい">
           <li data-step="waiting">おねがい</li>
           <li data-step="accepted">むかって<br />います</li>
           <li data-step="working">雪かき中</li>
           <li data-step="done">おわり</li>
         </ol>
-        <h2 class="center">受注状況</h2>
+        <h2 class="center status-heading">いまの様子</h2>
+        <div class="elder-status-panel" role="status" aria-live="polite">
         <p id="status-icon" class="big-number" aria-hidden="true">⏳</p>
         <p id="request-status" class="center"><strong>読み込み中です…</strong></p>
         <p id="request-helpers" class="center"></p>
+        </div>
         <p id="request-detail" class="note center"></p>
-        <a id="thanks-link" class="button" href="./thanks.html" hidden>いいねを送る</a>
-        <button id="cancel-button" class="button danger" type="button" hidden>取り消し</button>
-        <p class="note center">数秒ごとに自動で更新されます。</p>
+        <a id="thanks-link" class="button" href="./thanks.html" hidden>ありがとうを伝える</a>
+        <button id="cancel-button" class="button danger" type="button" hidden>おねがいを取り消す</button>
+        <p class="note center">この画面は自動で更新されます。
+          何度も押す必要はありません。</p>
         <p id="error" class="error" role="alert" hidden></p>
       </section>
 

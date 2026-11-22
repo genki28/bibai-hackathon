@@ -71,7 +71,7 @@ function renderListItem(request) {
   party.append(renderPartyPips(request.helperCount, request.capacity), `参加 ${request.helperCount}/${request.capacity}人`);
   const meta = el("span", undefined, "quest-meta");
   meta.append(party, el("span", `雪 ${amount} ・ ${timeAgo(request.createdAt)}`));
-  button.append(el("span", "QUEST", "quest-tag"), el("span", `📍 ${request.area}`, "quest-title"), difficulty, meta);
+  button.append(el("span", "協力クエスト", "quest-tag"), el("span", request.area, "quest-title"), difficulty, meta);
   button.addEventListener("click", () => showPlace(request));
   const item = el("li");
   item.append(button);
@@ -83,8 +83,13 @@ function renderList() {
   const pageCount = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
   page = Math.min(page, pageCount - 1);
   const shown = items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-  byId("waiting-count").textContent = `${items.length}件募集があります`;
+  byId("waiting-count").textContent = `${items.length} 件の雪かきが募集中`;
   byId("request-list").replaceChildren(...shown.map(renderListItem));
+  if (!shown.length) {
+    const empty = el("li", undefined, "empty-state");
+    empty.append(el("strong", "いま、このエリアの募集はありません"), el("p", "また雪が降ったら、あなたの出番。エリアを変えると、ほかの募集も確認できます。"));
+    byId("request-list").append(empty);
+  }
   byId("prev-button").disabled = page === 0;
   byId("next-button").disabled = page >= pageCount - 1;
   byId("page-info").textContent = `${page + 1} / ${pageCount} ページ`;
