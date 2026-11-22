@@ -2,6 +2,8 @@
 // 終わったら(リーダーが範囲に丸を付けたら)、自動でお疲れ様の画面へ進む。スリープなどから戻った瞬間にも読み直す(request-page.js)。雪かきの様子はドット絵(pixel-snow.js)で描く。
 // [雪かきを終える] は、リーダーなら範囲の画面へ。リーダー以外は「リーダーを待つ」表示にして、数秒ごとに読み直す。
 // スコップ計(scoop-meter.js)で、すくった回数を数えてサーバーに送る(ポイントには入れない)。
+// 雪山ボス(raid.js)はみんなのすくった回数で体力が減り、節目は音の実況(sound-coach.js)で知らせる。
+// スコップ計をオンにしたら、画面が消えないようにする(wake-lock.js)。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId, callApi, fetchAppConfig } from "./common.js";
@@ -20,6 +22,9 @@ import { userIdPromise } from "./template.js";
 import { digLevel, formatElapsed, levelProgress } from "./pixel-game.js";
 import { startPixelSnow } from "./pixel-snow.js";
 import { startScoopMeter } from "./scoop-meter.js";
+import { startRaid } from "./raid.js";
+import { createSoundCoach } from "./sound-coach.js";
+import { keepScreenOn } from "./wake-lock.js";
 
 const POLL_INTERVAL_MS = 3000;
 const TICK_MS = 1000;
@@ -123,6 +128,33 @@ async function isTestMode() {
   }
 }
 
+/** 音の実況のボタンの文字を、今のオン / オフに合わせる。 */
+function showSoundToggle(coach) {
+  const button = byId("sound-toggle");
+  button.textContent = coach.isOn() ? "🔊 音の実況: オン" : "🔇 音の実況: オフ";
+  button.setAttribute("aria-pressed", String(coach.isOn()));
+}
+
+/**
+ * 音の実況のボタンをつなぐ。音は利用者がボタンを押した処理の中でしか出し始められないので、
+ * スコップ計のボタン・まねるボタン・音のボタンを押したときに、音の準備(unlock)をする。
+ */
+function connectSound(coach) {
+  showSoundToggle(coach);
+  byId("sound-toggle").addEventListener("click", () => {
+    coach.unlock();
+    coach.setOn(!coach.isOn());
+    showSoundToggle(coach);
+    if (coach.isOn()) coach.say("音の実況、オン");
+  });
+  byId("scoop-on").addEventListener("click", () => {
+    coach.unlock();
+    keepScreenOn();
+    coach.say("スコップ計、スタート!ボスを倒そう");
+  });
+  byId("scoop-fake").addEventListener("click", () => coach.unlock(), { once: true });
+}
+
 /** 状態に合わせて画面を移る。移ったら(または続けられなければ)true。 */
 function moveIfNeeded(request, id) {
   if (stopIfUnavailable(request)) return true;
@@ -149,11 +181,25 @@ async function main() {
   const scenePromise = startScene(startTimer(request.startedAt), crewOf(request, userId));
   showHelperNames(request);
   showLeaderRole(request, userId);
+  const coach = createSoundCoach();
+  connectSound(coach);
+  let raid = null;
   const scoopMeter = startScoopMeter({
     requestId: id,
     send: sendScoops(id, userId),
-    onScoop: () => scenePromise.then((scene) => scene?.throwOnce()),
+    onScoop: (count) => {
+      scenePromise.then((scene) => scene?.throwOnce());
+      coach.scoop();
+      raid?.setMyCount(count);
+    },
     isTestMode: await isTestMode(),
+  });
+  raid = startRaid({
+    request,
+    userId,
+    myCount: scoopMeter.count(),
+    coach,
+    onBoss: (view) => scenePromise.then((scene) => scene?.setBoss(view)),
   });
   let latestRequest = request;
   byId("finish-button").addEventListener("click", async () => {
@@ -176,6 +222,7 @@ async function main() {
     latestRequest = latest;
     showHelperNames(latest);
     showLeaderRole(latest, userId);
+    raid.setRequest(latest);
     (await scenePromise)?.setCrew(crewOf(latest, userId));
     return false;
   }, POLL_INTERVAL_MS);
