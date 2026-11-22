@@ -10,7 +10,8 @@ AI(Claude など)に日本語でお願いしながら作る「バイブコーデ
 1. [準備する](docs/01-setup.md) — 必要なものを入れて、このリポジトリを自分の PC に持ってくる
 2. [作業の流れ](docs/02-workflow.md) — 「始める → 作る → 保存する」の 3 ステップ
 3. [AI への頼み方](docs/03-prompting.md) — うまく作ってもらうコツ
-4. [用語集](docs/glossary.md) — わからない言葉が出てきたら
+4. [LINE の準備](docs/04-line-setup.md) — LINE Bot と LIFF を動かすための設定
+5. [用語集](docs/glossary.md) — わからない言葉が出てきたら
 
 ## 合言葉(Claude Code で使えるコマンド)
 

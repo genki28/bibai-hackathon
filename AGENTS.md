@@ -22,15 +22,34 @@
 
 ## 技術スタック
 
-**まだ決まっていません。** 決まったら `docs/decisions.md` に記録されます。
+**LINE Bot + LIFF**(Node.js + TypeScript + Express + @line/bot-sdk)。データの保存先と公開方法は未定です。詳しくは `docs/decisions.md`。
 
 - コードを書く前に必ず `docs/decisions.md` と `docs/product.md` を読む。
-- スタックが未記入のまま実装を頼まれたら、勝手に選ばず `/decide-stack` を提案する。
-- 決まったあとは、起動方法・テスト方法などをこのファイルの「コマンド」に追記する。
+- 未定の項目(データの保存先・公開方法)が必要になったら、勝手に選ばず `/decide-stack` を提案する。
+- Express サーバー 1 つで Bot と LIFF の両方を動かしている。主な場所:
+  - `src/bot/reply.ts` — Bot の返事を作るところ(Bot の中身を変えるならまずここ)
+  - `src/bot/webhook.ts` — LINE からの通知を受けて返信するところ
+  - `src/app.ts` — URL ごとの処理の一覧 / `src/server.ts` — 起動 / `src/config.ts` — `.env` の読み込み
+  - `public/liff/` — LIFF の画面(HTML と JavaScript)
+  - `tests/` — テスト
+- `/webhook` より前に `express.json()` を入れない(LINE の署名確認が壊れる)。
+- LIFF の画面にユーザー由来の文字を入れるときは `textContent` を使う(`innerHTML` は使わない)。
+- LINE 側の準備手順は `docs/04-line-setup.md`。
 
 ## コマンド
 
-(技術スタック決定後に追記: インストール / 起動 / テスト / ビルド)
+Node.js 22 以上が必要です。すべてリポジトリの一番上のフォルダで実行します。
+
+| やること | コマンド |
+| --- | --- |
+| インストール(最初と、ライブラリが増えたとき) | `npm install` |
+| 起動(ファイルを保存すると自動で再起動) | `npm run dev` |
+| テスト | `npm test` |
+| 型チェック(= 書き間違いの自動チェック) | `npm run typecheck` |
+
+- 起動すると http://localhost:3000 で動く(`/health` で動作確認、`/liff/` で LIFF 画面)。
+- ビルドの手順はない(`tsx` が TypeScript をそのまま実行する)。
+- `.env` が空でも起動できる。Bot と LIFF を実際に LINE とつなぐには `.env` の値と https の公開 URL が必要。
 
 ## Git のルール
 
