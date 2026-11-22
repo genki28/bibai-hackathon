@@ -17,27 +17,40 @@ import { userIdPromise } from "./template.js";
 
 const POLL_INTERVAL_MS = 3000;
 
-function renderHelper(helper, isLeader, isMe) {
-  const item = el("li");
-  const row = el("div", undefined, "row");
-  const name = `${isLeader ? "👑 " : ""}${helper.displayName}${isMe ? "(あなた)" : ""}`;
-  row.append(el("span", name), el("span", helper.arrivedAt ? "✅ 到着" : "🚶 向かっています"));
-  item.append(row);
+/** 参加者 1 人のアイコン(円の index 番目に置く)。到着した人は光る。 */
+function renderHelper(helper, { isLeader, isMe, index, total }) {
+  const item = el("li", undefined, "party-member");
+  item.classList.toggle("arrived", Boolean(helper.arrivedAt));
+  item.classList.toggle("is-me", isMe);
+  item.style.setProperty("--i", String(index));
+  item.style.setProperty("--n", String(Math.max(total, 1)));
+  const avatar = el("span", Array.from(helper.displayName)[0] ?? "?", "avatar");
+  avatar.setAttribute("aria-hidden", "true");
+  if (isLeader) avatar.append(el("span", "👑", "crown"));
+  const name = `${isLeader ? "リーダー " : ""}${helper.displayName}${isMe ? "(あなた)" : ""}`;
+  item.append(
+    avatar,
+    el("span", name, "member-name"),
+    el("span", helper.arrivedAt ? "✅ 到着" : "🚶 向かっています", "member-status"),
+  );
   return item;
 }
 
 function render(request, userId) {
   const arrived = request.helpers.filter((h) => h.arrivedAt).length;
-  byId("gather-count").textContent = `${arrived}/${request.helpers.length}人集合`;
-  byId("helper-list").replaceChildren(
-    ...request.helpers.map((h) =>
-      renderHelper(h, h.userId === request.leaderUserId, h.userId === userId),
+  const total = request.helpers.length;
+  byId("gather-count").textContent = `${arrived}/${total}`;
+  const list = byId("helper-list");
+  list.classList.toggle("is-complete", total > 0 && arrived === total);
+  list.replaceChildren(
+    ...request.helpers.map((h, index) =>
+      renderHelper(h, { isLeader: h.userId === request.leaderUserId, isMe: h.userId === userId, index, total }),
     ),
   );
   const isLeader = request.leaderUserId === userId;
   byId("start-button").hidden = !isLeader;
   byId("leader-note").textContent = isLeader
-    ? "あなたがリーダーです。みんながそろったら「雪かき開始」を押してください。"
+    ? "あなたがリーダー(👑)です。みんながそろったら「雪かき開始」を押してください。"
     : "リーダー(👑)が開始するのを待っています。";
 }
 

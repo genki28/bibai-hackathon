@@ -7,16 +7,107 @@
     <!--
       【お年寄り】助けを呼んだ後の待機画面。リッチメニューの「たすけて」を押したとき、すでに呼んでいればこの画面になる。
       受注状況を数秒ごとに更新する: お待ちください → 受注が完了しました(向かってくる人の名前)→ 雪かき中です → 終わったら「いいねを送る」。
-      ページ一覧と URL は docs/features/pages.md を見てください。
+      ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md(お年寄りのトーン)を見てください。
     -->
+    <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
+    />
     <link rel="stylesheet" href="./template.css" />
+    <style>
+      /* やさしい冬のトーン。状態のアイコンを大きな丸に入れる */
+      #status-icon {
+        display: grid;
+        place-items: center;
+        width: 132px;
+        height: 132px;
+        margin: 8px auto 12px;
+        border: 3px solid #f6c9a6;
+        border-radius: 50%;
+        font-size: 4rem;
+        line-height: 1;
+        background: radial-gradient(circle, #fff4ea 0%, #ffe3cc 100%);
+      }
+      #request-status {
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #9a3412;
+      }
+      #request-helpers {
+        font-size: 1.3rem;
+        font-weight: 700;
+      }
+      /* 進みぐあい(おねがい → 向かっています → 雪かき中 → おわり)。body の data-status で色を付ける */
+      .elder-steps {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 4px;
+        margin: 12px 0 8px;
+        padding: 0;
+        list-style: none;
+        counter-reset: step;
+      }
+      .elder-steps li {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-size: 0.95rem;
+        font-weight: 700;
+        line-height: 1.3;
+        text-align: center;
+        color: #52606d;
+      }
+      .elder-steps li::before {
+        content: counter(step);
+        counter-increment: step;
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        margin-bottom: 4px;
+        border: 3px solid #e4e7eb;
+        border-radius: 50%;
+        font-family: var(--font-display);
+        font-weight: 800;
+        background: #fff;
+      }
+      /* いまの段階と、それより前の段階をオレンジにする */
+      body[data-status="waiting"] li[data-step="waiting"],
+      body[data-status="accepted"] li:is([data-step="waiting"], [data-step="accepted"]),
+      body[data-status="working"] li:not([data-step="done"]),
+      body[data-status="done"] li {
+        color: #9a3412;
+      }
+      body[data-status="waiting"] li[data-step="waiting"]::before,
+      body[data-status="accepted"] li:is([data-step="waiting"], [data-step="accepted"])::before,
+      body[data-status="working"] li:not([data-step="done"])::before,
+      body[data-status="done"] li::before {
+        border-color: var(--warm);
+        color: #fff;
+        background: var(--warm-deep);
+      }
+      #step-cancelled {
+        text-align: center;
+      }
+    </style>
   </head>
   <body class="for-elder">
     <main>
       <!-- 待っている間 -->
       <section id="step-waiting">
         <h1>おねがいしました</h1>
-        <h2>受注状況</h2>
+        <ol class="elder-steps" aria-label="進みぐあい">
+          <li data-step="waiting">おねがい</li>
+          <li data-step="accepted">むかって<br />います</li>
+          <li data-step="working">雪かき中</li>
+          <li data-step="done">おわり</li>
+        </ol>
+        <h2 class="center">受注状況</h2>
         <p id="status-icon" class="big-number" aria-hidden="true">⏳</p>
         <p id="request-status" class="center"><strong>読み込み中です…</strong></p>
         <p id="request-helpers" class="center"></p>
@@ -29,6 +120,7 @@
 
       <!-- 取り消した後 -->
       <section id="step-cancelled" hidden>
+        <p class="big-number" aria-hidden="true">🏠</p>
         <h1>取り消しました。</h1>
         <p class="note">また雪かきが必要になったら、メニューの「たすけて」を押してください。</p>
       </section>

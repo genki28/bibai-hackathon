@@ -6,17 +6,48 @@
     <title>いいねを送る</title>
     <!--
       【お年寄り】いいね(thanks.html?id=依頼ID)。来てくれた人に 1 人ずつ星 1〜5 を付けて送る(1 回だけ)。
-      ページ一覧と URL は docs/features/pages.md を見てください。
+      ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md(お年寄りのトーン)を見てください。
     -->
+    <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
+    />
     <link rel="stylesheet" href="./template.css" />
     <style>
+      /* 来てくれた人ごとのカード。星は大きく押しやすく */
       .helper-rating {
-        padding: 12px 0;
-        border-bottom: 1px solid var(--line);
+        margin: 12px 0;
+        padding: 14px 8px;
+        border: 2px solid #f6c9a6;
+        border-radius: 20px;
         text-align: center;
+        background: #fff8f1;
+      }
+      .helper-rating p {
+        margin: 0 0 4px;
+        font-family: var(--font-display);
+        font-size: 1.35rem;
+        font-weight: 800;
       }
       .helper-rating .stars {
-        font-size: 2.6rem;
+        gap: 2px;
+        font-size: clamp(2.4rem, 12vw, 3rem);
+      }
+      .helper-rating .stars label {
+        padding: 0 2px;
+      }
+      .sent-icon {
+        display: grid;
+        place-items: center;
+        width: 132px;
+        height: 132px;
+        margin: 8px auto;
+        border: 3px solid #f6c9a6;
+        border-radius: 50%;
+        background: radial-gradient(circle, #fff4ea 0%, #ffe3cc 100%);
       }
     </style>
   </head>
@@ -24,6 +55,7 @@
     <main>
       <section id="step-form">
         <h1>来てくれた人に<br />いいねを送る</h1>
+        <p class="center">星をえらんで「送信」を押してください。</p>
         <p id="loading" class="center">読み込み中です…</p>
         <!-- 来てくれた人ごとに、名前と星 5 つが入る(thanks.js が作る) -->
         <div id="helper-ratings"></div>
@@ -33,7 +65,7 @@
 
       <section id="step-sent" hidden>
         <h1>ありがとうを<br />送りました</h1>
-        <p class="big-number" aria-hidden="true">💌</p>
+        <p class="big-number sent-icon" aria-hidden="true">💌</p>
         <p class="center">来てくれた人に届きます。<br />雪かきのおねがい、おつかれさまでした。</p>
       </section>
     </main>

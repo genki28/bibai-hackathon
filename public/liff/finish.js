@@ -2,6 +2,8 @@
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId } from "./common.js";
+import { renderCommunityGauge } from "./community-gauge.js";
+import { countUp, snowConfetti } from "./effects.js";
 import {
   fetchRequest,
   pageUrl,
@@ -21,7 +23,9 @@ function render(request, userId) {
   const { result } = request;
   const stars = request.ratings?.[userId] ?? 0;
   const ratingPoints = stars * POINTS_PER_STAR;
-  byId("score").textContent = `${format(result.workPoints + ratingPoints)}!!!`;
+  // スコアは数えあげて、雪の紙吹雪を降らせる
+  countUp(byId("score"), result.workPoints + ratingPoints, (n) => `${format(n)} pt`);
+  snowConfetti();
   byId("minutes").textContent = `${format(result.minutes)} 分`;
   byId("calories").textContent = `${format(result.calories)} kcal`;
   byId("area").textContent = `${format(result.areaM2)} ㎡`;
@@ -46,6 +50,7 @@ async function main() {
     return;
   }
   render(request, userId);
+  renderCommunityGauge(byId("community-gauge"));
 }
 
 main().catch((error) => {

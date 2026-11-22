@@ -87,6 +87,7 @@ waiting(募集中)→ accepted(だれか参加)→ working(雪かき中)→ done
 | `POST /api/help-requests/:id/cancel` | `{ userId }` | 依頼の取り消し(依頼した本人だけ) |
 | `POST /api/help-requests/:id/thanks` | `{ userId, ratings: { 若者のユーザーID: 1〜5 } }` | いいね(依頼した本人だけ・1 回だけ) |
 | `GET /api/ranking?period=daily\|total&userId=` | なし | ポイントの多い順。`userId` を付けると自分に `isMe: true` が付く |
+| `GET /api/community` | なし | 仲間ゲージ `{ members, goal, baseline }`。members = 終わった依頼に関わった人の重複なしの人数、goal = baseline(10)× 2 |
 
 ## スコアの計算(仮の値。`src/help-requests/score.ts`)
 
@@ -106,7 +107,8 @@ waiting(募集中)→ accepted(だれか参加)→ working(雪かき中)→ done
 
 ## ひな形を作り込むときのメモ
 
-- 見た目の共通部分は `public/liff/template.css`、全ページ共通の処理は `public/liff/template.js`
+- 見た目の共通部分は `public/liff/template.css`、全ページ共通の処理は `public/liff/template.js`(デザインの方針は [design.md](../design.md))
+- 演出(カウントアップ・雪の紙吹雪)は `public/liff/effects.js`、仲間ゲージは `public/liff/community-gauge.js`
 - 地図の部品は `public/liff/map.js`、面積の計算は `public/liff/geo.js`、依頼 1 件の画面の共通処理は `public/liff/request-page.js`
 - 灰色の点線の箱(`class="placeholder"`)が「ここに〇〇が入る予定」の印
 - 「メニューを最初に戻す」ボタンは `template.js` が自動で出す

@@ -7,8 +7,15 @@
     <!--
       【若者】参加した依頼の場所・詳細(helper-place.html?id=依頼ID)。本人確認の後に来る。
       [取消] で参加をやめて「助けに行く」へ、[到着しました!] で待機中(helper-gather.html)へ。
-      ページ一覧と URL は docs/features/pages.md を見てください。
+      ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
+    <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
+    />
     <link rel="stylesheet" href="./template.css" />
     <link
       rel="stylesheet"
@@ -19,13 +26,19 @@
   </head>
   <body class="for-helper has-tab-bar">
     <main>
-      <h1>場所・詳細</h1>
-      <div id="detail-map" class="map-box tall"></div>
-      <div class="row"><span>住所</span><span id="address">読み込み中です…</span></div>
-      <div class="row"><span>募集者</span><span id="elder-name"></span></div>
-      <div class="row"><span>雪の多さ</span><span id="amount"></span></div>
-      <div class="row"><span>参加者</span><span id="helper-count"></span></div>
-      <p id="tools" class="note"></p>
+      <header class="page-head">
+        <p class="kicker">TARGET LOCATION</p>
+        <h1>目的地へ向かおう</h1>
+      </header>
+      <div class="card">
+        <div id="detail-map" class="map-box tall"></div>
+        <div class="row"><span>住所</span><span id="address">読み込み中です…</span></div>
+        <div class="row"><span>募集者</span><span id="elder-name"></span></div>
+        <div class="row"><span>雪の多さ</span><span id="amount"></span></div>
+        <div class="row"><span>参加者</span><span id="helper-count"></span></div>
+        <p id="tools" class="note"></p>
+      </div>
+      <p class="note center">着いたら「到着しました!」を押して、仲間と合流しよう。</p>
       <div class="button-row">
         <button id="leave-button" class="button secondary" type="button">取消</button>
         <button id="arrive-button" class="button" type="button">到着しました!</button>

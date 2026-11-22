@@ -1,6 +1,7 @@
 import express from "express";
 import type { Response, Router } from "express";
 import { isValidUserId } from "../identity/store.js";
+import { countCommunity } from "./community.js";
 import {
   isValidRequestId,
   parseFinishInput,
@@ -156,6 +157,11 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
     }
     const finished = await store.listFinished();
     res.json({ success: true, data: buildRanking(finished, period, now(), userId) });
+  });
+
+  // 仲間ゲージ(美唄の仲間を 2 倍に)。計算は community.ts
+  router.get("/api/community", async (_req, res) => {
+    res.json({ success: true, data: countCommunity(await store.listFinished()) });
   });
 
   return router;

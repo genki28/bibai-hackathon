@@ -1,62 +1,253 @@
 /*
- * ひな形ページ共通の見た目。デザインが決まったら、各ページの <style> で上書きするか、この中を書き換える。
- * 灰色の点線の箱(.placeholder)は「ここに〇〇が入る予定」という印。
+ * LIFF 画面共通の見た目(デザインの方針は docs/design.md)。
+ * コンセプト「ユキカキ・レイド ― 美唄の仲間を 2 倍に」
+ * - 若者の画面(body.for-helper)= 夜空 + オーロラ + ゆっくり舞う雪。ゲーム寄り
+ * - お年寄りの画面(body.for-elder)= 明るい雪景色 + あたたかいオレンジ。文字とボタン大きく、演出控えめ
+ * 色はすべて :root の変数にまとめる。画面ごとの細かい見た目は各ページの <style> に書く。
+ * 見出し・数字の字(M PLUS Rounded 1c)は各ページの <head> の <link> で読み込む。読めなくても端末の字で表示される。
  */
+
 /* hidden を付けた部品は必ず隠す(.button の display: block などに上書きされないように) */
 [hidden] {
   display: none !important;
 }
+
 :root {
-  --elder: #e8590c;
-  --helper: #1c7ed6;
-  --text: #1f2933;
-  --sub: #52606d;
-  --line: #e4e7eb;
-  --bg: #f4f6f8;
-  --card: #ffffff;
+  /* docs/design.md の色 */
+  --night-top: #0b1026;
+  --night-bottom: #1b2a5c;
+  --ice: #4fd1ff;
+  --aurora: #8b5cf6;
+  --aurora-light: #a78bfa; /* ボタンの文字が読めるように、明るめの紫を相方にする */
+  --gold: #ffc94d;
+  --snow: #f4f8ff;
+  --warm: #f26b1d;
+  --warm-deep: #c8470e; /* 白い文字を載せるオレンジ(コントラスト 4.5:1 以上) */
+  --warm-deeper: #b53d0b;
+  --snowscape-top: #fff8f1;
+  --snowscape-bottom: #eaf4ff;
+  --danger: #e5484d;
+  --danger-deep: #c62a2f;
+  --silver: #d7e0ee;
+  --bronze: #e8a16b;
+
+  /* 若者の画面(既定) */
+  --text: var(--snow);
+  --sub: #b8c4e0;
+  --line: rgba(244, 248, 255, 0.16);
+  --glass: rgba(255, 255, 255, 0.08);
+  --glass-strong: rgba(255, 255, 255, 0.14);
+  --glass-edge: rgba(180, 225, 255, 0.35);
+  --accent: var(--ice);
+  --on-accent: var(--night-top);
+  --error: #ff8a8f;
+
+  --radius: 20px;
+  --radius-small: 14px;
+  --font-body: system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", sans-serif;
+  --font-display: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", system-ui, sans-serif;
+  --tab-height: 64px;
+
+  /* 雪の粒(白い点を散らした 1 枚の柄。縦にずらして降らせる) */
+  --snow-tile: 320px;
+  --snow-dots:
+    radial-gradient(2px 2px at 20px 30px, #fff 50%, transparent 52%),
+    radial-gradient(3px 3px at 90px 140px, #fff 50%, transparent 52%),
+    radial-gradient(2px 2px at 160px 60px, #fff 50%, transparent 52%),
+    radial-gradient(4px 4px at 230px 210px, rgba(255, 255, 255, 0.9) 50%, transparent 52%),
+    radial-gradient(2px 2px at 290px 110px, #fff 50%, transparent 52%),
+    radial-gradient(3px 3px at 50px 250px, rgba(255, 255, 255, 0.8) 50%, transparent 52%),
+    radial-gradient(2px 2px at 130px 290px, #fff 50%, transparent 52%),
+    radial-gradient(3px 3px at 200px 20px, rgba(255, 255, 255, 0.85) 50%, transparent 52%),
+    radial-gradient(2px 2px at 270px 300px, #fff 50%, transparent 52%);
 }
+
+html {
+  overflow-x: hidden; /* 飾りがはみ出しても横スクロールを出さない */
+  background: var(--night-top);
+}
+html:has(body.for-elder) {
+  background: var(--snowscape-top);
+}
+
 body {
+  position: relative;
+  min-height: 100vh;
   margin: 0;
-  padding: 16px 16px 72px; /* 下は「メニューを最初に戻す」ボタンのぶん空ける */
-  font-family: system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", sans-serif;
+  padding: 20px 16px 88px; /* 下は「メニューを最初に戻す」ボタンのぶん空ける */
+  box-sizing: border-box;
+  font-family: var(--font-body);
   font-size: 1.05rem;
   line-height: 1.7;
   color: var(--text);
-  background: var(--bg);
+  background: linear-gradient(180deg, var(--night-top) 0%, var(--night-bottom) 100%) fixed;
+  -webkit-tap-highlight-color: transparent;
 }
+
+/* ---- 若者: オーロラ(::before)と舞う雪(::after) ---- */
+body.for-helper::before,
+body.for-helper::after,
+body.for-elder::after {
+  content: "";
+  position: fixed;
+  z-index: 0;
+  pointer-events: none;
+}
+body.for-helper::before {
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 32% at 18% 6%, rgba(79, 209, 255, 0.3), transparent 70%),
+    radial-gradient(ellipse 65% 30% at 85% 14%, rgba(139, 92, 246, 0.36), transparent 70%),
+    radial-gradient(ellipse 55% 24% at 50% 0%, rgba(80, 230, 180, 0.16), transparent 70%);
+  background-size: 160% 100%;
+  animation: aurora 20s ease-in-out infinite alternate;
+}
+body.for-helper::after,
+body.for-elder::after {
+  top: calc(-1 * var(--snow-tile));
+  right: 0;
+  left: 0;
+  height: calc(100vh + var(--snow-tile));
+  background-image: var(--snow-dots);
+  background-size: var(--snow-tile) var(--snow-tile);
+  opacity: 0.55;
+  animation: snowfall 26s linear infinite;
+}
+@keyframes aurora {
+  from {
+    background-position: 0% 0%;
+    opacity: 0.75;
+  }
+  to {
+    background-position: 100% 0%;
+    opacity: 1;
+  }
+}
+@keyframes snowfall {
+  to {
+    transform: translateY(var(--snow-tile));
+  }
+}
+
+/* ---- お年寄り: 明るい雪景色。演出は控えめ ---- */
+body.for-elder {
+  --text: #1f2933;
+  --sub: #52606d;
+  --line: #f1dfcf;
+  --glass: #ffffff;
+  --glass-strong: #fff4ea;
+  --glass-edge: #f6c9a6;
+  --accent: var(--warm-deep);
+  --on-accent: #ffffff;
+  --error: #b42318;
+  font-size: 1.25rem;
+  background: linear-gradient(180deg, var(--snowscape-top) 0%, var(--snowscape-bottom) 100%) fixed;
+}
+body.for-elder::after {
+  --snow-dots:
+    radial-gradient(4px 4px at 40px 60px, #c9dcf5 50%, transparent 52%),
+    radial-gradient(3px 3px at 180px 200px, #d6e4f7 50%, transparent 52%),
+    radial-gradient(5px 5px at 270px 90px, #c9dcf5 50%, transparent 52%);
+  opacity: 0.7;
+  animation-duration: 60s;
+}
+
 main {
+  position: relative;
+  z-index: 1;
   max-width: 480px;
   margin: 0 auto;
-  padding: 20px;
-  border-radius: 14px;
-  background: var(--card);
+}
+body.for-elder main {
+  padding: 24px 20px;
+  border: 2px solid var(--glass-edge);
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(242, 107, 29, 0.12);
+}
+
+h1,
+h2,
+.display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 h1 {
   margin: 0 0 12px;
-  font-size: 1.4rem;
+  font-size: 1.6rem;
+  line-height: 1.35;
   text-align: center;
 }
-h2 {
-  margin: 16px 0 8px;
-  font-size: 1.05rem;
+body.for-helper h1 {
+  text-shadow: 0 0 18px rgba(79, 209, 255, 0.45);
 }
+body.for-elder h1 {
+  font-size: 1.75rem;
+}
+h2 {
+  margin: 18px 0 8px;
+  font-size: 1.1rem;
+}
+
+/* 見出しの上の小さな飾り文字(例: QUEST BOARD) */
+.kicker {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.25em;
+  text-align: center;
+  color: var(--ice);
+}
+.page-head {
+  margin-bottom: 14px;
+}
+
+/* ---- ガラスのカード ---- */
+.card {
+  position: relative;
+  margin: 12px 0;
+  padding: 16px;
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius);
+  background: var(--glass);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 8px 24px rgba(3, 6, 20, 0.35);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+body.for-elder .card {
+  box-shadow: none;
+}
+
+/* ---- バッジ(称号・王冠など) ---- */
 .badge {
   display: inline-block;
   margin-bottom: 8px;
   padding: 2px 10px;
+  border: 1px solid rgba(255, 201, 77, 0.6);
   border-radius: 999px;
   font-size: 0.75rem;
-  color: #7a4b00;
-  background: #fff4d6;
+  font-weight: 700;
+  color: var(--gold);
+  background: rgba(255, 201, 77, 0.12);
 }
+body.for-elder .badge {
+  border-color: var(--glass-edge);
+  color: #9a3412;
+  background: var(--glass-strong);
+}
+
 .placeholder {
   display: grid;
   place-items: center;
   min-height: 72px;
   margin: 8px 0;
   padding: 12px;
-  border: 2px dashed #cbd2d9;
-  border-radius: 10px;
+  border: 2px dashed var(--line);
+  border-radius: var(--radius-small);
   color: var(--sub);
   font-size: 0.9rem;
   text-align: center;
@@ -64,6 +255,7 @@ h2 {
 .placeholder.map {
   min-height: 200px;
 }
+
 .row {
   display: flex;
   justify-content: space-between;
@@ -71,40 +263,113 @@ h2 {
   padding: 10px 4px;
   border-bottom: 1px solid var(--line);
 }
+.row > span:last-child {
+  font-weight: 700;
+  text-align: right;
+}
+
+/* ---- ボタン(氷の青 → オーロラの紫。押すと少し沈む) ---- */
 .button {
   display: block;
   width: 100%;
   box-sizing: border-box;
   min-height: 52px;
-  margin-top: 10px;
-  padding: 12px;
+  margin-top: 12px;
+  padding: 12px 16px;
   border: 0;
-  border-radius: 12px;
-  font: inherit;
-  font-weight: 700;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1.4;
   text-align: center;
   text-decoration: none;
-  color: #fff;
-  background: var(--accent, var(--helper));
+  color: var(--on-accent);
+  background: linear-gradient(100deg, var(--ice) 0%, var(--aurora-light) 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.25) inset,
+    0 6px 22px rgba(79, 209, 255, 0.45),
+    0 2px 0 rgba(139, 92, 246, 0.9);
   cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+  animation: glow 2.8s ease-in-out infinite;
+}
+.button:active:not(:disabled) {
+  transform: translateY(2px) scale(0.98);
+  box-shadow: 0 2px 10px rgba(79, 209, 255, 0.4);
+}
+.button:focus-visible,
+.toggle button:focus-visible,
+.pick-list button:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 3px;
+}
+@keyframes glow {
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.25) inset,
+      0 8px 30px rgba(139, 92, 246, 0.55),
+      0 2px 0 rgba(139, 92, 246, 0.9);
+  }
 }
 .button.secondary {
   color: var(--text);
-  background: var(--line);
+  background: var(--glass-strong);
+  box-shadow: 0 0 0 1px var(--glass-edge) inset;
+  animation: none;
 }
 .button.danger {
-  background: #c92a2a;
+  color: #fff;
+  background: var(--danger-deep);
+  box-shadow: 0 0 0 2px var(--danger) inset;
+  animation: none;
 }
-.for-elder {
-  --accent: var(--elder);
+.button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  animation: none;
 }
-.for-helper {
-  --accent: var(--helper);
+body.for-elder .button {
+  min-height: 72px;
+  font-size: 1.35rem;
+  background: linear-gradient(180deg, var(--warm-deep) 0%, var(--warm-deeper) 100%);
+  box-shadow:
+    0 6px 0 #8a2e08,
+    0 10px 24px rgba(242, 107, 29, 0.35);
+  animation: none;
 }
+body.for-elder .button:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 #8a2e08;
+}
+body.for-elder .button.secondary {
+  color: var(--text);
+  background: var(--glass-strong);
+  box-shadow: 0 0 0 2px var(--glass-edge) inset;
+}
+body.for-elder .button.danger {
+  background: var(--danger-deep);
+  box-shadow: 0 6px 0 #8f1d21;
+}
+
 .note {
   color: var(--sub);
   font-size: 0.85rem;
 }
+body.for-elder .note {
+  font-size: 1rem;
+}
+.error {
+  color: var(--error);
+  font-weight: 700;
+}
+.center {
+  text-align: center;
+}
+
+/* ---- 星(いいね) ---- */
 .stars {
   display: flex;
   flex-direction: row-reverse; /* HTML は 5 → 1 の順。右から並べて、見た目は 1 → 5 にする */
@@ -113,74 +378,98 @@ h2 {
   font-size: 2rem;
 }
 .stars label {
+  color: #cbd2d9;
   cursor: pointer;
+  transition: transform 0.15s ease;
 }
 .stars input {
   position: absolute;
   opacity: 0;
 }
-.stars label {
-  color: #cbd2d9;
-}
 /* 選んだ星と、その左(HTML では後ろ)の星を光らせる */
 .stars label:has(input:checked),
 .stars label:has(input:checked) ~ label {
   color: #f59f00;
+  text-shadow: 0 0 10px rgba(255, 201, 77, 0.7);
+}
+.stars label:has(input:focus-visible) {
+  outline: 3px solid var(--warm);
+  outline-offset: 2px;
+  border-radius: 8px;
 }
 
-/* ---- ここから下は、若者・お年寄りの画面を動く形にしたときに足した部品 ---- */
-
-/* 若者の画面の下に固定する [ランキング] [助けに行く] のタブ */
+/* ---- 若者の下のタブ(ガラスの帯。選んでいるタブは光る) ---- */
 body.has-tab-bar {
-  padding-bottom: 140px; /* タブと「メニューを最初に戻す」ボタンのぶん空ける */
+  padding-bottom: calc(var(--tab-height) + 96px); /* タブと「メニューを最初に戻す」ボタンのぶん */
 }
 .tab-bar {
   position: fixed;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  right: 12px;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  left: 12px;
   z-index: 900;
   display: flex;
-  padding-bottom: env(safe-area-inset-bottom);
-  border-top: 1px solid var(--line);
-  background: var(--card);
+  gap: 6px;
+  max-width: 480px;
+  height: var(--tab-height);
+  margin: 0 auto;
+  padding: 6px;
+  box-sizing: border-box;
+  border: 1px solid var(--glass-edge);
+  border-radius: 999px;
+  background: rgba(11, 16, 38, 0.72);
+  box-shadow: 0 10px 30px rgba(3, 6, 20, 0.5);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 .tab-bar a {
+  display: grid;
   flex: 1;
-  padding: 14px 8px;
-  font-weight: 700;
-  text-align: center;
+  place-items: center;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 800;
   text-decoration: none;
   color: var(--sub);
 }
 .tab-bar a[aria-current="page"] {
-  color: var(--helper);
-  box-shadow: inset 0 3px 0 var(--helper);
-}
-/* タブがある画面では「メニューを最初に戻す」ボタンをタブの上に出す */
-body.has-tab-bar #reset-menu-button {
-  bottom: calc(64px + env(safe-area-inset-bottom));
+  color: var(--night-top);
+  background: linear-gradient(100deg, var(--ice), var(--aurora-light));
+  box-shadow: 0 0 18px rgba(79, 209, 255, 0.55);
 }
 
-.error {
-  color: #b42318;
-  font-weight: 700;
+/* 「メニューを最初に戻す」ボタン(reset-menu-button.js が出す)の色 */
+body.for-helper {
+  --reset-fg: var(--snow);
+  --reset-bg: rgba(11, 16, 38, 0.78);
+  --reset-border: rgba(79, 209, 255, 0.45);
 }
-.center {
-  text-align: center;
+body.for-elder {
+  --reset-fg: #52606d;
+  --reset-bg: rgba(255, 255, 255, 0.95);
+  --reset-border: #f1dfcf;
 }
+/* タブがある画面では、タブの上に浮かべる */
+body.has-tab-bar #reset-menu-button {
+  bottom: calc(var(--tab-height) + 20px + env(safe-area-inset-bottom));
+}
+
+/* ---- 地図 ---- */
 .map-box {
+  position: relative;
+  z-index: 0;
   height: 260px;
   margin: 8px 0;
-  border-radius: 10px;
-  background: var(--line);
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius-small);
+  background: var(--glass);
   overflow: hidden;
 }
 .map-box.tall {
-  height: 360px;
+  height: 340px;
 }
 
-/* 選べる一覧(1 行ずつボタン) */
+/* ---- 選べる一覧(1 行ずつボタン) ---- */
 .pick-list {
   margin: 8px 0;
   padding: 0;
@@ -191,67 +480,66 @@ body.has-tab-bar #reset-menu-button {
   justify-content: space-between;
   gap: 8px;
   width: 100%;
-  margin: 6px 0;
-  padding: 14px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  margin: 8px 0;
+  padding: 14px;
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius-small);
   font: inherit;
   text-align: left;
   color: var(--text);
-  background: var(--card);
+  background: var(--glass);
   cursor: pointer;
-}
-.pick-list button:active {
-  background: var(--bg);
 }
 .button-row {
   display: flex;
-  gap: 8px;
+  gap: 10px;
 }
 .button-row .button {
   flex: 1;
-}
-.button:disabled {
-  opacity: 0.5;
+  min-width: 0;
 }
 select {
   width: 100%;
-  min-height: 44px;
-  padding: 8px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius-small);
   font: inherit;
-  background: var(--card);
+  color: var(--text);
+  background: var(--glass-strong);
+}
+select option {
+  color: #1f2933;
 }
 
-/* 切り替え(デイリー / 総合) */
+/* ---- 切り替え(デイリー / 総合) ---- */
 .toggle {
   display: flex;
-  margin: 8px 0 12px;
+  margin: 12px 0;
+  padding: 4px;
+  border: 1px solid var(--glass-edge);
   border-radius: 999px;
-  background: var(--line);
+  background: var(--glass);
 }
 .toggle button {
   flex: 1;
-  padding: 10px;
+  min-height: 44px;
   border: 0;
   border-radius: 999px;
-  font: inherit;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 800;
   color: var(--sub);
   background: transparent;
   cursor: pointer;
 }
 .toggle button[aria-pressed="true"] {
-  color: #fff;
-  background: var(--accent, var(--helper));
-}
-.row.me {
-  font-weight: 700;
-  background: #e7f5ff;
+  color: var(--night-top);
+  background: linear-gradient(100deg, var(--ice), var(--aurora-light));
+  box-shadow: 0 0 16px rgba(79, 209, 255, 0.5);
 }
 
-/* 画面の上に重ねる確認の小窓 */
+/* ---- 画面の上に重ねる確認の小窓 ---- */
 .overlay {
   position: fixed;
   inset: 0;
@@ -259,34 +547,156 @@ select {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(0, 0, 0, 0.45);
-}
-.overlay[hidden] {
-  display: none;
+  background: rgba(5, 8, 22, 0.72);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
 }
 .overlay .dialog {
   width: 100%;
   max-width: 360px;
-  padding: 20px;
-  border-radius: 14px;
-  background: var(--card);
+  box-sizing: border-box;
+  padding: 22px 18px;
+  border: 1px solid var(--glass-edge);
+  border-radius: 24px;
+  color: var(--text);
+  background: linear-gradient(180deg, #1d2c66 0%, #121a3f 100%);
+  box-shadow:
+    0 0 0 1px rgba(79, 209, 255, 0.25),
+    0 0 40px rgba(139, 92, 246, 0.45);
   text-align: center;
+  animation: pop-in 0.35s ease-out;
+}
+@keyframes pop-in {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
 }
 
+/* ---- 大きな数字 ---- */
 .big-number {
   margin: 8px 0;
+  font-family: var(--font-display);
   font-size: 3rem;
   font-weight: 800;
   line-height: 1.2;
   text-align: center;
-  color: var(--accent, var(--helper));
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+  text-shadow: 0 0 22px rgba(255, 201, 77, 0.45);
+}
+body.for-elder .big-number {
+  color: var(--warm-deep);
+  text-shadow: none;
 }
 
-/* お年寄りの画面は文字とボタンを大きく */
-body.for-elder {
-  font-size: 1.25rem;
+/* ---- 仲間ゲージ(community-gauge.js が中身を作る) ---- */
+.gauge-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 8px;
 }
-body.for-elder .button {
-  min-height: 72px;
-  font-size: 1.3rem;
+.gauge-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+.gauge-numbers {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+.gauge-numbers strong {
+  font-size: 1.7rem;
+  color: var(--gold);
+}
+.gauge-times {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  color: var(--night-top);
+  background: var(--gold);
+}
+.gauge-bar {
+  position: relative;
+  height: 14px;
+  margin: 10px 0 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+.gauge-fill {
+  width: 0;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--ice), var(--aurora-light), var(--gold));
+  box-shadow: 0 0 12px rgba(255, 201, 77, 0.6);
+  transition: width 1.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.gauge-mark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.7);
+}
+.gauge-flock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin: 8px 0 0;
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+.gauge-flock .goose {
+  animation: flap 2.4s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 0.15s);
+}
+.gauge-flock .goose.empty {
+  opacity: 0.22;
+  filter: grayscale(1);
+  animation: none;
+}
+@keyframes flap {
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* ---- 雪の紙吹雪(effects.js の snowConfetti が作る) ---- */
+.confetti-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  pointer-events: none;
+  overflow: hidden;
+}
+.confetti-piece {
+  position: absolute;
+  top: -2rem;
+  left: var(--x);
+  font-size: var(--size);
+  color: var(--hue);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
+  animation: confetti-fall var(--duration) ease-in var(--delay) forwards;
+}
+@keyframes confetti-fall {
+  to {
+    transform: translate(var(--drift), 110vh) rotate(540deg);
+    opacity: 0.2;
+  }
+}
+
+/* ---- 動きを減らす設定の人には、動きを止める ---- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }

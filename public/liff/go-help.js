@@ -10,6 +10,8 @@ import { profilePromise } from "./template.js";
 const PAGE_SIZE = 5;
 const STEPS = ["list", "place"];
 const AMOUNT_LABELS = { little: "すこし", normal: "ふつう", lots: "たくさん" };
+/** 雪の多さ → 難易度(雪の結晶の数)。 */
+const DIFFICULTY = { little: 1, normal: 2, lots: 3 };
 const NEXT_PAGE_AFTER_IDENTITY = "helper-place.html";
 
 let requests = [];
@@ -48,14 +50,26 @@ function renderAreaOptions() {
   select.value = areas.includes(previous) ? previous : "";
 }
 
+/** 参加人数の点(〇/5)。 */
+function renderPartyPips(count, capacity) {
+  const pips = el("span", undefined, "party-pips");
+  pips.setAttribute("aria-hidden", "true");
+  pips.append(...Array.from({ length: capacity }, (_, i) => el("i", undefined, i < count ? "filled" : "")));
+  return pips;
+}
+
+/** 依頼 1 件を「クエスト」のカードにする(雪の多さ = 雪の結晶 1〜3 個)。 */
 function renderListItem(request) {
-  const button = el("button");
+  const button = el("button", undefined, "quest-card");
   button.type = "button";
-  const people = `${request.helperCount}/${request.capacity}人`;
-  button.append(
-    el("span", `📍 ${request.area} ・ 雪 ${AMOUNT_LABELS[request.amount] ?? "-"}`),
-    el("span", `${people} ・ ${timeAgo(request.createdAt)}`, "note"),
-  );
+  const amount = AMOUNT_LABELS[request.amount] ?? "-";
+  const difficulty = el("span", "❄".repeat(DIFFICULTY[request.amount] ?? 1), "quest-difficulty");
+  difficulty.setAttribute("aria-label", `雪の多さ ${amount}`);
+  const party = el("span");
+  party.append(renderPartyPips(request.helperCount, request.capacity), `参加 ${request.helperCount}/${request.capacity}人`);
+  const meta = el("span", undefined, "quest-meta");
+  meta.append(party, el("span", `雪 ${amount} ・ ${timeAgo(request.createdAt)}`));
+  button.append(el("span", "QUEST", "quest-tag"), el("span", `📍 ${request.area}`, "quest-title"), difficulty, meta);
   button.addEventListener("click", () => showPlace(request));
   const item = el("li");
   item.append(button);
@@ -133,6 +147,9 @@ byId("back-button").addEventListener("click", () => {
   loadRequests().catch(console.error);
 });
 byId("go-button").addEventListener("click", () => {
+  const amount = AMOUNT_LABELS[selected.amount] ?? "-";
+  byId("confirm-summary").textContent =
+    `📍 ${selected.area} ・ 雪 ${amount} ${"❄".repeat(DIFFICULTY[selected.amount] ?? 1)} ・ 参加 ${selected.helperCount}/${selected.capacity}人`;
   byId("confirm-overlay").hidden = false;
 });
 byId("confirm-back-button").addEventListener("click", () => {

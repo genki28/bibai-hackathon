@@ -7,39 +7,123 @@
     <!--
       【若者】お疲れ様の画面(finish.html?id=依頼ID)。スコアと内訳(作業時間・消費カロリー・面積・雪の重さ)を出す。
       [メイン画面に戻る] でランキング(ranking.html)へ。
-      ページ一覧と URL は docs/features/pages.md を見てください。
+      「QUEST CLEAR!」の演出・スコアのカウントアップ・雪の紙吹雪・仲間ゲージを出す。
+      ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
+    <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
+    />
     <link rel="stylesheet" href="./template.css" />
     <style>
+      /* 「QUEST CLEAR!」の演出 */
+      .clear-banner {
+        position: relative;
+        margin: 4px 0 0;
+        font-family: var(--font-display);
+        font-size: clamp(2.2rem, 12vw, 3.2rem);
+        font-weight: 800;
+        line-height: 1.1;
+        letter-spacing: 0.04em;
+        text-align: center;
+        color: var(--gold);
+        text-shadow:
+          0 0 18px rgba(255, 201, 77, 0.7),
+          0 3px 0 #b7791f;
+        animation: clear-in 0.9s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+      }
+      @supports (background-clip: text) or (-webkit-background-clip: text) {
+        .clear-banner {
+          color: transparent;
+          background: linear-gradient(100deg, #fff6d6 0%, var(--gold) 35%, #fff 50%, var(--gold) 65%, #fff6d6 100%);
+          background-size: 250% 100%;
+          -webkit-background-clip: text;
+          background-clip: text;
+          text-shadow: none;
+          filter: drop-shadow(0 0 14px rgba(255, 201, 77, 0.6));
+          animation:
+            clear-in 0.9s cubic-bezier(0.2, 1.4, 0.4, 1) both,
+            shine 3s linear 1s infinite;
+        }
+      }
+      @keyframes clear-in {
+        from {
+          transform: scale(0.3) rotate(-6deg);
+          opacity: 0;
+        }
+      }
+      @keyframes shine {
+        to {
+          background-position: -250% 0;
+        }
+      }
+      .score-card {
+        text-align: center;
+        border-color: rgba(255, 201, 77, 0.6);
+        box-shadow: 0 0 30px rgba(255, 201, 77, 0.3);
+      }
       .score {
-        font-size: 3.6rem;
-        animation: pop 0.6s ease-out;
+        margin: 0;
+        font-size: clamp(3rem, 16vw, 4.2rem);
       }
-      @keyframes pop {
-        from { transform: scale(0.3); opacity: 0; }
-        70% { transform: scale(1.15); }
+      /* 内訳を 2 列のマスで */
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
       }
-      @media (prefers-reduced-motion: reduce) {
-        .score { animation: none; }
+      .stats .row {
+        flex-direction: column;
+        gap: 0;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .stats .row > span:first-child {
+        font-size: 0.8rem;
+        color: var(--sub);
+      }
+      .stats .row > span:last-child {
+        font-family: var(--font-display);
+        font-size: 1.05rem;
+        text-align: left;
+      }
+      .stats .row.wide {
+        grid-column: 1 / -1;
       }
     </style>
   </head>
   <body class="for-helper">
     <main>
+      <p class="kicker">RAID RESULT</p>
+      <p class="clear-banner" aria-hidden="true">QUEST CLEAR!</p>
       <h1>お疲れ様でした!</h1>
-      <p class="center">あなたのスコア</p>
-      <p id="score" class="big-number score">…</p>
-      <h2>内訳</h2>
-      <div class="row"><span>作業時間</span><span id="minutes">-</span></div>
-      <div class="row"><span>消費カロリー</span><span id="calories">-</span></div>
-      <div class="row"><span>雪かきした面積</span><span id="area">-</span></div>
-      <div class="row"><span>運んだ雪の重さ</span><span id="snow">-</span></div>
-      <div class="row"><span>雪かきのポイント</span><span id="work-points">-</span></div>
-      <div class="row"><span>評価のポイント</span><span id="rating-points">-</span></div>
-      <p class="note">
-        消費カロリーは体重 60kg として計算した目安です。雪の重さは「面積 × 積雪の深さ × 100kg」の目安です。
-        評価のポイントは、お願いした人が星を付けると入ります。
-      </p>
+      <section class="card score-card">
+        <p class="center">あなたのスコア</p>
+        <p id="score" class="big-number score">…</p>
+      </section>
+      <section class="card">
+        <h2>内訳</h2>
+        <div class="stats">
+          <div class="row"><span>作業時間</span><span id="minutes">-</span></div>
+          <div class="row"><span>消費カロリー</span><span id="calories">-</span></div>
+          <div class="row"><span>雪かきした面積</span><span id="area">-</span></div>
+          <div class="row"><span>雪かきのポイント</span><span id="work-points">-</span></div>
+          <div class="row wide"><span>運んだ雪の重さ</span><span id="snow">-</span></div>
+          <div class="row wide"><span>評価のポイント</span><span id="rating-points">-</span></div>
+        </div>
+        <p class="note">
+          消費カロリーは体重 60kg として計算した目安です。雪の重さは「面積 × 積雪の深さ × 100kg」の目安です。
+          評価のポイントは、お願いした人が星を付けると入ります。
+        </p>
+      </section>
+      <section id="community-gauge" class="card" aria-label="仲間ゲージ">
+        <p class="note center">仲間ゲージを読み込み中です…</p>
+      </section>
       <a class="button" href="./ranking.html">メイン画面に戻る</a>
       <p id="error" class="error" role="alert" hidden></p>
     </main>

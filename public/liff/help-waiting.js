@@ -28,6 +28,8 @@ function helpersText(request) {
 }
 
 function render(request) {
+  // 進みぐあいの表示(help-waiting.html の .elder-steps)の色分けに使う
+  document.body.dataset.status = request?.status ?? "none";
   if (!request) {
     byId("status-icon").textContent = "🏠";
     byId("request-status").textContent = "いまは、おねがいしている雪かきはありません。";

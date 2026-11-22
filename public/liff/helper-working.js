@@ -16,6 +16,13 @@ import { userIdPromise } from "./template.js";
 
 const POLL_INTERVAL_MS = 5000;
 const TICK_MS = 1000;
+/** 雪だるまが育ちきるまでの分数と、大きさ(はじめ → 最大)。 */
+const GROW_FULL_MINUTES = 30;
+const SNOWMAN_MIN_SCALE = 0.6;
+const SNOWMAN_MAX_SCALE = 1.25;
+/** 雪だるまのレベルが 1 つ上がる分数(最大 Lv.5)。 */
+const MINUTES_PER_LEVEL = 6;
+const MAX_LEVEL = 5;
 
 const pad = (n) => String(n).padStart(2, "0");
 
@@ -28,10 +35,22 @@ function formatElapsed(ms) {
   return hours > 0 ? `${hours}:${pad(minutes)}:${pad(seconds)}` : `${pad(minutes)}:${pad(seconds)}`;
 }
 
+/** 経過時間に合わせて雪だるまを大きくし、レベルを出す(見た目だけ)。 */
+function growSnowman(ms) {
+  const minutes = Math.max(0, ms / 60_000);
+  const ratio = Math.min(1, minutes / GROW_FULL_MINUTES);
+  const scale = SNOWMAN_MIN_SCALE + (SNOWMAN_MAX_SCALE - SNOWMAN_MIN_SCALE) * ratio;
+  document.querySelector(".scene")?.style.setProperty("--grow", scale.toFixed(3));
+  const level = Math.min(MAX_LEVEL, 1 + Math.floor(minutes / MINUTES_PER_LEVEL));
+  byId("snowman-level").textContent = `雪だるま Lv.${level}`;
+}
+
 function startTimer(startedAt) {
   const startMs = new Date(startedAt).getTime();
   const tick = () => {
-    byId("elapsed").textContent = formatElapsed(Date.now() - startMs);
+    const elapsedMs = Date.now() - startMs;
+    byId("elapsed").textContent = formatElapsed(elapsedMs);
+    growSnowman(elapsedMs);
   };
   tick();
   setInterval(tick, TICK_MS);
