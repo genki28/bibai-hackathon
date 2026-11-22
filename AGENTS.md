@@ -47,6 +47,8 @@ Node.js 22 以上が必要です。すべてリポジトリの一番上のフォ
 | テスト | `npm test` |
 | 型チェック(= 書き間違いの自動チェック) | `npm run typecheck` |
 | リッチメニュー(= トーク画面下のメニュー)を LINE に登録し直す | `npm run richmenu` |
+| 天気の通知のおためし(送らずに文面だけ表示) | `npm run notify:weather` |
+| 天気の通知を友だち全員に送る(大雪のときだけ。人間に確認してから) | `npm run notify:weather -- --send` |
 
 - 起動すると http://localhost:3000 で動く(`/health` で動作確認、`/liff/` で LIFF 画面)。
 - ビルドの手順はない(`tsx` が TypeScript をそのまま実行する)。

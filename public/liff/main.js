@@ -38,7 +38,29 @@ async function showDetails(liff) {
   loginButton.addEventListener("click", () => liff.login());
 }
 
+/** 美唄の雪の予報を表示する。失敗しても画面の他の部分は動くようにする。 */
+async function showWeather() {
+  const text = byId("weather-text");
+  try {
+    const response = await fetch("/api/weather");
+    const body = await response.json();
+    if (!response.ok || !body?.success) throw new Error(body?.error ?? String(response.status));
+    const { summary } = body.data;
+    const lines = [
+      `これから24時間の降雪: ${summary.snowfallNext24hCm}cm`,
+      `いまの積雪: 約${summary.currentSnowDepthCm}cm`,
+    ];
+    text.textContent = summary.isHeavySnow
+      ? `${lines.join("\n")}\n大雪になりそうです。雪かきの出番です!`
+      : lines.join("\n");
+  } catch (error) {
+    console.error(error);
+    text.textContent = "天気予報を取得できませんでした。";
+  }
+}
+
 async function main() {
+  showWeather();
   const liff = window.liff;
   if (!liff) {
     showStatus("LIFF SDK を読み込めませんでした。ネット接続を確認してください。", true);
