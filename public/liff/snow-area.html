@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>雪かきをした範囲</title>
     <!--
-      【若者】雪かきをした範囲を地図に描く(snow-area.html?id=依頼ID)。地図をタップすると点が増え、点を結んだ形の面積を出す。
+      【若者】雪かきをした範囲を地図に描く(snow-area.html?id=依頼ID)。点を結んだ形の面積を出す。
+      [地図を動かす]/[範囲を描く] を切り替え、描くモードのときだけ地図をタップすると点が増える。
+      点はつかんで動かせる・タップで消える。辺の真ん中のつまみを引っぱると点が増える。[四角で始める] もある。
       [雪かき終了!] で終了(API)→ お疲れ様(finish.html)。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
@@ -23,6 +25,79 @@
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
       crossorigin=""
     />
+    <style>
+      /* ---- この画面だけの見た目(範囲を描く地図) ---- */
+      .map-wrap {
+        position: relative;
+      }
+      /* 今のモードを地図の右上に出す(地図の操作のじゃまをしない) */
+      .mode-badge {
+        position: absolute;
+        top: 18px;
+        right: 10px;
+        z-index: 1000;
+        margin: 0;
+        padding: 4px 12px;
+        border-radius: 999px;
+        font-family: var(--font-display);
+        font-size: 0.85rem;
+        font-weight: 800;
+        color: var(--snow);
+        background: rgba(11, 16, 38, 0.8);
+        box-shadow: 0 0 0 1px var(--glass-edge) inset;
+        pointer-events: none;
+      }
+      .map-wrap.is-drawing .mode-badge {
+        color: var(--night-top);
+        background: var(--gold);
+        box-shadow: 0 0 14px rgba(255, 201, 77, 0.7);
+      }
+      /* 描くモードのときは地図の枠を金色にして、ひと目で分かるようにする */
+      #area-map.is-drawing {
+        border: 3px solid var(--gold);
+        box-shadow: 0 0 18px rgba(255, 201, 77, 0.45);
+      }
+      #area-map.is-drawing,
+      #area-map.is-drawing .leaflet-grab {
+        cursor: crosshair;
+      }
+      /* 角の点(つかんで動かす・タップで消す) */
+      .area-handle {
+        box-sizing: border-box;
+        border-radius: 50%;
+      }
+      .area-vertex {
+        background: var(--snow);
+        border: 5px solid var(--ice);
+        box-shadow:
+          0 0 0 2px var(--night-top),
+          0 0 12px rgba(79, 209, 255, 0.9);
+        cursor: grab;
+      }
+      /* 辺の真ん中のつまみ。押せる範囲は大きく、見た目は小さな丸 */
+      .area-midpoint {
+        display: grid;
+        place-items: center;
+        cursor: grab;
+      }
+      .area-midpoint::after {
+        content: "";
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: rgba(244, 248, 255, 0.75);
+        box-shadow:
+          0 0 0 2px var(--ice),
+          0 0 0 3px var(--night-top);
+      }
+      .is-dragging-point .area-midpoint {
+        visibility: hidden;
+      }
+      .area-hint {
+        min-height: 2.6em;
+        margin: 4px 0 0;
+      }
+    </style>
   </head>
   <body class="for-helper">
     <main>
@@ -31,9 +106,17 @@
         <h1>雪かきをした範囲に<br />丸を付けてね</h1>
       </header>
       <div class="card">
-        <p class="note center">地図を指でタップして、範囲の角に点を置いてください(3 つ以上)。</p>
-        <div id="area-map" class="map-box tall"></div>
+        <div class="toggle" role="group" aria-label="地図の操作の切り替え">
+          <button id="mode-move" type="button" aria-pressed="true">✋ 地図を動かす</button>
+          <button id="mode-draw" type="button" aria-pressed="false">✏️ 範囲を描く</button>
+        </div>
+        <p id="area-hint" class="note center area-hint" aria-live="polite"></p>
+        <div id="map-wrap" class="map-wrap">
+          <div id="area-map" class="map-box tall"></div>
+          <p id="mode-badge" class="mode-badge" aria-hidden="true"></p>
+        </div>
         <p id="area-size" class="big-number">0 ㎡</p>
+        <button id="square-button" class="button" type="button">⬜ 四角で始める</button>
         <div class="button-row">
           <button id="undo-button" class="button secondary" type="button">1 つ戻す</button>
           <button id="reset-button" class="button secondary" type="button">やり直す</button>

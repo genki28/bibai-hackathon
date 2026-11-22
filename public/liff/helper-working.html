@@ -7,6 +7,7 @@
     <!--
       【若者】雪かき中(helper-working.html?id=依頼ID)。経過時間は、サーバーに残した開始時刻から計算するので、
       画面を閉じて開き直しても続きから表示される。[雪かきを終える] で範囲の画面(snow-area.html)へ。
+      雪かきの様子はドット絵(pixel-snow.js が Canvas に描く)。タップするとコンボの演出が出る(見た目だけで、スコアには入らない)。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
     <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
@@ -18,158 +19,77 @@
     />
     <link rel="stylesheet" href="./template.css" />
     <style>
-      /* 夜空に雪が舞う中で、雪だるまが育っていく(CSS だけで描く。画像ファイルは使わない) */
-      .scene {
-        --grow: 0.6; /* helper-working.js が経過時間に合わせて 0.6 → 1.25 に増やす */
-        position: relative;
-        height: 260px;
-        margin: 8px 0 16px;
-        border: 1px solid var(--glass-edge);
-        border-radius: 22px;
-        background:
-          radial-gradient(circle at 82% 18%, #fffbe6 0 16px, rgba(255, 251, 230, 0.25) 17px 30px, transparent 31px),
-          radial-gradient(ellipse 80% 40% at 30% 0%, rgba(139, 92, 246, 0.45), transparent 70%),
-          radial-gradient(ellipse 60% 30% at 70% 10%, rgba(79, 209, 255, 0.3), transparent 70%),
-          linear-gradient(#0b1026, #1b2a5c 72%);
-        box-shadow: 0 0 30px rgba(79, 209, 255, 0.25);
-        overflow: hidden;
-      }
-      .ground {
-        position: absolute;
-        right: -10%;
-        bottom: 0;
-        left: -10%;
-        height: 30%;
-        border-radius: 50% 50% 0 0 / 30% 30% 0 0;
-        background: linear-gradient(#f4f8ff, #cfdcf5);
-      }
-      .flake {
-        position: absolute;
-        top: -14px;
-        color: #fff;
-        font-size: 1rem;
-        text-shadow: 0 0 6px rgba(79, 209, 255, 0.9);
-        animation: fall 6s linear infinite;
-      }
-      .flake:nth-child(1) { left: 6%; animation-delay: 0s; }
-      .flake:nth-child(2) { left: 20%; animation-delay: 1.6s; animation-duration: 7s; font-size: 0.8rem; }
-      .flake:nth-child(3) { left: 36%; animation-delay: 3.1s; }
-      .flake:nth-child(4) { left: 52%; animation-delay: 0.8s; animation-duration: 6.6s; font-size: 1.3rem; }
-      .flake:nth-child(5) { left: 66%; animation-delay: 2.4s; font-size: 0.8rem; }
-      .flake:nth-child(6) { left: 80%; animation-delay: 4.2s; animation-duration: 7.4s; }
-      .flake:nth-child(7) { left: 92%; animation-delay: 1.1s; font-size: 1.2rem; }
-      @keyframes fall {
-        to { transform: translate(-16px, 290px) rotate(360deg); }
-      }
-      .snowman {
-        position: absolute;
-        bottom: 18%;
-        left: 14%;
-        transform: scale(var(--grow));
-        transform-origin: bottom center;
-        transition: transform 1.2s ease-out;
-      }
-      .snowman-inner {
-        animation: wobble 2.4s ease-in-out infinite;
-        transform-origin: bottom center;
-      }
-      .snowman .head,
-      .snowman .body {
-        position: relative;
-        margin: 0 auto;
-        border-radius: 50%;
-        background: #fff;
-        box-shadow: inset -7px -7px 0 #d6e2ff, 0 0 18px rgba(79, 209, 255, 0.35);
-      }
-      .snowman .head { width: 54px; height: 54px; margin-bottom: -8px; z-index: 1; }
-      .snowman .body { width: 86px; height: 86px; }
-      .snowman .head::before,
-      .snowman .head::after {
-        content: "";
-        position: absolute;
-        top: 18px;
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: #1f2933;
-      }
-      .snowman .head::before { left: 15px; }
-      .snowman .head::after { right: 15px; }
-      .snowman .nose {
-        position: absolute;
-        top: 26px;
-        left: 24px;
-        border-top: 4px solid transparent;
-        border-bottom: 4px solid transparent;
-        border-left: 18px solid #f26b1d;
-      }
-      .snowman .hat {
-        position: absolute;
-        top: -20px;
-        left: 11px;
-        width: 32px;
-        height: 20px;
-        border-radius: 4px 4px 0 0;
-        background: #8b5cf6;
-        box-shadow: 0 4px 0 -1px #1f2933;
-      }
-      .snowman .scarf {
-        position: absolute;
-        top: -4px;
-        left: 12px;
-        z-index: 2;
-        width: 62px;
-        height: 10px;
-        border-radius: 6px;
-        background: #4fd1ff;
-      }
-      @keyframes wobble {
-        50% { transform: rotate(-5deg); }
-      }
-      .shovel {
-        position: absolute;
-        right: 22%;
-        bottom: 22%;
-        font-size: 3.2rem;
-        transform-origin: bottom left;
-        animation: dig 1.3s ease-in-out infinite;
-      }
-      @keyframes dig {
-        0%, 100% { transform: rotate(0deg); }
-        50% { transform: rotate(-35deg) translateY(-8px); }
-      }
-      .pile {
-        position: absolute;
-        right: 6%;
-        bottom: 24%;
-        width: 64px;
-        height: 32px;
-        border-radius: 50% 50% 0 0;
-        background: #fff;
-        box-shadow: inset -4px -4px 0 #d6e2ff;
-        animation: grow 3s ease-in-out infinite alternate;
-        transform-origin: bottom;
-      }
-      @keyframes grow {
-        from { transform: scaleY(0.6); }
-        to { transform: scaleY(1.2); }
-      }
-      .level {
-        position: absolute;
-        top: 12px;
-        left: 12px;
-        padding: 2px 12px;
-        border: 1px solid rgba(255, 201, 77, 0.7);
-        border-radius: 999px;
+      /* ドット絵の雪かき(pixel-snow.js が Canvas に描く。画像ファイルは使わない) */
+      .pixel-hud {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 8px 0 6px;
         font-family: var(--font-display);
-        font-size: 0.85rem;
         font-weight: 800;
+      }
+      .pixel-level {
+        flex: none;
+        margin: 0;
+        padding: 3px 10px;
         color: var(--gold);
-        background: rgba(11, 16, 38, 0.6);
+        background: var(--night-top);
+        /* 角を四角く段々にした、ドット絵の枠 */
+        box-shadow:
+          0 -3px 0 0 var(--gold),
+          0 3px 0 0 var(--gold),
+          -3px 0 0 0 var(--gold),
+          3px 0 0 0 var(--gold);
+        letter-spacing: 0.04em;
+      }
+      .pixel-level small {
+        margin-right: 6px;
+        font-size: 0.75rem;
+        color: var(--snow);
+      }
+      /* 次のレベルまでの進み具合(10 マス) */
+      .pixel-bar {
+        display: grid;
+        flex: 1;
+        grid-template-columns: repeat(10, 1fr);
+        gap: 2px;
+        height: 12px;
+        padding: 2px;
+        background: var(--night-top);
+        box-shadow: 0 0 0 2px var(--ice);
+      }
+      .pixel-bar span {
+        background: rgba(79, 209, 255, 0.15);
+      }
+      .pixel-bar span.is-on {
+        background: var(--ice);
+      }
+      .pixel-stage {
+        margin: 8px 0 14px;
+        padding: 4px;
+        background: var(--night-top);
+        box-shadow:
+          0 0 0 3px var(--ice),
+          0 0 24px rgba(79, 209, 255, 0.35);
+      }
+      #pixel-canvas {
+        display: block;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+        touch-action: manipulation;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
       }
       #elapsed {
         margin: 0;
         font-size: clamp(3.2rem, 18vw, 4.5rem);
+        /* ドット風: ぼかさない段々の影 */
+        text-shadow:
+          3px 3px 0 var(--night-top),
+          6px 6px 0 rgba(139, 92, 246, 0.55);
       }
       .elapsed-label {
         margin: 0;
@@ -186,25 +106,17 @@
         <p class="kicker">RAID IN PROGRESS</p>
         <h1>雪かき中!</h1>
       </header>
-      <div class="scene" aria-hidden="true">
-        <span class="flake">❄</span><span class="flake">❅</span><span class="flake">❄</span>
-        <span class="flake">❆</span><span class="flake">❄</span><span class="flake">❅</span>
-        <span class="flake">❄</span>
-        <div class="ground"></div>
-        <div class="snowman">
-          <div class="snowman-inner">
-            <div class="head"><span class="hat"></span><span class="nose"></span></div>
-            <div class="body"><span class="scarf"></span></div>
-          </div>
-        </div>
-        <div class="shovel">🪏</div>
-        <div class="pile"></div>
-        <span id="snowman-level" class="level">雪だるま Lv.1</span>
+      <div class="pixel-hud">
+        <p id="dig-level" class="pixel-level"><small>雪かきレベル</small>Lv.1</p>
+        <div id="level-bar" class="pixel-bar" aria-hidden="true"></div>
+      </div>
+      <div class="pixel-stage">
+        <canvas id="pixel-canvas" width="160" height="120" aria-hidden="true"></canvas>
       </div>
       <p class="elapsed-label center">経過時間</p>
       <p id="elapsed" class="big-number" role="timer">--:--</p>
       <p id="helper-names" class="note center"></p>
-      <p class="note center">がんばるほど、雪だるまが大きく育ちます。</p>
+      <p class="note center">絵をタップすると、雪をすばやく投げられます。連続でコンボ!</p>
       <button id="finish-button" class="button" type="button">雪かきを終える</button>
       <p id="error" class="error" role="alert" hidden></p>
     </main>

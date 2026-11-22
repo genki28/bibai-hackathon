@@ -1,5 +1,5 @@
 // 【若者】雪かき中の動き。開始時刻はサーバーにあるので、開き直しても経過時間は続きから出る。
-// だれかが先に終えたら、自動でお疲れ様の画面へ進む。
+// だれかが先に終えたら、自動でお疲れ様の画面へ進む。雪かきの様子はドット絵(pixel-snow.js)で描く。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId } from "./common.js";
@@ -14,47 +14,44 @@ import {
   stopIfUnavailable,
 } from "./request-page.js";
 import { userIdPromise } from "./template.js";
+import { digLevel, formatElapsed, levelProgress } from "./pixel-game.js";
+import { startPixelSnow } from "./pixel-snow.js";
 
 const POLL_INTERVAL_MS = 5000;
 const TICK_MS = 1000;
-/** 雪だるまが育ちきるまでの分数と、大きさ(はじめ → 最大)。 */
-const GROW_FULL_MINUTES = 30;
-const SNOWMAN_MIN_SCALE = 0.6;
-const SNOWMAN_MAX_SCALE = 1.25;
-/** 雪だるまのレベルが 1 つ上がる分数(最大 Lv.5)。 */
-const MINUTES_PER_LEVEL = 6;
-const MAX_LEVEL = 5;
+/** 次のレベルまでの進み具合を見せるマスの数。 */
+const LEVEL_BAR_CELLS = 10;
 
-const pad = (n) => String(n).padStart(2, "0");
-
-/** 経過時間を「時:分:秒」か「分:秒」の形にする。 */
-function formatElapsed(ms) {
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  return hours > 0 ? `${hours}:${pad(minutes)}:${pad(seconds)}` : `${pad(minutes)}:${pad(seconds)}`;
-}
-
-/** 経過時間に合わせて雪だるまを大きくし、レベルを出す(見た目だけ)。 */
-function growSnowman(ms) {
-  const minutes = Math.max(0, ms / 60_000);
-  const ratio = Math.min(1, minutes / GROW_FULL_MINUTES);
-  const scale = SNOWMAN_MIN_SCALE + (SNOWMAN_MAX_SCALE - SNOWMAN_MIN_SCALE) * ratio;
-  document.querySelector(".scene")?.style.setProperty("--grow", scale.toFixed(3));
-  const level = Math.min(MAX_LEVEL, 1 + Math.floor(minutes / MINUTES_PER_LEVEL));
-  byId("snowman-level").textContent = `雪だるま Lv.${level}`;
+/** レベルの表示(「雪かきレベル」の小さな字 + Lv.〇)と、進み具合のマスを今の経過時間に合わせる。 */
+function showLevel(elapsedMs) {
+  const label = document.createElement("small");
+  label.textContent = "雪かきレベル";
+  byId("dig-level").replaceChildren(label, `Lv.${digLevel(elapsedMs)}`);
+  const filled = Math.floor(levelProgress(elapsedMs) * LEVEL_BAR_CELLS);
+  [...byId("level-bar").children].forEach((cell, i) => cell.classList.toggle("is-on", i < filled));
 }
 
 function startTimer(startedAt) {
   const startMs = new Date(startedAt).getTime();
+  const getElapsedMs = () => Math.max(0, Date.now() - startMs);
+  byId("level-bar").replaceChildren(...Array.from({ length: LEVEL_BAR_CELLS }, () => document.createElement("span")));
   const tick = () => {
-    const elapsedMs = Date.now() - startMs;
+    const elapsedMs = getElapsedMs();
     byId("elapsed").textContent = formatElapsed(elapsedMs);
-    growSnowman(elapsedMs);
+    showLevel(elapsedMs);
   };
   tick();
   setInterval(tick, TICK_MS);
+  return getElapsedMs;
+}
+
+/** ドット絵の雪かきを動かす。うまく動かなくても、経過時間とボタンは使えるようにする。 */
+function startScene(getElapsedMs) {
+  try {
+    startPixelSnow(byId("pixel-canvas"), { getElapsedMs });
+  } catch (error) {
+    console.error("ドット絵のアニメーションを動かせませんでした", error);
+  }
 }
 
 /** 状態に合わせて画面を移る。移ったら(または続けられなければ)true。 */
@@ -80,7 +77,7 @@ async function main() {
   const userId = await userIdPromise;
   const request = await fetchRequest(id, userId);
   if (moveIfNeeded(request, id)) return;
-  startTimer(request.startedAt);
+  startScene(startTimer(request.startedAt));
   byId("helper-names").textContent = `いっしょに: ${request.helpers.map((h) => h.displayName).join("、")}`;
   byId("finish-button").addEventListener("click", () => {
     navigateTo(pageUrl("snow-area.html", id));
