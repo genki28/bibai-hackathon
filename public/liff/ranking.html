@@ -5,25 +5,179 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ランキング</title>
     <!--
-      【若者】ランキング。4 種類のポイントの合計で順位を出す(docs/features/04-ranking.md)。
-      ひな形です。灰色の点線の箱(.placeholder)に、デザインや中身を入れていきます。
-      ページ一覧と URL は docs/features/pages.md を見てください。
+      【若者】ランキング。「デイリー(日本時間の今日)/ 総合」を切り替えて、ポイントの多い順に出す。
+      上位 3 人は金・銀・銅の表彰台、自分の順位は光る帯。いちばん上に「仲間ゲージ」(美唄の仲間を 2 倍に)。
+      ポイント = 雪かき(作業時間・雪の重さ)+ 評価(星)。再会ボーナス・勧誘ポイントは未実装(docs/features/04-ranking.md)。
+      ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
+    <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
+    />
     <link rel="stylesheet" href="./template.css" />
+    <style>
+      /* 表彰台(上位 3 人)。並びは 2 位・1 位・3 位 */
+      .podium {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-items: end;
+        gap: 8px;
+        margin: 18px 0 12px;
+      }
+      .podium-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 0;
+        padding: 12px 6px 14px;
+        border: 2px solid var(--medal);
+        border-radius: 20px 20px 12px 12px;
+        background: rgba(255, 255, 255, 0.08); /* color-mix が使えない端末用 */
+        background: linear-gradient(180deg, color-mix(in srgb, var(--medal) 28%, transparent), rgba(255, 255, 255, 0.04));
+        box-shadow: 0 0 18px color-mix(in srgb, var(--medal) 45%, transparent);
+        text-align: center;
+      }
+      .podium-card.place-1 {
+        --medal: var(--gold);
+        grid-area: 1 / 2;
+        min-height: 200px;
+      }
+      .podium-card.place-2 {
+        --medal: var(--silver);
+        grid-area: 1 / 1;
+        min-height: 170px;
+      }
+      .podium-card.place-3 {
+        --medal: var(--bronze);
+        grid-area: 1 / 3;
+        min-height: 150px;
+      }
+      .podium-medal {
+        font-size: 2rem;
+        line-height: 1.1;
+      }
+      .place-1 .podium-medal {
+        font-size: 2.5rem;
+        animation: bob 2.4s ease-in-out infinite;
+      }
+      @keyframes bob {
+        50% {
+          transform: translateY(-4px);
+        }
+      }
+      .podium-name {
+        width: 100%;
+        margin: 6px 0 0;
+        overflow: hidden;
+        font-weight: 700;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .podium-points {
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: var(--medal);
+      }
+      .podium-card .badge {
+        margin: 6px 0 0;
+        font-size: 0.7rem;
+      }
+      /* 4 位から下 */
+      .rank-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 8px 0;
+        padding: 10px 14px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--glass);
+      }
+      .rank-number {
+        display: grid;
+        flex: none;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        font-family: var(--font-display);
+        font-weight: 800;
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .rank-name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .rank-points {
+        font-family: var(--font-display);
+        font-weight: 800;
+        color: var(--gold);
+      }
+      .is-me {
+        border-color: var(--ice);
+        box-shadow: 0 0 16px rgba(79, 209, 255, 0.55);
+      }
+      .me-tag {
+        display: inline-block;
+        margin-left: 4px;
+        padding: 0 6px;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        color: var(--night-top);
+        background: var(--ice);
+        vertical-align: middle;
+      }
+      /* 自分の順位の光る帯(スクロールしても上に残る) */
+      #my-rank {
+        position: sticky;
+        top: 8px;
+        z-index: 5;
+        margin: 12px 0;
+        padding: 12px 16px;
+        border: 1px solid var(--ice);
+        border-radius: 999px;
+        font-family: var(--font-display);
+        font-weight: 800;
+        text-align: center;
+        background: linear-gradient(100deg, rgba(79, 209, 255, 0.22), rgba(139, 92, 246, 0.3));
+        box-shadow: 0 0 22px rgba(79, 209, 255, 0.45);
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+      }
+    </style>
   </head>
-  <body class="for-helper">
+  <body class="for-helper has-tab-bar">
     <main>
-      <span class="badge">ひな形</span>
-      <h1>今シーズンのランキング</h1>
-      <div class="row"><span>1 位 (名前)</span><span>(ポイント) pt</span></div>
-      <div class="row"><span>2 位 (名前)</span><span>(ポイント) pt</span></div>
-      <div class="row"><span>3 位 (名前)</span><span>(ポイント) pt</span></div>
-      <div class="placeholder">自分の順位とポイント(目立たせる)</div>
-      <div class="placeholder">ポイントの内訳(雪かき・評価・勧誘・再会ボーナス)</div>
-      <a class="button" href="./go-help.html">助けに行く</a>
-      <button class="button secondary" type="button" disabled>友だちを誘う(あとで作る)</button>
+      <header class="page-head">
+        <p class="kicker">YUKIKAKI RAID</p>
+        <h1>🏆 ランキング</h1>
+      </header>
+      <section id="community-gauge" class="card" aria-label="仲間ゲージ">
+        <p class="note center">仲間ゲージを読み込み中です…</p>
+      </section>
+      <div class="toggle" role="group" aria-label="期間">
+        <button id="daily-button" type="button" aria-pressed="true">デイリー</button>
+        <button id="total-button" type="button" aria-pressed="false">総合</button>
+      </div>
+      <p id="my-rank" aria-live="polite"></p>
+      <div id="ranking-list">
+        <p class="note center">読み込み中です…</p>
+      </div>
+      <p id="error" class="error" role="alert" hidden></p>
     </main>
+    <nav class="tab-bar" aria-label="若者のメニュー">
+      <a href="./ranking.html" aria-current="page">🏆 ランキング</a>
+      <a href="./go-help.html">🧤 助けに行く</a>
+    </nav>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script type="module" src="./template.js"></script>
+    <script type="module" src="./ranking.js"></script>
   </body>
 </html>

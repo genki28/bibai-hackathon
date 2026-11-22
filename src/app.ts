@@ -5,12 +5,16 @@ import { fileURLToPath } from "node:url";
 import { createWebhookHandlers } from "./bot/webhook.js";
 import { isBotConfigured, isLiffConfigured } from "./config.js";
 import { createHelpRequestRouter } from "./help-requests/routes.js";
+import { createSnowDepthProvider } from "./help-requests/snow-depth.js";
 import { createIdentityRouter } from "./identity/routes.js";
+import type { IdentityStore } from "./identity/store.js";
+import type { HelpRequestStore } from "./help-requests/store.js";
+import { createStores } from "./storage.js";
 import { verifyIdTokenWithLine } from "./users/idToken.js";
 import { createMenuUnlinker } from "./users/menu.js";
 import { createUsersRouter } from "./users/routes.js";
 import type { UsersRouterDeps } from "./users/routes.js";
-import { createRoleStore } from "./users/store.js";
+import { fetchBibaiForecast } from "./weather/forecast.js";
 import { createWeatherRouter } from "./weather/routes.js";
 import type { WeatherRouterOptions } from "./weather/routes.js";
 import type { AppConfig } from "./config.js";
@@ -61,14 +65,18 @@ export type AppOptions = WeatherRouterOptions &
      * Cloudflare Workers では Cloudflare 側が配信するので false にする(src/worker.ts)。
      */
     readonly serveStatic?: boolean;
+    /** 保存先の差し替え(テスト用)。渡さなければ設定に応じて Supabase かメモリを使う。 */
+    readonly helpRequestStore?: HelpRequestStore;
+    readonly identityStore?: IdentityStore;
   };
 
 export function createApp(config: AppConfig, options: AppOptions = {}): Express {
   const app = express();
   const botConfigured = isBotConfigured(config);
   const liffConfigured = isLiffConfigured(config);
-  // 「誰がどの役割か」は Webhook とメニューを戻す API で同じものを使う
-  const roleStore = options.roleStore ?? createRoleStore();
+  // 保存先(Supabase / メモリ)。「誰がどの役割か」は Webhook とメニューを戻す API で同じものを使う
+  const stores = createStores(config);
+  const roleStore = options.roleStore ?? stores.roleStore;
 
   app.get("/health", (_req, res) => {
     res.json({
@@ -89,11 +97,18 @@ export function createApp(config: AppConfig, options: AppOptions = {}): Express 
   });
 
   // 本人確認(マイナンバーカード)のデモ用 API。中で express.json() を使うので /webhook より後に置く。
-  app.use(createIdentityRouter());
+  app.use(createIdentityRouter(options.identityStore ?? stores.identityStore));
   // 美唄の雪の予報(Open-Meteo)
   app.use(createWeatherRouter(options));
-  // お年寄りからの雪かきの依頼
-  app.use(createHelpRequestRouter());
+  // お年寄りからの雪かきの依頼と、若者の参加・雪かき・ランキング
+  const now = options.now ?? (() => new Date());
+  app.use(
+    createHelpRequestRouter({
+      store: options.helpRequestStore ?? stores.helpRequestStore,
+      now,
+      getSnowDepthM: createSnowDepthProvider(options.fetchForecast ?? fetchBibaiForecast, now),
+    }),
+  );
   // リッチメニューを最初(利用者登録)に戻す
   app.use(
     createUsersRouter({

@@ -83,7 +83,7 @@ test("役割を選ぶと保存して、その役割のメニューに切り替�
   );
 
   // Assert
-  expect(deps.roleStore.getRole(USER_ID)).toBe("helper");
+  expect(await deps.roleStore.getRole(USER_ID)).toBe("helper");
   expect(deps.linked).toEqual([{ userId: USER_ID, role: "helper" }]);
   const text = (messages[0] as messagingApi.TextMessage).text;
   expect(text).toContain("助けたい");
@@ -98,7 +98,7 @@ test("あとから役割を変えると、新しい役割で上書きされる",
   await handleRegistrationPostback({ type: "set-role", role: "elder" }, USER_ID, deps);
 
   // Assert
-  expect(deps.roleStore.getRole(USER_ID)).toBe("elder");
+  expect(await deps.roleStore.getRole(USER_ID)).toBe("elder");
   expect(deps.linked.map((l) => l.role)).toEqual(["helper", "elder"]);
 });
 
@@ -147,7 +147,7 @@ test("POST /webhook でポストバックを受け取ると、役割を保存し
 
   // Assert
   expect(response.status).toBe(200);
-  expect(deps.roleStore.getRole(USER_ID)).toBe("elder");
+  expect(await deps.roleStore.getRole(USER_ID)).toBe("elder");
   expect(deps.linked).toEqual([{ userId: USER_ID, role: "elder" }]);
   expect(replies).toHaveLength(1);
   expect(replies[0]?.replyToken).toBe("dummy-reply-token");

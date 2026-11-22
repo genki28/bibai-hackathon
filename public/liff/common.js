@@ -40,14 +40,34 @@ async function fetchLiffId() {
   return body?.data?.liffId ?? "";
 }
 
-/** LINE にログインしていれば本物のユーザー ID、していなければ仮の ID を使う。 */
-export async function resolveUserId() {
+/** LINE の外で使う表示名(「ゲスト」+ ID の末尾 4 文字)。 */
+const guestProfile = (userId) => ({ userId, displayName: `ゲスト${userId.slice(-4)}` });
+
+async function loadProfile() {
   const liff = window.liff;
   const liffId = liff && !isPreviewMode() ? await fetchLiffId() : "";
-  if (!liffId) return getGuestUserId();
+  if (!liffId) return guestProfile(getGuestUserId());
   await liff.init({ liffId });
-  if (!liff.isLoggedIn()) return getGuestUserId();
+  if (!liff.isLoggedIn()) return guestProfile(getGuestUserId());
   const profile = await liff.getProfile();
+  return { userId: profile.userId, displayName: profile.displayName || guestProfile(profile.userId).displayName };
+}
+
+let profilePromise = null;
+
+/**
+ * この画面を開いている人の { userId, displayName }。
+ * LINE にログインしていれば本物、していなければ仮の ID と「ゲスト〇〇〇〇」。
+ * LIFF の準備(liff.init)は 1 回だけにしたいので、結果を覚えておく。
+ */
+export function resolveProfile() {
+  profilePromise ??= loadProfile();
+  return profilePromise;
+}
+
+/** LINE にログインしていれば本物のユーザー ID、していなければ仮の ID を使う。 */
+export async function resolveUserId() {
+  const profile = await resolveProfile();
   return profile.userId;
 }
 

@@ -4,33 +4,28 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>本人確認(デモ)</title>
+    <!--
+      本人確認(マイナンバーカード)のデモ画面。若者が「助けに行く」で参加した後に通るので、若者のトーン(夜空)にする。
+      ⚠ 実際のカードの読み取りはしない。デモの注意書き(.demo-banner)は必ず残すこと。
+      デザインは docs/design.md を見てください。
+    -->
+    <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
+    />
+    <link rel="stylesheet" href="./template.css" />
     <style>
-      body {
-        margin: 0;
-        padding: 24px 16px;
-        font-family: system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", sans-serif;
-        line-height: 1.7;
-        color: #1f2933;
-        background: #f4f6f8;
-      }
-      main {
-        max-width: 480px;
-        margin: 0 auto;
-        padding: 20px;
-        border-radius: 12px;
-        background: #fff;
-      }
-      h1 {
-        margin: 0 0 12px;
-        font-size: 1.3rem;
-      }
       .demo-banner {
         margin: 0 0 16px;
-        padding: 10px 12px;
-        border-radius: 8px;
+        padding: 10px 14px;
+        border: 1px solid rgba(255, 201, 77, 0.6);
+        border-radius: 14px;
         font-size: 0.85rem;
-        color: #7a4b00;
-        background: #fff4d6;
+        color: #ffe7a8;
+        background: rgba(255, 201, 77, 0.12);
       }
       .step {
         text-align: center;
@@ -39,8 +34,16 @@
         font-size: 1.1rem;
       }
       .icon {
-        font-size: 3.5rem;
-        line-height: 1.2;
+        display: grid;
+        place-items: center;
+        width: 110px;
+        height: 110px;
+        margin: 8px auto;
+        border-radius: 50%;
+        font-size: 3.2rem;
+        line-height: 1;
+        background: radial-gradient(circle, rgba(79, 209, 255, 0.35), rgba(139, 92, 246, 0.15) 70%);
+        box-shadow: 0 0 30px rgba(79, 209, 255, 0.35);
       }
       .card-anim {
         animation: float 1.6s ease-in-out infinite;
@@ -51,11 +54,12 @@
         }
       }
       .spinner {
-        width: 48px;
-        height: 48px;
-        margin: 12px auto;
-        border: 5px solid #d9f5e4;
-        border-top-color: #06c755;
+        width: 52px;
+        height: 52px;
+        margin: 16px auto;
+        border: 5px solid rgba(255, 255, 255, 0.15);
+        border-top-color: var(--ice);
+        border-right-color: var(--aurora-light);
         border-radius: 50%;
         animation: spin 0.9s linear infinite;
       }
@@ -64,84 +68,70 @@
           transform: rotate(360deg);
         }
       }
-      @media (prefers-reduced-motion: reduce) {
-        .card-anim,
-        .spinner {
-          animation: none;
-        }
-      }
-      button {
-        width: 100%;
-        min-height: 56px;
-        margin-top: 12px;
-        border: 0;
-        border-radius: 10px;
-        font-size: 1.15rem;
-        font-weight: 600;
-        color: #fff;
-        background: #06c755;
-      }
-      button.secondary {
-        min-height: 44px;
-        font-size: 1rem;
-        font-weight: 400;
-        color: #1f2933;
-        background: #e4e7eb;
+      #step-done .icon {
+        background: radial-gradient(circle, rgba(255, 201, 77, 0.45), rgba(255, 201, 77, 0.1) 70%);
+        box-shadow: 0 0 34px rgba(255, 201, 77, 0.5);
       }
       #error {
-        color: #b42318;
-        font-weight: 600;
+        color: var(--error);
+        font-weight: 700;
       }
-      a {
+      .back-link {
         display: block;
         margin-top: 16px;
         text-align: center;
-        color: #06c755;
+        color: var(--ice);
       }
     </style>
   </head>
-  <body>
+  <body class="for-helper">
     <main>
-      <h1>本人確認</h1>
-      <p class="demo-banner">
-        これはデモ用の画面です。実際のカードの読み取りや本人確認は行いません。
-        カードの情報やマイナンバーは送信・保存されません。
-      </p>
+      <div class="card">
+        <header class="page-head">
+          <p class="kicker">PLAYER CHECK</p>
+          <h1>本人確認</h1>
+        </header>
+        <p class="demo-banner">
+          これはデモ用の画面です。実際のカードの読み取りや本人確認は行いません。
+          カードの情報やマイナンバーは送信・保存されません。
+        </p>
 
-      <section id="step-loading" class="step">
-        <div class="spinner" aria-hidden="true"></div>
-        <p role="status">読み込み中です…</p>
-      </section>
+        <section id="step-loading" class="step">
+          <div class="spinner" aria-hidden="true"></div>
+          <p role="status">読み込み中です…</p>
+        </section>
 
-      <section id="step-intro" class="step" hidden>
-        <div class="icon" aria-hidden="true">🪪</div>
-        <p>マイナンバーカードで<br />本人確認をします</p>
-        <button id="start-button" type="button">確認をはじめる</button>
-      </section>
+        <section id="step-intro" class="step" hidden>
+          <div class="icon" aria-hidden="true">🪪</div>
+          <p>マイナンバーカードで<br />本人確認をします</p>
+          <button id="start-button" class="button" type="button">確認をはじめる</button>
+        </section>
 
-      <section id="step-scan" class="step" hidden>
-        <div class="icon card-anim" aria-hidden="true">📱🪪</div>
-        <p>カードをスマホの<br />背面にかざしてください</p>
-        <button id="scan-button" type="button">かざした(デモ)</button>
-        <button id="cancel-button" class="secondary" type="button">やめる</button>
-      </section>
+        <section id="step-scan" class="step" hidden>
+          <div class="icon card-anim" aria-hidden="true">📱🪪</div>
+          <p>マイナンバーカードを<br />スマホの背面に重ねてください</p>
+          <button id="scan-button" class="button" type="button">スキャンする(デモ)</button>
+          <button id="cancel-button" class="button secondary" type="button">やめる</button>
+        </section>
 
-      <section id="step-checking" class="step" hidden>
-        <div class="spinner" aria-hidden="true"></div>
-        <p role="status">確認しています…</p>
-      </section>
+        <section id="step-checking" class="step" hidden>
+          <div class="spinner" aria-hidden="true"></div>
+          <p role="status">確認しています…</p>
+        </section>
 
-      <section id="step-done" class="step" hidden>
-        <div class="icon" aria-hidden="true">✅</div>
-        <p><strong>本人確認ができました</strong></p>
-        <p id="verified-at"></p>
-        <!-- 「助けに行く」から来たときは、次の画面へ進むボタンが出る(?next=〇〇.html) -->
-        <button id="next-button" type="button" hidden>次へ進む</button>
-        <button id="reset-button" class="secondary" type="button">もう一度ためす</button>
-      </section>
+        <section id="step-done" class="step" hidden>
+          <div class="icon" aria-hidden="true">✅</div>
+          <p><strong>本人確認完了!</strong></p>
+          <p id="auto-next-note" hidden>自動で画面遷移します。</p>
+          <p id="verified-at"></p>
+          <!-- 「助けに行く」から来たときは、1.5 秒ほどで次の画面へ自動で進む。押しても進める(?next=〇〇.html&id=依頼ID) -->
+          <button id="next-button" class="button" type="button" hidden>次へ進む</button>
+          <button id="reset-button" class="button secondary" type="button">もう一度ためす</button>
+        </section>
 
-      <p id="error" role="alert" hidden></p>
-      <a href="./">トップにもどる</a>
+        <p id="error" role="alert" hidden></p>
+        <a class="back-link" href="./">トップにもどる</a>
+      </div>
     </main>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script type="module" src="./identity.js"></script>

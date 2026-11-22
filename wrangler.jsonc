@@ -11,10 +11,11 @@
   "assets": {
     "directory": "./public"
   },
-  // 公開してよい設定値。秘密の値(チャネルシークレット・アクセストークン)はここに書かず、
-  // npx wrangler secret put で Cloudflare に登録する
+  // 公開してよい設定値。秘密の値(チャネルシークレット・アクセストークン・Supabase の secret キー)は
+  // ここに書かず、npx wrangler secret put で Cloudflare に登録する
   "vars": {
-    "LIFF_ID": "2012745330-FLjYEkeQ"
+    "LIFF_ID": "2012745330-FLjYEkeQ",
+    "SUPABASE_URL": "https://bixvmqnwvtkpvizyttal.supabase.co"
   },
   "observability": {
     "enabled": true

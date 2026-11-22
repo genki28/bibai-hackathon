@@ -12,6 +12,8 @@ const EMPTY_CONFIG: AppConfig = {
   channelAccessToken: "",
   liffId: "",
   port: 0,
+  supabaseUrl: "",
+  supabaseSecretKey: "",
 };
 const BOT_CONFIG: AppConfig = {
   ...EMPTY_CONFIG,

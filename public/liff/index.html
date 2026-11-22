@@ -4,62 +4,57 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>美唄ハッカソン LIFF</title>
+    <!--
+      LIFF のトップ(動作確認と雪の予報)。若者のトーン(夜空)で、アプリの顔として「ユキカキ・レイド」を見せる。
+      デザインは docs/design.md を見てください。
+    -->
+    <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
+    />
+    <link rel="stylesheet" href="./template.css" />
     <style>
-      body {
+      .hero {
+        margin: 8px 0 4px;
+        text-align: center;
+      }
+      .hero-icon {
         margin: 0;
-        padding: 24px 16px;
-        font-family: system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", sans-serif;
-        line-height: 1.7;
-        color: #1f2933;
-        background: #f4f6f8;
+        font-size: 3rem;
+        line-height: 1.2;
       }
-      main {
-        max-width: 480px;
-        margin: 0 auto;
-        padding: 20px;
-        border-radius: 12px;
-        background: #fff;
+      .hero-sub {
+        margin: 0;
+        font-family: var(--font-display);
+        font-weight: 700;
+        color: var(--sub);
       }
-      h1 {
-        margin: 0 0 12px;
-        font-size: 1.25rem;
+      .hero-sub strong {
+        color: var(--gold);
       }
       #status {
         margin: 0 0 12px;
-        font-weight: 600;
+        font-weight: 700;
       }
       #status.error {
-        color: #b42318;
+        color: var(--error);
       }
       dl {
         margin: 0;
       }
       dt {
         font-size: 0.8rem;
-        color: #52606d;
+        color: var(--sub);
       }
       dd {
         margin: 0 0 8px;
-      }
-      button {
-        width: 100%;
-        min-height: 44px;
-        margin-top: 8px;
-        border: 0;
-        border-radius: 8px;
-        font-size: 1rem;
-        color: #fff;
-        background: #06c755;
-      }
-      .weather {
-        margin-top: 16px;
-        padding: 12px;
-        border-radius: 8px;
-        background: #eef6ff;
+        font-weight: 700;
       }
       .weather h2 {
         margin: 0 0 4px;
-        font-size: 1rem;
       }
       .weather p {
         margin: 0;
@@ -68,36 +63,32 @@
       .weather .weather-note {
         margin-top: 4px;
         font-size: 0.75rem;
-        color: #52606d;
-      }
-      .link-button {
-        display: block;
-        margin-top: 12px;
-        padding: 10px;
-        border: 2px solid #06c755;
-        border-radius: 8px;
-        text-align: center;
-        color: #06c755;
-        font-weight: 600;
-        text-decoration: none;
+        color: var(--sub);
       }
     </style>
   </head>
-  <body>
+  <body class="for-helper">
     <main>
-      <h1>美唄ハッカソン LIFF</h1>
-      <p id="status" role="status">読み込み中です…</p>
-      <dl id="details" hidden>
-        <dt>開いている場所</dt>
-        <dd id="where"></dd>
-        <dt>ログイン</dt>
-        <dd id="login"></dd>
-        <dt>表示名</dt>
-        <dd id="name"></dd>
-      </dl>
-      <button id="login-button" type="button" hidden>LINE でログイン</button>
-      <a class="link-button" href="./identity.html">本人確認(デモ)へ</a>
-      <section class="weather" aria-labelledby="weather-title">
+      <header class="hero">
+        <p class="kicker">YUKIKAKI RAID</p>
+        <p class="hero-icon" aria-hidden="true">❄️⛄❄️</p>
+        <h1>美唄ハッカソン LIFF</h1>
+        <p class="hero-sub">みんなで雪かき、美唄の仲間を <strong>×2</strong> に</p>
+      </header>
+      <section class="card">
+        <p id="status" role="status">読み込み中です…</p>
+        <dl id="details" hidden>
+          <dt>開いている場所</dt>
+          <dd id="where"></dd>
+          <dt>ログイン</dt>
+          <dd id="login"></dd>
+          <dt>表示名</dt>
+          <dd id="name"></dd>
+        </dl>
+        <button id="login-button" class="button" type="button" hidden>LINE でログイン</button>
+        <a class="button secondary" href="./identity.html">本人確認(デモ)へ</a>
+      </section>
+      <section class="card weather" aria-labelledby="weather-title">
         <h2 id="weather-title">❄ 美唄の雪の予報</h2>
         <p id="weather-text">読み込み中です…</p>
         <p class="weather-note">データ: Open-Meteo</p>

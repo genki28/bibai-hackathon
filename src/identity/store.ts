@@ -5,8 +5,8 @@
  * 本番では、国の認定を受けた本人確認サービスの結果をここに保存する想定です。
  * マイナンバー(12 桁の番号)そのものは、本番でも保存しません。
  *
- * いまはサーバーのメモリに置いているので、サーバーを再起動すると消えます
- * (Supabase につなぐときに置き換える)。
+ * 保存先は 2 種類: メモリ版(このファイル。テストや Supabase 未設定のとき用。再起動で消える)と
+ * Supabase 版(supabase-store.ts)。
  */
 
 const USER_ID_PATTERN = /^U[0-9a-f]{32}$/;
@@ -20,11 +20,11 @@ export type IdentityStatus = {
 };
 
 export type IdentityStore = {
-  readonly getStatus: (userId: string) => IdentityStatus;
-  readonly markVerified: (userId: string, now: Date) => IdentityStatus;
+  readonly getStatus: (userId: string) => Promise<IdentityStatus>;
+  readonly markVerified: (userId: string, now: Date) => Promise<IdentityStatus>;
 };
 
-const NOT_VERIFIED: IdentityStatus = {
+export const NOT_VERIFIED: IdentityStatus = {
   verified: false,
   verifiedAt: null,
   method: null,
@@ -35,17 +35,19 @@ export function isValidUserId(value: unknown): value is string {
   return typeof value === "string" && USER_ID_PATTERN.test(value);
 }
 
+/** 確認済みの状態を作る。 */
+export function verifiedStatus(now: Date): IdentityStatus {
+  return { verified: true, verifiedAt: now.toISOString(), method: "mynumber-card-mock" };
+}
+
+/** メモリ版。 */
 export function createIdentityStore(): IdentityStore {
   let records: ReadonlyMap<string, IdentityStatus> = new Map();
 
   return {
-    getStatus: (userId) => records.get(userId) ?? NOT_VERIFIED,
-    markVerified: (userId, now) => {
-      const status: IdentityStatus = {
-        verified: true,
-        verifiedAt: now.toISOString(),
-        method: "mynumber-card-mock",
-      };
+    getStatus: async (userId) => records.get(userId) ?? NOT_VERIFIED,
+    markVerified: async (userId, now) => {
+      const status = verifiedStatus(now);
       records = new Map([...records, [userId, status]]);
       return status;
     },

@@ -18,12 +18,15 @@ const STYLE = `
     min-height: 0;
     margin: 0;
     padding: 8px 12px;
-    border: 1px solid rgba(31, 41, 51, 0.2);
+    /* 色は template.css の --reset-〇〇 で画面に合わせる(ない画面ではこの白っぽい色) */
+    border: 1px solid var(--reset-border, rgba(31, 41, 51, 0.2));
     border-radius: 999px;
     font: 600 0.8rem/1.2 system-ui, -apple-system, "Hiragino Sans", sans-serif;
-    color: #1f2933;
-    background: rgba(255, 255, 255, 0.92);
+    color: var(--reset-fg, #1f2933);
+    background: var(--reset-bg, rgba(255, 255, 255, 0.92));
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
     cursor: pointer;
   }
   #${BUTTON_ID}:disabled {

@@ -7,6 +7,10 @@
 //   id="error" … エラーを出す場所
 //   id="preview-note" … おためし表示の注意書き
 //   name="amount" の選択肢(value は "little" / "normal" / "lots")
+//
+// HTML にあれば送るもの(なくても動きます。詳しくは docs/guides/help-request-form-for-gemini.md):
+//   name="name"(名前)/ "address"(住所)/ "depth"(雪の深さ)/ "tools"(道具)
+//   name="lat" / "lng"(緯度・経度。ふつうは hidden。id="use-location-button" を押すと現在地が入る)
 
 import { byId, callApi, closeScreen, isPreviewMode, postJson, resolveUserId, wait } from "./common.js";
 import "./reset-menu-button.js";
@@ -31,6 +35,52 @@ function selectedAmount() {
   return document.querySelector('input[name="amount"]:checked')?.value ?? "normal";
 }
 
+const TEXT_FIELDS = ["name", "address", "depth", "tools"];
+const NUMBER_FIELDS = ["lat", "lng"];
+
+const fieldSelector = (name) => ["input", "select", "textarea"].map((tag) => `${tag}[name="${name}"]`).join(",");
+
+/** name="〇〇" の入力の値。ラジオボタンなら選ばれているもの。なければ空文字。 */
+function fieldValue(name) {
+  const fields = [...document.querySelectorAll(fieldSelector(name))];
+  const field = fields.find((f) => f.type !== "radio" && f.type !== "checkbox") ?? fields.find((f) => f.checked);
+  return (field?.value ?? "").trim();
+}
+
+/** HTML にある任意の項目だけを集める(空のものは送らない)。 */
+function optionalFields() {
+  const texts = TEXT_FIELDS.map((name) => [name, fieldValue(name)]).filter(([, v]) => v !== "");
+  const numbers = NUMBER_FIELDS.map((name) => [name, fieldValue(name)])
+    .filter(([, v]) => v !== "" && Number.isFinite(Number(v)))
+    .map(([name, v]) => [name, Number(v)]);
+  // 緯度と経度はそろっているときだけ送る
+  const location = numbers.length === NUMBER_FIELDS.length ? numbers : [];
+  return Object.fromEntries([...texts, ...location]);
+}
+
+/** id="use-location-button" があれば、押したときに現在地を name="lat" / "lng" に入れる。 */
+function setUpLocationButton() {
+  const button = byId("use-location-button");
+  if (!button) return;
+  button.addEventListener("click", () => {
+    if (!navigator.geolocation) {
+      showError("この端末では現在地を取れません。");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const lat = document.querySelector(fieldSelector("lat"));
+        const lng = document.querySelector(fieldSelector("lng"));
+        if (lat) lat.value = String(coords.latitude);
+        if (lng) lng.value = String(coords.longitude);
+        showError("");
+        button.textContent = "現在地を入れました";
+      },
+      () => showError("現在地を取れませんでした。住所だけでも大丈夫です。"),
+    );
+  });
+}
+
 /** 依頼を送る。おためし表示のときは送らずに、送れたふりをする。 */
 async function sendRequest(userIdPromise) {
   if (isPreviewMode()) {
@@ -38,7 +88,7 @@ async function sendRequest(userIdPromise) {
     return;
   }
   const userId = await userIdPromise;
-  await postJson("/api/help-requests", { userId, amount: selectedAmount() });
+  await postJson("/api/help-requests", { ...optionalFields(), userId, amount: selectedAmount() });
 }
 
 async function onCall(userIdPromise) {
@@ -75,6 +125,7 @@ function main() {
     goToWaitingIfAlreadyCalled(userIdPromise).catch((error) => console.error(error));
   }
 
+  setUpLocationButton();
   byId("call-button").addEventListener("click", () => onCall(userIdPromise));
   byId("cancel-button").addEventListener("click", closeScreen);
   byId("close-button").addEventListener("click", closeScreen);

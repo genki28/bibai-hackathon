@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>待機中</title>
+    <!--
+      【若者】到着した後の待機中(helper-gather.html?id=依頼ID)。参加者と集合の人数を数秒ごとに更新する。
+      リーダー(最初に参加した人)だけ「雪かき開始」を押せる。開始されたら全員が雪かき中(helper-working.html)へ。
+      ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
+    -->
+    <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
+    />
+    <link rel="stylesheet" href="./template.css" />
+    <style>
+      /* 参加者のアイコンを円く並べる。到着した人は光る */
+      .party-stage {
+        --ring: min(320px, calc(100vw - 48px));
+        position: relative;
+        width: var(--ring);
+        height: var(--ring);
+        margin: 8px auto 16px;
+      }
+      .party-stage::before {
+        content: "";
+        position: absolute;
+        inset: 14%;
+        border: 2px dashed rgba(79, 209, 255, 0.4);
+        border-radius: 50%;
+        animation: spin 40s linear infinite;
+      }
+      .party-stage:has(.is-complete)::before {
+        border-style: solid;
+        border-color: var(--gold);
+        box-shadow: 0 0 30px rgba(255, 201, 77, 0.6);
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .party-center {
+        position: absolute;
+        inset: 30%;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(139, 92, 246, 0.45), rgba(11, 16, 38, 0.2) 70%);
+      }
+      #gather-count {
+        margin: 0;
+        font-size: clamp(1.8rem, 9vw, 2.4rem);
+        line-height: 1.1;
+        white-space: nowrap;
+      }
+      .party-center > div {
+        text-align: center;
+      }
+      .gather-label {
+        margin: 2px 0 0;
+        font-size: 0.85rem;
+        font-weight: 700;
+        white-space: nowrap;
+        color: var(--snow, #f4f8ff);
+      }
+      .party-ring {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .party-member {
+        --angle: calc(360deg / var(--n) * var(--i));
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 84px;
+        transform: translate(-50%, -50%) rotate(var(--angle)) translateY(calc(var(--ring) * -0.35))
+          rotate(calc(-1 * var(--angle)));
+        text-align: center;
+      }
+      .avatar {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 54px;
+        height: 54px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        font-family: var(--font-display);
+        font-size: 1.4rem;
+        font-weight: 800;
+        background: rgba(255, 255, 255, 0.1);
+        opacity: 0.6;
+      }
+      .party-member.arrived .avatar {
+        border-color: var(--ice);
+        color: var(--night-top);
+        background: linear-gradient(135deg, var(--ice), var(--aurora-light));
+        box-shadow: 0 0 20px rgba(79, 209, 255, 0.8);
+        opacity: 1;
+        animation: arrive-glow 2s ease-in-out infinite;
+      }
+      @keyframes arrive-glow {
+        50% {
+          box-shadow: 0 0 30px rgba(139, 92, 246, 0.9);
+        }
+      }
+      .crown {
+        position: absolute;
+        top: -16px;
+        font-size: 1.1rem;
+      }
+      .member-name {
+        width: 100%;
+        overflow: hidden;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .member-status {
+        font-size: 0.7rem;
+        color: var(--sub);
+      }
+      .party-member.is-me .member-name {
+        color: var(--ice);
+      }
+    </style>
+  </head>
+  <body class="for-helper has-tab-bar">
+    <main>
+      <header class="page-head">
+        <p class="kicker">PARTY ASSEMBLE</p>
+        <h1>パーティー集結中</h1>
+      </header>
+      <div class="party-stage">
+        <div class="party-center"><div><p id="gather-count" class="big-number">-/-</p><p class="gather-label">人集合</p></div></div>
+        <ul id="helper-list" class="party-ring" aria-label="参加者"></ul>
+      </div>
+      <p id="leader-note" class="note center"></p>
+      <button id="start-button" class="button" type="button" hidden>⚔️ 雪かき開始</button>
+      <p class="note center">数秒ごとに自動で更新されます。</p>
+      <p id="error" class="error" role="alert" hidden></p>
+    </main>
+    <nav class="tab-bar" aria-label="若者のメニュー">
+      <a href="./ranking.html">🏆 ランキング</a>
+      <a href="./go-help.html">🧤 助けに行く</a>
+    </nav>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script type="module" src="./helper-gather.js"></script>
+  </body>
+</html>

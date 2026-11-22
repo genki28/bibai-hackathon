@@ -3,37 +3,70 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ありがとうを送る</title>
+    <title>いいねを送る</title>
     <!--
-      【お年寄り】いいね機能。来てくれた人の名前と、星で評価する。
-      ひな形です。灰色の点線の箱(.placeholder)に、デザインや中身を入れていきます。
-      ページ一覧と URL は docs/features/pages.md を見てください。
+      【お年寄り】いいね(thanks.html?id=依頼ID)。来てくれた人に 1 人ずつ星 1〜5 を付けて送る(1 回だけ)。
+      ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md(お年寄りのトーン)を見てください。
     -->
+    <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
+    />
     <link rel="stylesheet" href="./template.css" />
+    <style>
+      /* 来てくれた人ごとのカード。星は大きく押しやすく */
+      .helper-rating {
+        margin: 12px 0;
+        padding: 14px 8px;
+        border: 2px solid #f6c9a6;
+        border-radius: 20px;
+        text-align: center;
+        background: #fff8f1;
+      }
+      .helper-rating p {
+        margin: 0 0 4px;
+        font-family: var(--font-display);
+        font-size: 1.35rem;
+        font-weight: 800;
+      }
+      .helper-rating .stars {
+        gap: 2px;
+        font-size: clamp(2.4rem, 12vw, 3rem);
+      }
+      .helper-rating .stars label {
+        padding: 0 2px;
+      }
+      .sent-icon {
+        display: grid;
+        place-items: center;
+        width: 132px;
+        height: 132px;
+        margin: 8px auto;
+        border: 3px solid #f6c9a6;
+        border-radius: 50%;
+        background: radial-gradient(circle, #fff4ea 0%, #ffe3cc 100%);
+      }
+    </style>
   </head>
   <body class="for-elder">
     <main>
-      <span class="badge">ひな形</span>
       <section id="step-form">
-        <h1>来てくれた人に<br />ありがとうを送る</h1>
-        <h2>来てくれた人</h2>
-        <div class="row"><span>(名前が入る)</span><span>👤</span></div>
-        <div class="row"><span>(名前が入る)</span><span>👤</span></div>
-        <h2>どうでしたか?</h2>
-        <div class="stars" role="radiogroup" aria-label="星で評価">
-          <!-- 選んだ星とその左が光るように、5 → 1 の順に書いて右から並べている(template.css) -->
-          <label aria-label="5"><input type="radio" name="stars" value="5" checked />★</label>
-          <label aria-label="4"><input type="radio" name="stars" value="4" />★</label>
-          <label aria-label="3"><input type="radio" name="stars" value="3" />★</label>
-          <label aria-label="2"><input type="radio" name="stars" value="2" />★</label>
-          <label aria-label="1"><input type="radio" name="stars" value="1" />★</label>
-        </div>
-        <button id="send-button" class="button" type="button">送る</button>
+        <h1>来てくれた人に<br />いいねを送る</h1>
+        <p class="center">星をえらんで「送信」を押してください。</p>
+        <p id="loading" class="center">読み込み中です…</p>
+        <!-- 来てくれた人ごとに、名前と星 5 つが入る(thanks.js が作る) -->
+        <div id="helper-ratings"></div>
+        <button id="send-button" class="button" type="button" hidden>送信</button>
+        <p id="error" class="error" role="alert" hidden></p>
       </section>
 
       <section id="step-sent" hidden>
-        <h1>ありがとうを送りました</h1>
-        <p class="note">来てくれた人に届きます。</p>
+        <h1>ありがとうを<br />送りました</h1>
+        <p class="big-number sent-icon" aria-hidden="true">💌</p>
+        <p class="center">来てくれた人に届きます。<br />雪かきのおねがい、おつかれさまでした。</p>
       </section>
     </main>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>

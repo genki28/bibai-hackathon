@@ -81,7 +81,7 @@ export async function handleRegistrationPostback(
   if (command.type === "register") {
     return [buildRoleChoiceMessage()];
   }
-  deps.roleStore.setRole(userId, command.role);
+  await deps.roleStore.setRole(userId, command.role);
   await deps.linkMenu(userId, command.role);
   return [buildRegisteredMessage(command.role)];
 }

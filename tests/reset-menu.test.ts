@@ -13,6 +13,8 @@ const CONFIG: AppConfig = {
   channelAccessToken: "dummy-token-for-test",
   liffId: "1234567890-AbCdEfGh",
   port: 0,
+  supabaseUrl: "",
+  supabaseSecretKey: "",
 };
 
 type Calls = { verified: string[]; unlinked: string[] };
@@ -67,7 +69,7 @@ test("LIFF ID の前半(ハイフンの前)を LINE ログインのチャネル 
 test("本人の証明が正しければ、役割を消してメニューを最初に戻す", async () => {
   // Arrange
   const { baseUrl, calls, roleStore } = await startApp(CONFIG, async () => USER_ID);
-  roleStore.setRole(USER_ID, "helper");
+  await roleStore.setRole(USER_ID, "helper");
 
   // Act
   const response = await postReset(baseUrl, { idToken: "dummy-id-token" });
@@ -78,7 +80,7 @@ test("本人の証明が正しければ、役割を消してメニューを最�
   expect(body).toEqual({ success: true, data: { reset: true } });
   expect(calls.verified).toEqual(["dummy-id-token@1234567890"]);
   expect(calls.unlinked).toEqual([USER_ID]);
-  expect(roleStore.getRole(USER_ID)).toBeNull();
+  expect(await roleStore.getRole(USER_ID)).toBeNull();
 });
 
 test("本人の証明がないと 400 を返し、何もしない", async () => {
