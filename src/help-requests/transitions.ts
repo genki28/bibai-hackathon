@@ -104,6 +104,19 @@ export function finish(
   return succeed({ ...r, status: "done", finishedAt: now.toISOString(), result });
 }
 
+/**
+ * スコップ計で数えた回数を残す(雪かき中の参加者だけ)。
+ * 前より増えたときだけ書き換える(同じか少ないときは、そのまま返す)。ポイントには入れない。
+ */
+export function recordScoops(r: HelpRequest, userId: string, count: number): Result<HelpRequest> {
+  const helper = findHelper(r, userId);
+  if (!helper) return NOT_HELPER;
+  if (r.status !== "working") return fail(409, "雪かき中だけ記録できます。");
+  if (count <= (helper.scoops ?? 0)) return succeed(r);
+  const helpers = r.helpers.map((h) => (h.userId === userId ? { ...h, scoops: count } : h));
+  return succeed({ ...r, helpers });
+}
+
 /** お年寄りが依頼を取り消す(本人だけ)。終わった依頼は取り消せない。 */
 export function cancel(r: HelpRequest, userId: string, now: Date): Result<HelpRequest> {
   if (r.userId !== userId) return NOT_OWNER;

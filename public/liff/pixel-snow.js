@@ -176,7 +176,7 @@ function renderLabels(container, crew) {
  *   crew: Array<{ id: string, name: string, isMe: boolean, isLeader: boolean }>,
  *   labels?: HTMLElement | null,
  * }} options 経過時間(サーバーの開始時刻から計算)・参加者(参加した順)・名前の札を入れる場所
- * @returns {Promise<{ stop: () => void, setCrew: (crew: Array<{ id: string, name: string, isMe: boolean, isLeader: boolean }>) => void }>}
+ * @returns {Promise<{ stop: () => void, throwOnce: () => void, setCrew: (crew: Array<{ id: string, name: string, isMe: boolean, isLeader: boolean }>) => void }>}
  */
 export async function startPixelSnow(canvas, { getElapsedMs, crew: firstCrew, labels = null }) {
   const [backgroundImage, heroImage] = await Promise.all([loadImage(BACKGROUND_URL), loadImage(HERO_URL)]);
@@ -371,6 +371,13 @@ export async function startPixelSnow(canvas, { getElapsedMs, crew: firstCrew, la
     frameId = 0;
   }
 
+  /** 自分がすばやく 1 回投げる(タップとスコップ計で共通。コンボの演出は出さない)。 */
+  function throwQuick(now) {
+    quickStartedAt = now;
+    const me = crew.find((member) => member.isMe) ?? crew[0];
+    if (me) throwSnow(me, positionOf(me, now), TAP_PARTICLES, now);
+  }
+
   /** タップ: 自分がすばやく 1 回投げて「+1」。コンボの節目で声が出る(スコアには入らない)。 */
   function onTap(event) {
     const now = performance.now();
@@ -378,9 +385,7 @@ export async function startPixelSnow(canvas, { getElapsedMs, crew: firstCrew, la
     const tapX = ((event.clientX - box.left) / box.width) * W;
     const tapY = ((event.clientY - box.top) / box.height) * H;
     combo = registerTap(combo, now);
-    quickStartedAt = now;
-    const me = crew.find((member) => member.isMe) ?? crew[0];
-    if (me) throwSnow(me, positionOf(me, now), TAP_PARTICLES, now);
+    throwQuick(now);
     const plus = TEXT_SCALE.plusOne;
     const plusX = Math.round(Math.min(W - 20, Math.max(4, tapX - 7)));
     const plusY = Math.round(Math.min(H - 16, Math.max(40, tapY - 12)));
@@ -407,6 +412,12 @@ export async function startPixelSnow(canvas, { getElapsedMs, crew: firstCrew, la
 
   return {
     setCrew: (people) => setCrew(people),
+    /** スコップ計で 1 回すくったとき: 自分が雪を投げる(コンボ・「+1」は出さない)。 */
+    throwOnce() {
+      const now = performance.now();
+      throwQuick(now);
+      if (isReduced) drawScene(now);
+    },
     stop() {
       pause();
       canvas.removeEventListener("pointerdown", onTap);

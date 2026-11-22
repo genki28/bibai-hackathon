@@ -18,6 +18,11 @@ export const MAX_AREA_M2 = 300;
 /** 評価の星の数の範囲。 */
 export const MIN_STARS = 1;
 export const MAX_STARS = 5;
+/**
+ * スコップ計(public/liff/scoop-counter.js)で数えた、1 人 1 依頼あたりのすくった回数の上限。
+ * これより多いのは入力ミスかいたずらとみなす(仮)。
+ */
+export const MAX_SCOOPS = 3000;
 
 /** フォームから任意で届く項目(なければ省略)。 */
 export type HelpRequestExtras = {
@@ -43,6 +48,8 @@ export type Helper = {
   readonly displayName: string;
   readonly joinedAt: string;
   readonly arrivedAt: string | null;
+  /** スコップ計で数えた、すくった回数。使っていなければ省略(ポイントには入れない)。 */
+  readonly scoops?: number;
 };
 
 /** 雪かきの結果。参加した全員に workPoints が入る。 */
