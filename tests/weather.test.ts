@@ -31,8 +31,12 @@ function makeResponse(snowfall: number[], snowDepthM: number[]): unknown {
   };
 }
 
-// 日本時間 2026-11-22 03:30(= UTC 2026-11-21 18:30)
-const NOW = new Date("2026-11-21T18:30:00Z");
+// 日本時間 2026-11-22 17:30(= UTC 08:30)。夕方に通知を判定する想定
+const NOW = new Date("2026-11-22T08:30:00Z");
+// 2026-11-22 0 時から 48 時間ぶん。17 = 今日 17 時、31 = 明日 7 時、35 = 明日 11 時
+const HOURS = 48;
+const TOMORROW_7AM = 31;
+const fill = (value: number): number[] => Array(HOURS).fill(value);
 
 const servers: Server[] = [];
 
@@ -65,10 +69,10 @@ test("Open-Meteo の応答の形がおかしいとエラーにする", () => {
   broken.forEach((raw) => expect(() => parseForecast(raw)).toThrow());
 });
 
-test("これから 24 時間の降雪量の合計と、いまの積雪の深さをまとめる", () => {
-  // Arrange: 0〜2 時は過去なので数えない。3 時から 24 時間ぶん(3 時〜翌 2 時)を数える
-  const snowfall = Array.from({ length: 30 }, (_, i) => (i < 3 ? 99 : 0.5));
-  const depth = Array.from({ length: 30 }, (_, i) => (i === 3 ? 0.25 : 0.3));
+test("夕方に、明日のお昼までの降雪量と明日の朝の積雪をまとめる(お昼以降は見ない)", () => {
+  // Arrange: 今日 17 時より前と、明日 12 時以降は 99cm にして、数えていないことを確かめる
+  const snowfall = Array.from({ length: HOURS }, (_, i) => (i < 17 || i >= 36 ? 99 : 0.6));
+  const depth = Array.from({ length: HOURS }, (_, i) => (i === TOMORROW_7AM ? 0.25 : 0.3));
   const hours = parseForecast(makeResponse(snowfall, depth));
 
   // Act
@@ -76,42 +80,44 @@ test("これから 24 時間の降雪量の合計と、いまの積雪の深さ�
 
   // Assert
   expect(summary).toEqual({
-    snowfallNext24hCm: 12,
-    currentSnowDepthCm: 25,
+    snowfallUntilTomorrowNoonCm: 11.4,
+    tomorrowMorningDepthCm: 25,
     isHeavySnow: true,
   });
 });
 
 test("降雪が少ないときは大雪ではない", () => {
   // Arrange
-  const hours = parseForecast(makeResponse(Array(30).fill(0.1), Array(30).fill(0)));
+  const hours = parseForecast(makeResponse(fill(0.1), fill(0)));
 
   // Act
   const summary = summarizeSnow(hours, NOW);
 
   // Assert
   expect(summary.isHeavySnow).toBe(false);
-  expect(summary.snowfallNext24hCm).toBe(2.4);
+  expect(summary.snowfallUntilTomorrowNoonCm).toBe(1.9);
 });
 
 test("大雪のときだけ若者向けの通知文を作る", () => {
   // Arrange
-  const heavy: SnowSummary = { snowfallNext24hCm: 15, currentSnowDepthCm: 30, isHeavySnow: true };
-  const light: SnowSummary = { snowfallNext24hCm: 2, currentSnowDepthCm: 30, isHeavySnow: false };
+  const heavy: SnowSummary = { snowfallUntilTomorrowNoonCm: 15, tomorrowMorningDepthCm: 30, isHeavySnow: true };
+  const light: SnowSummary = { snowfallUntilTomorrowNoonCm: 2, tomorrowMorningDepthCm: 30, isHeavySnow: false };
 
   // Act
   const heavyMessage = buildWeatherMessage(heavy);
   const lightMessage = buildWeatherMessage(light);
 
   // Assert
+  expect(heavyMessage).toContain("明日の朝");
+  expect(heavyMessage).toContain("約30cm");
   expect(heavyMessage).toContain("15cm");
   expect(heavyMessage).toContain("美唄");
   expect(lightMessage).toBeNull();
 });
 
-test("テスト送信用の文面は、大雪でなくてもテストと分かる形で今の予報を伝える", () => {
+test("テスト送信用の文面は、大雪でなくてもテストと分かる形で明日の予報を伝える", () => {
   // Arrange
-  const light: SnowSummary = { snowfallNext24hCm: 0.1, currentSnowDepthCm: 6, isHeavySnow: false };
+  const light: SnowSummary = { snowfallUntilTomorrowNoonCm: 0.1, tomorrowMorningDepthCm: 6, isHeavySnow: false };
 
   // Act
   const message = buildTestWeatherMessage(light);
@@ -124,7 +130,7 @@ test("テスト送信用の文面は、大雪でなくてもテストと分か�
 
 test("GET /api/weather は美唄の雪のまとめと通知文を返す", async () => {
   // Arrange
-  const fakeFetch = async () => makeResponse(Array(30).fill(1), Array(30).fill(0.2));
+  const fakeFetch = async () => makeResponse(fill(1), fill(0.2));
   const server = createApp(CONFIG, { fetchForecast: fakeFetch, now: () => NOW }).listen(0);
   servers.push(server);
   await new Promise((resolve) => server.once("listening", resolve));
@@ -138,11 +144,11 @@ test("GET /api/weather は美唄の雪のまとめと通知文を返す", async 
   expect(response.status).toBe(200);
   expect(body.success).toBe(true);
   expect(body.data.summary).toEqual({
-    snowfallNext24hCm: 24,
-    currentSnowDepthCm: 20,
+    snowfallUntilTomorrowNoonCm: 19,
+    tomorrowMorningDepthCm: 20,
     isHeavySnow: true,
   });
-  expect(body.data.message).toContain("24cm");
+  expect(body.data.message).toContain("19cm");
 });
 
 test("天気が取れないときは 502 と日本語のエラーを返す", async () => {

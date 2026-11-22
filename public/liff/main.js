@@ -47,11 +47,11 @@ async function showWeather() {
     if (!response.ok || !body?.success) throw new Error(body?.error ?? String(response.status));
     const { summary } = body.data;
     const lines = [
-      `これから24時間の降雪: ${summary.snowfallNext24hCm}cm`,
-      `いまの積雪: 約${summary.currentSnowDepthCm}cm`,
+      `明日の朝の積雪: 約${summary.tomorrowMorningDepthCm}cm`,
+      `明日のお昼までの降雪: ${summary.snowfallUntilTomorrowNoonCm}cm`,
     ];
     text.textContent = summary.isHeavySnow
-      ? `${lines.join("\n")}\n大雪になりそうです。雪かきの出番です!`
+      ? `${lines.join("\n")}\n明日は大雪になりそうです。雪かきの出番です!`
       : lines.join("\n");
   } catch (error) {
     console.error(error);
