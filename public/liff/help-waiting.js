@@ -34,7 +34,7 @@ function helpersText(request) {
 function render(request) {
   // 進みぐあいの表示(help-waiting.html の .elder-steps)の色分けに使う
   document.body.dataset.status = request?.status ?? "none";
-  byId("waiting-title").textContent = request ? "おねがいを\n受け付けました" : "雪かきの\nおねがい状況";
+  byId("waiting-title").textContent = "おねがい状況";
   const steps = document.querySelector(".elder-steps");
   steps.hidden = !request;
   steps.querySelectorAll("li").forEach((step) => {
@@ -55,7 +55,7 @@ function render(request) {
   byId("request-status").textContent = view.text;
   byId("request-helpers").textContent = helpersText(request);
   const createdAt = new Date(request.createdAt).toLocaleString("ja-JP");
-  byId("request-detail").textContent = `雪の多さ: ${AMOUNT_LABELS[request.amount] ?? "-"} / おねがいした時刻: ${createdAt}`;
+  byId("request-detail").textContent = `雪の多さ：${AMOUNT_LABELS[request.amount] ?? "-"}\n受付：${createdAt}`;
   byId("cancel-button").hidden = request.status === "done";
   byId("thanks-link").hidden = request.status !== "done";
   byId("thanks-link").href = pageUrl("thanks.html", request.id);

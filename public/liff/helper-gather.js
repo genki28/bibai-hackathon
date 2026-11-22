@@ -32,7 +32,7 @@ function renderHelper(helper, { isMe, index, total }) {
   item.append(
     avatar,
     el("span", name, "member-name"),
-    el("span", helper.arrivedAt ? "✅ 到着" : "🚶 向かっています", "member-status"),
+    el("span", helper.arrivedAt ? "到着" : "移動中", "member-status"),
   );
   return item;
 }
@@ -52,8 +52,8 @@ function render(request, userId) {
   const hasArrived = Boolean(me?.arrivedAt);
   byId("start-button").hidden = !hasArrived;
   byId("leader-note").textContent = hasArrived
-    ? "みんながそろったら、だれが押してもOK!「雪かき開始」でリーダー(👑)がランダムに決まります。リーダーの役目は、終わったときに範囲に丸を付けることだけ。"
-    : "到着すると「雪かき開始」を押せるようになります。開始したときに、到着した人の中からリーダー(👑)がランダムに決まります。";
+    ? "準備ができたら始めましょう。開始時に、作業範囲を記録するリーダーが決まります。"
+    : "到着を知らせると、雪かきを始められます。";
 }
 
 /** 1 回分の更新。次の画面へ進むか、続けられないときは true(= 更新をやめる)。 */

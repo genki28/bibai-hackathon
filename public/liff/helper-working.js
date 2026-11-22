@@ -83,8 +83,8 @@ function showLeaderRole(request, userId) {
   }
   role.textContent =
     request.leaderUserId === userId
-      ? "👑 あなたがリーダー! 終わったら範囲に丸を付けてね"
-      : `👑 リーダーは ${leaderNameOf(request)} さん。終わったらリーダーが範囲に丸を付けます`;
+      ? "あなたがリーダーです。終了時に作業範囲を記録します。"
+      : `範囲の記録は、リーダーの ${leaderNameOf(request)} さんが行います。`;
 }
 
 /** 「リーダーが範囲に丸を付けています」の表示にする(終わったら読み直しでお疲れ様へ進む)。 */

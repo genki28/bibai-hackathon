@@ -124,24 +124,27 @@
         color: var(--ice);
       }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&amp;display=swap" />
+    <script src="./design-theme.js"></script>
     <link rel="stylesheet" href="./snow-ui.css" />
+    <link rel="stylesheet" href="./snow-pixel.css" />
   </head>
   <body class="for-helper has-tab-bar">
     <main>
-      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム"><span class="brand-mark" aria-hidden="true">＊</span> ユキカキ・レイド</a><span>北海道 美唄</span></div>
+      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム">ユキカキ・レイド</a><span>美唄</span></div>
       <header class="page-head">
-        <p class="kicker">PARTY ASSEMBLE</p>
-        <h1>仲間が、集まってきた。</h1>
-        <p class="head-description">全員の準備を確かめて、雪かきへ。</p>
+        <h1>メンバー集合</h1>
       </header>
       <div class="party-stage">
-        <img class="party-scene" src="./images/snow-town.svg" alt="" />
+
         <div class="party-center"><div><p id="gather-count" class="big-number">-/-</p><p class="gather-label">人集合</p></div></div>
         <ul id="helper-list" class="party-ring" aria-label="参加者"></ul>
       </div>
       <p id="leader-note" class="note center"></p>
-      <button id="start-button" class="button" type="button" hidden>みんなで雪かき開始</button>
-      <p class="note center">数秒ごとに自動で更新されます。</p>
+      <button id="start-button" class="button" type="button" hidden>雪かきを始める</button>
+      <p class="note center">自動で更新されます。</p>
       <p id="error" class="error" role="alert" hidden></p>
     </main>
     <nav class="tab-bar" aria-label="若者のメニュー">

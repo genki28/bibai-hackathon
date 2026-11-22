@@ -54,7 +54,7 @@ function renderGauge(container, { members, goal, baseline }) {
 
   const note = el(
     "p",
-    `シーズン開始時は ${baseline} 人。友だちを誘ったり、また会いに来たりすると仲間が増えます。`,
+    `シーズン開始時の ${baseline} 人を含みます。`,
     "note",
   );
   container.replaceChildren(head, bar, renderFlock(members, goal), note);
