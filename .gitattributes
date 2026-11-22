@@ -1,0 +1,2 @@
+# Mac と Windows で改行コードがずれて、全行が「変更あり」になるのを防ぐ
+* text=auto eol=lf
