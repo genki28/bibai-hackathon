@@ -12,13 +12,6 @@
       (リーダー以外が開いたら、雪かき中の画面の「リーダーを待つ」表示へ移る)。面積は 300 ㎡ まで。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
-    <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
-    />
     <link rel="stylesheet" href="./template.css" />
     <link
       rel="stylesheet"
@@ -99,12 +92,15 @@
         margin: 4px 0 0;
       }
     </style>
+    <link rel="stylesheet" href="./snow-ui.css" />
   </head>
   <body class="for-helper">
     <main>
+      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム"><span class="brand-mark" aria-hidden="true">＊</span> ユキカキ・レイド</a><span>北海道 美唄</span></div>
       <header class="page-head">
         <p class="kicker">MAP THE AREA</p>
-        <h1>雪かきをした範囲に<br />丸を付けてね</h1>
+        <h1>きれいにした場所を<br />記録しよう。</h1>
+        <p class="head-description">地図に範囲を描いて、今回の成果を残そう。</p>
       </header>
       <div class="card">
         <div class="toggle" role="group" aria-label="地図の操作の切り替え">
@@ -118,13 +114,13 @@
         </div>
         <p id="area-size" class="big-number">0 ㎡</p>
         <p id="area-limit" class="note center">300 ㎡ まで</p>
-        <button id="square-button" class="button" type="button">⬜ 四角で始める</button>
+        <button id="square-button" class="button" type="button">四角で始める</button>
         <div class="button-row">
           <button id="undo-button" class="button secondary" type="button">1 つ戻す</button>
           <button id="reset-button" class="button secondary" type="button">やり直す</button>
         </div>
       </div>
-      <button id="finish-button" class="button" type="button" disabled>🏁 雪かき終了!</button>
+      <button id="finish-button" class="button" type="button" disabled>雪かきを完了する</button>
       <p id="error" class="error" role="alert" hidden></p>
     </main>
     <script

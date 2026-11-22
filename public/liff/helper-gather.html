@@ -11,13 +11,6 @@
       開始前は王冠を出さない。開始されたら全員が雪かき中(helper-working.html)へ。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
-    <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
-    />
     <link rel="stylesheet" href="./template.css" />
     <style>
       /* 参加者のアイコンを円く並べる。到着した人は光る */
@@ -131,25 +124,29 @@
         color: var(--ice);
       }
     </style>
+    <link rel="stylesheet" href="./snow-ui.css" />
   </head>
   <body class="for-helper has-tab-bar">
     <main>
+      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム"><span class="brand-mark" aria-hidden="true">＊</span> ユキカキ・レイド</a><span>北海道 美唄</span></div>
       <header class="page-head">
         <p class="kicker">PARTY ASSEMBLE</p>
-        <h1>パーティー集結中</h1>
+        <h1>仲間が、集まってきた。</h1>
+        <p class="head-description">全員の準備を確かめて、雪かきへ。</p>
       </header>
       <div class="party-stage">
+        <img class="party-scene" src="./images/snow-town.svg" alt="" />
         <div class="party-center"><div><p id="gather-count" class="big-number">-/-</p><p class="gather-label">人集合</p></div></div>
         <ul id="helper-list" class="party-ring" aria-label="参加者"></ul>
       </div>
       <p id="leader-note" class="note center"></p>
-      <button id="start-button" class="button" type="button" hidden>⚔️ 雪かき開始</button>
+      <button id="start-button" class="button" type="button" hidden>みんなで雪かき開始</button>
       <p class="note center">数秒ごとに自動で更新されます。</p>
       <p id="error" class="error" role="alert" hidden></p>
     </main>
     <nav class="tab-bar" aria-label="若者のメニュー">
-      <a href="./ranking.html?list=1">🏆 ランキング</a>
-      <a href="./go-help.html?list=1">🧤 助けに行く</a>
+      <a href="./ranking.html?list=1">ランキング</a>
+      <a href="./go-help.html?list=1">助けに行く</a>
     </nav>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script type="module" src="./helper-gather.js"></script>

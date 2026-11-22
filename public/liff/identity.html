@@ -11,13 +11,6 @@
       画像・顔の特徴の数値はサーバーへ送らない。送るのは結果だけ(identity.js)。
       デザインは docs/design.md を見てください。
     -->
-    <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
-    />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <link rel="stylesheet" href="./template.css" />
     <style>
@@ -166,9 +159,11 @@
         color: var(--ice);
       }
     </style>
+    <link rel="stylesheet" href="./snow-ui.css" />
   </head>
   <body class="for-helper">
     <main>
+      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム"><span class="brand-mark" aria-hidden="true">＊</span> ユキカキ・レイド</a><span>北海道 美唄</span></div>
       <div class="card">
         <header class="page-head">
           <p class="kicker">PLAYER CHECK</p>

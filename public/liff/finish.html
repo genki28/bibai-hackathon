@@ -13,13 +13,6 @@
       「QUEST CLEAR!」の演出・スコアのカウントアップ・雪の紙吹雪・仲間ゲージを出す。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
-    <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
-    />
     <link rel="stylesheet" href="./template.css" />
     <style>
       /* 「QUEST CLEAR!」の演出 */
@@ -99,10 +92,13 @@
         grid-column: 1 / -1;
       }
     </style>
+    <link rel="stylesheet" href="./snow-ui.css" />
   </head>
   <body class="for-helper">
     <main>
+      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム"><span class="brand-mark" aria-hidden="true">＊</span> ユキカキ・レイド</a><span>北海道 美唄</span></div>
       <p class="kicker">RAID RESULT</p>
+      <div class="clear-medal" aria-hidden="true">✦</div>
       <p class="clear-banner" aria-hidden="true">QUEST CLEAR!</p>
       <h1>お疲れ様でした!</h1>
       <section class="card score-card">
@@ -110,7 +106,8 @@
         <p id="score" class="big-number score">…</p>
       </section>
       <section class="card">
-        <h2>内訳</h2>
+        <p class="section-label">YOUR ACHIEVEMENT</p>
+        <h2>今日、あなたが届けた力</h2>
         <div class="stats">
           <div class="row"><span>作業時間</span><span id="minutes">-</span></div>
           <div class="row"><span>消費カロリー</span><span id="calories">-</span></div>
@@ -139,7 +136,7 @@
       <section id="community-gauge" class="card" aria-label="仲間ゲージ">
         <p class="note center">仲間ゲージを読み込み中です…</p>
       </section>
-      <a class="button" href="./ranking.html?list=1">メイン画面に戻る</a>
+      <a class="button" href="./ranking.html?list=1">ランキングを見る</a>
       <p id="error" class="error" role="alert" hidden></p>
     </main>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>

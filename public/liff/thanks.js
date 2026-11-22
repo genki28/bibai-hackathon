@@ -32,7 +32,7 @@ function renderStars(groupName, label) {
 
 function renderHelper(helper, index) {
   const box = el("div", undefined, "helper-rating");
-  box.append(el("p", `👤 ${helper.displayName} さん`), renderStars(`stars-${index}`, `${helper.displayName} さんの評価`));
+  box.append(el("p", `${helper.displayName} さん`), renderStars(`stars-${index}`, `${helper.displayName} さんの評価`));
   return box;
 }
 

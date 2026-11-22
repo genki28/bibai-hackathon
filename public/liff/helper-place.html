@@ -9,13 +9,6 @@
       [取消] で参加をやめて「助けに行く」へ、[到着しました!] で待機中(helper-gather.html)へ。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
-    <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap"
-    />
     <link rel="stylesheet" href="./template.css" />
     <link
       rel="stylesheet"
@@ -23,12 +16,15 @@
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
       crossorigin=""
     />
+    <link rel="stylesheet" href="./snow-ui.css" />
   </head>
   <body class="for-helper has-tab-bar">
     <main>
+      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム"><span class="brand-mark" aria-hidden="true">＊</span> ユキカキ・レイド</a><span>北海道 美唄</span></div>
       <header class="page-head">
         <p class="kicker">TARGET LOCATION</p>
         <h1>目的地へ向かおう</h1>
+        <p class="head-description">あなたの参加が、まちの力に。</p>
       </header>
       <div class="card">
         <div id="detail-map" class="map-box tall"></div>
@@ -40,14 +36,14 @@
       </div>
       <p class="note center">着いたら「到着しました!」を押して、仲間と合流しよう。</p>
       <div class="button-row">
-        <button id="leave-button" class="button secondary" type="button">取消</button>
+        <button id="leave-button" class="button secondary" type="button">参加をやめる</button>
         <button id="arrive-button" class="button" type="button">到着しました!</button>
       </div>
       <p id="error" class="error" role="alert" hidden></p>
     </main>
     <nav class="tab-bar" aria-label="若者のメニュー">
-      <a href="./ranking.html?list=1">🏆 ランキング</a>
-      <a href="./go-help.html?list=1">🧤 助けに行く</a>
+      <a href="./ranking.html?list=1">ランキング</a>
+      <a href="./go-help.html?list=1">助けに行く</a>
     </nav>
     <script
       src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
