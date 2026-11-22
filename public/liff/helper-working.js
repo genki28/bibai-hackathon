@@ -1,9 +1,10 @@
 // 【若者】雪かき中の動き。開始時刻はサーバーにあるので、開き直しても経過時間は続きから出る。
 // 終わったら(リーダーが範囲に丸を付けたら)、自動でお疲れ様の画面へ進む。スリープなどから戻った瞬間にも読み直す(request-page.js)。雪かきの様子はドット絵(pixel-snow.js)で描く。
 // [雪かきを終える] は、リーダーなら範囲の画面へ。リーダー以外は「リーダーを待つ」表示にして、数秒ごとに読み直す。
+// スコップ計(scoop-meter.js)で、すくった回数を数えてサーバーに送る(ポイントには入れない)。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
-import { byId } from "./common.js";
+import { byId, callApi, fetchAppConfig } from "./common.js";
 import { navigateTo, pageReady } from "./loading.js";
 import {
   fetchRequest,
@@ -18,6 +19,7 @@ import {
 import { userIdPromise } from "./template.js";
 import { digLevel, formatElapsed, levelProgress } from "./pixel-game.js";
 import { startPixelSnow } from "./pixel-snow.js";
+import { startScoopMeter } from "./scoop-meter.js";
 
 const POLL_INTERVAL_MS = 3000;
 const TICK_MS = 1000;
@@ -103,6 +105,24 @@ async function startScene(getElapsedMs, crew) {
   }
 }
 
+/** スコップ計の回数をサーバーに送る。keepalive は画面が隠れる・閉じるときでも送り切るため。 */
+const sendScoops = (id, userId) => (count, { keepalive = false } = {}) =>
+  callApi(`/api/help-requests/${id}/scoops`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ userId, count }),
+    keepalive,
+  });
+
+/** テスト用の設定(testMode)がオンか。読めなければオフ。 */
+async function isTestMode() {
+  try {
+    return (await fetchAppConfig()).testMode;
+  } catch {
+    return false;
+  }
+}
+
 /** 状態に合わせて画面を移る。移ったら(または続けられなければ)true。 */
 function moveIfNeeded(request, id) {
   if (stopIfUnavailable(request)) return true;
@@ -129,8 +149,16 @@ async function main() {
   const scenePromise = startScene(startTimer(request.startedAt), crewOf(request, userId));
   showHelperNames(request);
   showLeaderRole(request, userId);
+  const scoopMeter = startScoopMeter({
+    requestId: id,
+    send: sendScoops(id, userId),
+    onScoop: () => scenePromise.then((scene) => scene?.throwOnce()),
+    isTestMode: await isTestMode(),
+  });
   let latestRequest = request;
-  byId("finish-button").addEventListener("click", () => {
+  byId("finish-button").addEventListener("click", async () => {
+    // 終える前に、いまの回数を送っておく(送れなくても進む)
+    await scoopMeter.flush();
     if (canFinish(latestRequest, userId)) {
       navigateTo(pageUrl("snow-area.html", id));
       return;

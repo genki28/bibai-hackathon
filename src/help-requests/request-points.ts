@@ -20,7 +20,10 @@ export type RequestPoints = {
     readonly partners: readonly string[];
   };
   readonly firstFinishBonus: number;
+  /** 雪かきのポイント・評価・再会・はじめてのボーナスの合計(スコップ計は入れない)。 */
   readonly total: number;
+  /** スコップ計ですくった回数(表示だけ。ポイントには入れない)。mine = 自分、total = 参加者みんなの合計。 */
+  readonly scoops: { readonly mine: number; readonly total: number };
 };
 
 export function pointsForRequest(
@@ -47,5 +50,9 @@ export function pointsForRequest(
     reunion: { points: reunionPoints, partners },
     firstFinishBonus,
     total: workPoints + ratingPoints + reunionPoints + firstFinishBonus,
+    scoops: {
+      mine: findHelper(request, userId)?.scoops ?? 0,
+      total: request.helpers.reduce((sum, h) => sum + (h.scoops ?? 0), 0),
+    },
   };
 }

@@ -178,6 +178,7 @@ test("お疲れ様の画面用: 依頼 1 件の自分の内訳(再会した人�
     reunion: { points: 0, partners: [] },
     firstFinishBonus: 200,
     total: 1200,
+    scoops: { mine: 0, total: 0 },
   });
   expect(bSecond).toEqual({
     workPoints: 1000,
@@ -186,5 +187,6 @@ test("お疲れ様の画面用: 依頼 1 件の自分の内訳(再会した人�
     reunion: { points: 150, partners: ["ゆきお"] },
     firstFinishBonus: 0,
     total: 1550,
+    scoops: { mine: 0, total: 0 },
   });
 });
