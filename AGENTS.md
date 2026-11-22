@@ -46,6 +46,7 @@ Node.js 22 以上が必要です。すべてリポジトリの一番上のフォ
 | 起動(ファイルを保存すると自動で再起動) | `npm run dev` |
 | テスト | `npm test` |
 | 型チェック(= 書き間違いの自動チェック) | `npm run typecheck` |
+| リッチメニュー(= トーク画面下のメニュー)を LINE に登録し直す | `npm run richmenu` |
 
 - 起動すると http://localhost:3000 で動く(`/health` で動作確認、`/liff/` で LIFF 画面)。
 - ビルドの手順はない(`tsx` が TypeScript をそのまま実行する)。
