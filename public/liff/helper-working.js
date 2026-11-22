@@ -2,7 +2,7 @@
 // 終わったら(リーダーが範囲に丸を付けたら)、自動でお疲れ様の画面へ進む。スリープなどから戻った瞬間にも読み直す(request-page.js)。雪かきの様子はドット絵(pixel-snow.js)で描く。
 // [雪かきを終える] は、リーダーなら範囲の画面へ。リーダー以外は「リーダーを待つ」表示にして、数秒ごとに読み直す。
 // スコップ計(scoop-meter.js)で、すくった回数を数えてサーバーに送る(ポイントには入れない)。
-// 雪山ボス(raid.js)はみんなのすくった回数で体力が減り、節目は音の実況(sound-coach.js)で知らせる。
+// みんなで動かした雪(moved-meter.js)を出し、節目は音の実況(sound-coach.js)で知らせる。
 // スコップ計をオンにしたら、画面が消えないようにする(wake-lock.js)。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
@@ -22,7 +22,7 @@ import { userIdPromise } from "./template.js";
 import { digLevel, formatElapsed, levelProgress } from "./pixel-game.js";
 import { startPixelSnow } from "./pixel-snow.js";
 import { startScoopMeter } from "./scoop-meter.js";
-import { startRaid } from "./raid.js";
+import { startMovedMeter } from "./moved-meter.js";
 import { createSoundCoach } from "./sound-coach.js";
 import { keepScreenOn } from "./wake-lock.js";
 
@@ -150,7 +150,7 @@ function connectSound(coach) {
   byId("scoop-on").addEventListener("click", () => {
     coach.unlock();
     keepScreenOn();
-    coach.say("スコップ計、スタート!ボスを倒そう");
+    coach.say("スコップ計、スタート!");
   });
   byId("scoop-fake").addEventListener("click", () => coach.unlock(), { once: true });
 }
@@ -183,24 +183,18 @@ async function main() {
   showLeaderRole(request, userId);
   const coach = createSoundCoach();
   connectSound(coach);
-  let raid = null;
+  let movedMeter = null;
   const scoopMeter = startScoopMeter({
     requestId: id,
     send: sendScoops(id, userId),
     onScoop: (count) => {
       scenePromise.then((scene) => scene?.throwOnce());
       coach.scoop();
-      raid?.setMyCount(count);
+      movedMeter?.setMyCount(count);
     },
     isTestMode: await isTestMode(),
   });
-  raid = startRaid({
-    request,
-    userId,
-    myCount: scoopMeter.count(),
-    coach,
-    onBoss: (view) => scenePromise.then((scene) => scene?.setBoss(view)),
-  });
+  movedMeter = startMovedMeter({ request, userId, myCount: scoopMeter.count(), coach });
   let latestRequest = request;
   byId("finish-button").addEventListener("click", async () => {
     // 終える前に、いまの回数を送っておく(送れなくても進む)
@@ -222,7 +216,7 @@ async function main() {
     latestRequest = latest;
     showHelperNames(latest);
     showLeaderRole(latest, userId);
-    raid.setRequest(latest);
+    movedMeter.setRequest(latest);
     (await scenePromise)?.setCrew(crewOf(latest, userId));
     return false;
   }, POLL_INTERVAL_MS);
