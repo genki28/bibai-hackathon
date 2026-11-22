@@ -30,6 +30,21 @@ HTML の中の、次の **id と name / value はそのまま残してくださ�
 | `id="preview-note"` | おためし表示の注意書き |
 | `name="amount"` と `value="little"` / `"normal"` / `"lots"` | 雪の多さ(すこし / ふつう / たくさん) |
 
+## 足してよい入力欄(任意)
+
+次の `name` を付けた入力欄を足すと、その値も一緒に送られます。**なくても動きます**。空のままなら送りません。
+
+| 項目 | `name` 属性 | 入力欄の例 | 決まり |
+| --- | --- | --- | --- |
+| お年寄りの名前 | `name="name"` | `<input type="text" name="name">` | 40 文字まで |
+| 住所 | `name="address"` | `<input type="text" name="address">` | 100 文字まで。「北海道美唄市東1条南2丁目」のように書くと、若者の一覧に「東」のような地区名だけが出る |
+| 雪の深さ | `name="depth"` | `<input type="radio" name="depth" value="knee">ひざ` など | 選んだ value の文字(20 文字まで)。value は英語の短い言葉にする(例: `ankle` / `knee` / `waist`) |
+| 道具 | `name="tools"` | `<input type="text" name="tools">` | 100 文字まで。例「スコップあり」 |
+| 位置(緯度・経度) | `name="lat"` と `name="lng"` | `<input type="hidden" name="lat">` `<input type="hidden" name="lng">` | 2 つそろったときだけ送る |
+| 現在地ボタン | `id="use-location-button"` | `<button type="button" id="use-location-button">いまいる場所を使う</button>` | 押すと、上の `lat` / `lng` に現在地が入る(上の 2 つの hidden と一緒に置く) |
+
+位置が送られないときは、地図には美唄市の中心あたりが出ます。名前・住所・正確な位置は、参加した若者にだけ見せます。
+
 `<script ...>` の 2 行(LINE の部品とボタンの動き)も消さないでください。
 
 画面の右下に「↺ メニューを最初に戻す」ボタンが自動で出ます。これはどの画面にも出る共通のボタンなので、HTML に書く必要はありません。デザインが重なって困るときは、下に少し余白(`padding-bottom`)をとってください。
@@ -94,7 +109,8 @@ Gemini が出したものは、`help-request.html` に **まるごと上書き**
 
 ```text
 POST /api/help-requests
-{ "userId": "LINE のユーザー ID", "amount": "little" か "normal" か "lots" }
+{ "userId": "LINE のユーザー ID", "amount": "little" か "normal" か "lots",
+  "name"・"address"・"depth"・"tools"・"lat"・"lng" は入力欄があって空でなければ }
 ```
 
-保存された依頼は、若者側の「助けに行く」画面で使う予定です。
+保存された依頼は、若者側の「助けに行く」画面に出ます。

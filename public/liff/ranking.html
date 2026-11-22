@@ -5,25 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ランキング</title>
     <!--
-      【若者】ランキング。4 種類のポイントの合計で順位を出す(docs/features/04-ranking.md)。
-      ひな形です。灰色の点線の箱(.placeholder)に、デザインや中身を入れていきます。
+      【若者】ランキング。「デイリー(日本時間の今日)/ 総合」を切り替えて、ポイントの多い順に出す。
+      ポイント = 雪かき(作業時間・雪の重さ)+ 評価(星)。再会ボーナス・勧誘ポイントは未実装(docs/features/04-ranking.md)。
       ページ一覧と URL は docs/features/pages.md を見てください。
     -->
     <link rel="stylesheet" href="./template.css" />
   </head>
-  <body class="for-helper">
+  <body class="for-helper has-tab-bar">
     <main>
-      <span class="badge">ひな形</span>
-      <h1>今シーズンのランキング</h1>
-      <div class="row"><span>1 位 (名前)</span><span>(ポイント) pt</span></div>
-      <div class="row"><span>2 位 (名前)</span><span>(ポイント) pt</span></div>
-      <div class="row"><span>3 位 (名前)</span><span>(ポイント) pt</span></div>
-      <div class="placeholder">自分の順位とポイント(目立たせる)</div>
-      <div class="placeholder">ポイントの内訳(雪かき・評価・勧誘・再会ボーナス)</div>
-      <a class="button" href="./go-help.html">助けに行く</a>
-      <button class="button secondary" type="button" disabled>友だちを誘う(あとで作る)</button>
+      <h1>🏆 ランキング</h1>
+      <div class="toggle" role="group" aria-label="期間">
+        <button id="daily-button" type="button" aria-pressed="true">デイリー</button>
+        <button id="total-button" type="button" aria-pressed="false">総合</button>
+      </div>
+      <div id="ranking-list">
+        <p class="note center">読み込み中です…</p>
+      </div>
+      <p id="my-rank" class="center"></p>
+      <p id="error" class="error" role="alert" hidden></p>
     </main>
+    <nav class="tab-bar" aria-label="若者のメニュー">
+      <a href="./ranking.html" aria-current="page">🏆 ランキング</a>
+      <a href="./go-help.html">🧤 助けに行く</a>
+    </nav>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script type="module" src="./template.js"></script>
+    <script type="module" src="./ranking.js"></script>
   </body>
 </html>

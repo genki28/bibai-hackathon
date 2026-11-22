@@ -5,24 +5,143 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>雪かき中</title>
     <!--
-      【若者】待機画面(雪かき中)。到着して開始 → 終了で終了画面へ。
-      ひな形です。灰色の点線の箱(.placeholder)に、デザインや中身を入れていきます。
+      【若者】雪かき中(helper-working.html?id=依頼ID)。経過時間は、サーバーに残した開始時刻から計算するので、
+      画面を閉じて開き直しても続きから表示される。[雪かきを終える] で範囲の画面(snow-area.html)へ。
       ページ一覧と URL は docs/features/pages.md を見てください。
     -->
     <link rel="stylesheet" href="./template.css" />
+    <style>
+      /* 雪だるまと雪かきのイラスト(CSS だけで描く。画像ファイルは使わない) */
+      .scene {
+        position: relative;
+        height: 220px;
+        margin: 8px 0 16px;
+        border-radius: 14px;
+        background: linear-gradient(#a5d8ff, #e7f5ff 70%, #fff 70%);
+        overflow: hidden;
+      }
+      .flake {
+        position: absolute;
+        top: -10px;
+        color: #fff;
+        font-size: 1.1rem;
+        text-shadow: 0 0 2px #74c0fc;
+        animation: fall 4s linear infinite;
+      }
+      .flake:nth-child(1) { left: 8%; animation-delay: 0s; }
+      .flake:nth-child(2) { left: 28%; animation-delay: 1.2s; animation-duration: 5s; }
+      .flake:nth-child(3) { left: 48%; animation-delay: 2.1s; }
+      .flake:nth-child(4) { left: 68%; animation-delay: 0.6s; animation-duration: 4.6s; }
+      .flake:nth-child(5) { left: 88%; animation-delay: 2.8s; }
+      @keyframes fall {
+        to { transform: translateY(240px) rotate(360deg); }
+      }
+      .snowman {
+        position: absolute;
+        bottom: 26%;
+        left: 18%;
+        animation: wobble 2s ease-in-out infinite;
+        transform-origin: bottom center;
+      }
+      .snowman .head,
+      .snowman .body {
+        position: relative;
+        margin: 0 auto;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: inset -6px -6px 0 #dbe4ff;
+      }
+      .snowman .head { width: 46px; height: 46px; margin-bottom: -6px; z-index: 1; }
+      .snowman .body { width: 72px; height: 72px; }
+      .snowman .head::before,
+      .snowman .head::after {
+        content: "";
+        position: absolute;
+        top: 15px;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #1f2933;
+      }
+      .snowman .head::before { left: 13px; }
+      .snowman .head::after { right: 13px; }
+      .snowman .nose {
+        position: absolute;
+        top: 22px;
+        left: 20px;
+        border-top: 4px solid transparent;
+        border-bottom: 4px solid transparent;
+        border-left: 16px solid #f76707;
+      }
+      .snowman .hat {
+        position: absolute;
+        top: -18px;
+        left: 9px;
+        width: 28px;
+        height: 18px;
+        background: #c92a2a;
+        border-radius: 4px 4px 0 0;
+        box-shadow: 0 4px 0 -1px #1f2933;
+      }
+      @keyframes wobble {
+        50% { transform: rotate(-6deg); }
+      }
+      .shovel {
+        position: absolute;
+        right: 18%;
+        bottom: 26%;
+        font-size: 3.4rem;
+        transform-origin: bottom left;
+        animation: dig 1.2s ease-in-out infinite;
+      }
+      @keyframes dig {
+        0%, 100% { transform: rotate(0deg); }
+        50% { transform: rotate(-35deg) translateY(-8px); }
+      }
+      .pile {
+        position: absolute;
+        right: 6%;
+        bottom: 28%;
+        width: 60px;
+        height: 30px;
+        border-radius: 50% 50% 0 0;
+        background: #fff;
+        box-shadow: inset -4px -4px 0 #dbe4ff;
+        animation: grow 3s ease-in-out infinite alternate;
+        transform-origin: bottom;
+      }
+      @keyframes grow {
+        from { transform: scaleY(0.6); }
+        to { transform: scaleY(1.2); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .flake, .snowman, .shovel, .pile { animation: none; }
+      }
+      #elapsed {
+        font-variant-numeric: tabular-nums;
+      }
+    </style>
   </head>
   <body class="for-helper">
     <main>
-      <span class="badge">ひな形</span>
-      <h1>雪かき中…</h1>
-      <div class="placeholder map">詳しいマップ(行き先の家)</div>
-      <div class="placeholder">行き先の情報・お年寄りへの連絡</div>
-      <h2>経過時間</h2>
-      <p class="placeholder">00:00(開始ボタンで計り始める予定)</p>
-      <button class="button" type="button" disabled>雪かき開始(あとで作る)</button>
-      <a class="button secondary" href="./finish.html">雪かき終了</a>
+      <h1>雪かき中!</h1>
+      <div class="scene" aria-hidden="true">
+        <span class="flake">❄</span><span class="flake">❄</span><span class="flake">❄</span>
+        <span class="flake">❄</span><span class="flake">❄</span>
+        <div class="snowman">
+          <div class="head"><span class="hat"></span><span class="nose"></span></div>
+          <div class="body"></div>
+        </div>
+        <div class="shovel">🪏</div>
+        <div class="pile"></div>
+      </div>
+      <h2 class="center">経過時間</h2>
+      <p id="elapsed" class="big-number" role="timer">--:--</p>
+      <p id="helper-names" class="note center"></p>
+      <button id="finish-button" class="button" type="button">雪かきを終える</button>
+      <p id="error" class="error" role="alert" hidden></p>
     </main>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script type="module" src="./template.js"></script>
+    <script type="module" src="./helper-working.js"></script>
   </body>
 </html>

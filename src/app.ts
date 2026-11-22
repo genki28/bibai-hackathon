@@ -5,12 +5,14 @@ import { fileURLToPath } from "node:url";
 import { createWebhookHandlers } from "./bot/webhook.js";
 import { isBotConfigured, isLiffConfigured } from "./config.js";
 import { createHelpRequestRouter } from "./help-requests/routes.js";
+import { createSnowDepthProvider } from "./help-requests/snow-depth.js";
 import { createIdentityRouter } from "./identity/routes.js";
 import { verifyIdTokenWithLine } from "./users/idToken.js";
 import { createMenuUnlinker } from "./users/menu.js";
 import { createUsersRouter } from "./users/routes.js";
 import type { UsersRouterDeps } from "./users/routes.js";
 import { createRoleStore } from "./users/store.js";
+import { fetchBibaiForecast } from "./weather/forecast.js";
 import { createWeatherRouter } from "./weather/routes.js";
 import type { WeatherRouterOptions } from "./weather/routes.js";
 import type { AppConfig } from "./config.js";
@@ -92,8 +94,14 @@ export function createApp(config: AppConfig, options: AppOptions = {}): Express 
   app.use(createIdentityRouter());
   // 美唄の雪の予報(Open-Meteo)
   app.use(createWeatherRouter(options));
-  // お年寄りからの雪かきの依頼
-  app.use(createHelpRequestRouter());
+  // お年寄りからの雪かきの依頼と、若者の参加・雪かき・ランキング
+  const now = options.now ?? (() => new Date());
+  app.use(
+    createHelpRequestRouter({
+      now,
+      getSnowDepthM: createSnowDepthProvider(options.fetchForecast ?? fetchBibaiForecast, now),
+    }),
+  );
   // リッチメニューを最初(利用者登録)に戻す
   app.use(
     createUsersRouter({

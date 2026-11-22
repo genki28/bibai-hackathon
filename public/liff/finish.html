@@ -3,26 +3,47 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>おつかれさまでした</title>
+    <title>お疲れ様でした</title>
     <!--
-      【若者】終了画面。作業時間・消費カロリー・運んだ雪・獲得ポイントを出す。
-      ひな形です。灰色の点線の箱(.placeholder)に、デザインや中身を入れていきます。
+      【若者】お疲れ様の画面(finish.html?id=依頼ID)。スコアと内訳(作業時間・消費カロリー・面積・雪の重さ)を出す。
+      [メイン画面に戻る] でランキング(ranking.html)へ。
       ページ一覧と URL は docs/features/pages.md を見てください。
     -->
     <link rel="stylesheet" href="./template.css" />
+    <style>
+      .score {
+        font-size: 3.6rem;
+        animation: pop 0.6s ease-out;
+      }
+      @keyframes pop {
+        from { transform: scale(0.3); opacity: 0; }
+        70% { transform: scale(1.15); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .score { animation: none; }
+      }
+    </style>
   </head>
   <body class="for-helper">
     <main>
-      <span class="badge">ひな形</span>
-      <h1>おつかれさまでした!</h1>
-      <div class="row"><span>作業時間</span><span>(〇〇 分)</span></div>
-      <div class="row"><span>消費カロリー</span><span>(〇〇 kcal)</span></div>
-      <div class="row"><span>運んだ雪</span><span>(〇〇 kg)</span></div>
-      <div class="row"><span>獲得ポイント</span><span>(+〇〇 pt)</span></div>
-      <div class="placeholder">ボーナスの内訳(再会ボーナスなど)</div>
-      <a class="button" href="./ranking.html">ランキングを見る</a>
+      <h1>お疲れ様でした!</h1>
+      <p class="center">あなたのスコア</p>
+      <p id="score" class="big-number score">…</p>
+      <h2>内訳</h2>
+      <div class="row"><span>作業時間</span><span id="minutes">-</span></div>
+      <div class="row"><span>消費カロリー</span><span id="calories">-</span></div>
+      <div class="row"><span>雪かきした面積</span><span id="area">-</span></div>
+      <div class="row"><span>運んだ雪の重さ</span><span id="snow">-</span></div>
+      <div class="row"><span>雪かきのポイント</span><span id="work-points">-</span></div>
+      <div class="row"><span>評価のポイント</span><span id="rating-points">-</span></div>
+      <p class="note">
+        消費カロリーは体重 60kg として計算した目安です。雪の重さは「面積 × 積雪の深さ × 100kg」の目安です。
+        評価のポイントは、お願いした人が星を付けると入ります。
+      </p>
+      <a class="button" href="./ranking.html">メイン画面に戻る</a>
+      <p id="error" class="error" role="alert" hidden></p>
     </main>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script type="module" src="./template.js"></script>
+    <script type="module" src="./finish.js"></script>
   </body>
 </html>

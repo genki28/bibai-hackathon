@@ -92,6 +92,12 @@ export function summarizeSnow(hours: readonly HourlySnow[], now: Date): SnowSumm
   };
 }
 
+/** いま(日本時間のいまの時間帯)の積雪の深さ(cm)。予報にその時間がなければ null。 */
+export function currentSnowDepthCm(hours: readonly HourlySnow[], now: Date): number | null {
+  const current = toJstHour(now);
+  return hours.find((h) => h.time === current)?.snowDepthCm ?? null;
+}
+
 /** 大雪のときだけ若者向けの通知文を返す。大雪でなければ null(= 送らない)。 */
 export function buildWeatherMessage(summary: SnowSummary): string | null {
   if (!summary.isHeavySnow) return null;

@@ -121,8 +121,8 @@
 
       <section id="step-scan" class="step" hidden>
         <div class="icon card-anim" aria-hidden="true">📱🪪</div>
-        <p>カードをスマホの<br />背面にかざしてください</p>
-        <button id="scan-button" type="button">かざした(デモ)</button>
+        <p>マイナンバーカードを<br />スマホの背面に重ねてください</p>
+        <button id="scan-button" type="button">スキャンする(デモ)</button>
         <button id="cancel-button" class="secondary" type="button">やめる</button>
       </section>
 
@@ -133,9 +133,10 @@
 
       <section id="step-done" class="step" hidden>
         <div class="icon" aria-hidden="true">✅</div>
-        <p><strong>本人確認ができました</strong></p>
+        <p><strong>本人確認完了!</strong></p>
+        <p id="auto-next-note" hidden>自動で画面遷移します。</p>
         <p id="verified-at"></p>
-        <!-- 「助けに行く」から来たときは、次の画面へ進むボタンが出る(?next=〇〇.html) -->
+        <!-- 「助けに行く」から来たときは、1.5 秒ほどで次の画面へ自動で進む。押しても進める(?next=〇〇.html&id=依頼ID) -->
         <button id="next-button" type="button" hidden>次へ進む</button>
         <button id="reset-button" class="secondary" type="button">もう一度ためす</button>
       </section>

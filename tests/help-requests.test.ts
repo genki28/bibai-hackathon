@@ -104,7 +104,12 @@ test("POST /api/help-requests で依頼を登録し、GET で一覧が取れる"
   expect(postResponse.status).toBe(201);
   expect(postBody.success).toBe(true);
   expect(postBody.data).toMatchObject({ userId: ELDER_ID, amount: "lots", status: "waiting" });
-  expect(listBody).toEqual({ success: true, data: [postBody.data] });
+  // 一覧は「参加していない若者」向けなので、依頼した人のユーザー ID などは出さない
+  expect(listBody.success).toBe(true);
+  expect(listBody.data).toEqual([
+    expect.objectContaining({ id: postBody.data.id, amount: "lots", status: "waiting" }),
+  ]);
+  expect(listBody.data[0]).not.toHaveProperty("userId");
 });
 
 test("POST /api/help-requests は入力がおかしいと 400 と日本語のエラーを返す", async () => {
