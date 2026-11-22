@@ -1,0 +1,27 @@
+# 秘密情報(絶対に Git に入れない)
+.env
+.env.*
+!.env.example
+
+# 個人用の AI ツール設定(チーム共通は .claude/settings.json)
+.claude/settings.local.json
+CLAUDE.local.md
+
+# OS が勝手に作るファイル
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# エディタの個人設定
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# よくある自動生成物(技術スタック決定後に追記)
+node_modules/
+dist/
+build/
+__pycache__/
+.venv/
+*.log
