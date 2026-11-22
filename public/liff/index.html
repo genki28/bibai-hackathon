@@ -51,6 +51,17 @@
         color: #fff;
         background: #06c755;
       }
+      .link-button {
+        display: block;
+        margin-top: 12px;
+        padding: 10px;
+        border: 2px solid #06c755;
+        border-radius: 8px;
+        text-align: center;
+        color: #06c755;
+        font-weight: 600;
+        text-decoration: none;
+      }
     </style>
   </head>
   <body>
@@ -66,6 +77,7 @@
         <dd id="name"></dd>
       </dl>
       <button id="login-button" type="button" hidden>LINE でログイン</button>
+      <a class="link-button" href="./identity.html">本人確認(デモ)へ</a>
     </main>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script type="module" src="./main.js"></script>

@@ -4,6 +4,7 @@ import type { ErrorRequestHandler, Express, RequestHandler } from "express";
 import { fileURLToPath } from "node:url";
 import { createWebhookHandlers } from "./bot/webhook.js";
 import { isBotConfigured, isLiffConfigured } from "./config.js";
+import { createIdentityRouter } from "./identity/routes.js";
 import type { AppConfig } from "./config.js";
 
 const PUBLIC_DIR = fileURLToPath(new URL("../public", import.meta.url));
@@ -19,11 +20,20 @@ const notFound: RequestHandler = (_req, res) => {
   res.status(404).json({ success: false, error: "ページが見つかりません。" });
 };
 
+/** express.json() が「送られてきた JSON が壊れている」ときに出すエラーかどうか。 */
+function isBodyParseError(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    (err as { type?: unknown }).type === "entity.parse.failed"
+  );
+}
+
 function toErrorResponse(err: unknown): { status: number; error: string } {
   if (err instanceof SignatureValidationFailed) {
     return { status: 401, error: "LINE の署名を確認できませんでした。" };
   }
-  if (err instanceof JSONParseError) {
+  if (err instanceof JSONParseError || isBodyParseError(err)) {
     return { status: 400, error: "リクエストの形式が正しくありません。" };
   }
   return { status: 500, error: "サーバーでエラーが起きました。" };
@@ -58,6 +68,9 @@ export function createApp(config: AppConfig): Express {
   app.get("/api/config", (_req, res) => {
     res.json({ success: true, data: { liffId: config.liffId } });
   });
+
+  // 本人確認(マイナンバーカード)のデモ用 API。中で express.json() を使うので /webhook より後に置く。
+  app.use(createIdentityRouter());
 
   app.get("/", (_req, res) => {
     res.redirect("/liff/");
