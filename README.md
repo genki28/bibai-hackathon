@@ -25,6 +25,8 @@ AI(Claude など)に日本語でお願いしながら作る「バイブコーデ
 ## いま決まっていること
 
 - 何を作るか: [docs/product.md](docs/product.md)
+- 機能ごとの説明: [docs/features/README.md](docs/features/README.md)
+- 技術的な課題: [docs/technical-challenges.md](docs/technical-challenges.md)
 - 何で作るか・決めたことの記録: [docs/decisions.md](docs/decisions.md)
 
 ## フォルダの中身

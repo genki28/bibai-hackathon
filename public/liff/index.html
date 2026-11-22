@@ -51,6 +51,36 @@
         color: #fff;
         background: #06c755;
       }
+      .weather {
+        margin-top: 16px;
+        padding: 12px;
+        border-radius: 8px;
+        background: #eef6ff;
+      }
+      .weather h2 {
+        margin: 0 0 4px;
+        font-size: 1rem;
+      }
+      .weather p {
+        margin: 0;
+        white-space: pre-line;
+      }
+      .weather .weather-note {
+        margin-top: 4px;
+        font-size: 0.75rem;
+        color: #52606d;
+      }
+      .link-button {
+        display: block;
+        margin-top: 12px;
+        padding: 10px;
+        border: 2px solid #06c755;
+        border-radius: 8px;
+        text-align: center;
+        color: #06c755;
+        font-weight: 600;
+        text-decoration: none;
+      }
     </style>
   </head>
   <body>
@@ -66,6 +96,12 @@
         <dd id="name"></dd>
       </dl>
       <button id="login-button" type="button" hidden>LINE でログイン</button>
+      <a class="link-button" href="./identity.html">本人確認(デモ)へ</a>
+      <section class="weather" aria-labelledby="weather-title">
+        <h2 id="weather-title">❄ 美唄の雪の予報</h2>
+        <p id="weather-text">読み込み中です…</p>
+        <p class="weather-note">データ: Open-Meteo</p>
+      </section>
     </main>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script type="module" src="./main.js"></script>
