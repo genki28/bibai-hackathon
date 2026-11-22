@@ -20,3 +20,21 @@ export function registerTap(state: ComboState, now: number): ComboState;
 export function cheerFor(combo: number): string | null;
 export function flockSize(level: number): number;
 export function createRandom(seed: number): () => number;
+
+export const HERO_FRAME_COUNT: number;
+export const THROW_FRAME: number;
+export const HERO_CYCLE_MS: number;
+export const HERO_FRAME_STARTS: ReadonlyArray<number>;
+export const QUICK_THROW_MS: number;
+export const QUICK_FRAME_STARTS: ReadonlyArray<number>;
+export function heroFrameIndex(options: { now: number; quickStartedAt: number; isReduced: boolean }): number;
+export function frameRect(
+  index: number,
+  frameWidth: number,
+  frameHeight: number,
+): { sx: number; sy: number; sw: number; sh: number };
+export function fitToHeight(width: number, height: number, targetHeight: number): { width: number; height: number };
+export function moundSize(
+  remaining: number,
+  range: { minHalfWidth: number; maxHalfWidth: number; minHeight: number; maxHeight: number },
+): { halfWidth: number; height: number };

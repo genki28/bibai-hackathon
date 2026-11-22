@@ -1,11 +1,11 @@
 import { describe, expect, test } from "vitest";
 import {
+  CROWN,
   FONT,
   FONT_HEIGHT,
   FONT_PALETTE,
   FONT_WIDTH,
   GOOSE_FRAMES,
-  HERO_FRAMES,
   PALETTE,
   spriteSize,
   textWidth,
@@ -57,19 +57,6 @@ describe("validateSprite", () => {
 });
 
 describe("用意したスプライト", () => {
-  test("若者の 3 コマはどれも形が正しく、同じ大きさ", () => {
-    // Arrange
-    const frames = Object.values(HERO_FRAMES);
-
-    // Act
-    const errors = frames.flatMap((frame) => validateSprite(frame, PALETTE));
-    const sizes = frames.map(spriteSize);
-
-    // Assert
-    expect(errors).toEqual([]);
-    expect(new Set(sizes.map((s) => `${s.width}x${s.height}`)).size).toBe(1);
-  });
-
   test("マガンの 2 コマはどれも形が正しく、同じ大きさ", () => {
     // Arrange
     const frames = Object.values(GOOSE_FRAMES);
@@ -81,6 +68,14 @@ describe("用意したスプライト", () => {
     // Assert
     expect(errors).toEqual([]);
     expect(sizes[0]).toEqual(sizes[1]);
+  });
+
+  test("リーダーの王冠は形が正しい", () => {
+    // Arrange / Act
+    const errors = validateSprite(CROWN, PALETTE);
+
+    // Assert
+    expect(errors).toEqual([]);
   });
 
   test("ドットの文字はすべて 3×5 で形が正しい", () => {
@@ -101,7 +96,7 @@ describe("用意したスプライト", () => {
 
   test("画面に出す言葉は、すべてドットの文字で書ける", () => {
     // Arrange
-    const words = ["+1", "COMBO x99", "COOL!", "GREAT!", "SUPER!", "LEVEL UP!", "LV.9", "0123456789"];
+    const words = ["+1", "COMBO x99", "COOL!", "GREAT!", "SUPER!", "LEVEL UP!", "JOIN!", "LV.9", "0123456789"];
 
     // Act
     const missing = words.flatMap((word) => [...word].filter((ch) => !(ch in FONT)));

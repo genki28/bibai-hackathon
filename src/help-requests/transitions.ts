@@ -2,7 +2,7 @@
  * 依頼の状態を進める処理(純粋関数)。もとの依頼は書き換えず、新しい依頼を作って返す。
  * できないとき(権限がない・状態が合わない)は、理由つきの失敗を返す。
  */
-import { fail, findHelper, isOpen, leaderOf, MAX_HELPERS, succeed } from "./model.js";
+import { fail, findHelper, isJoinable, isOpen, leaderOf, MAX_HELPERS, succeed } from "./model.js";
 import type { Helper, HelpRequest, Ratings, Result } from "./model.js";
 import type { FinishInput, JoinInput } from "./inputs.js";
 import {
@@ -15,14 +15,15 @@ import {
 const NOT_HELPER = fail(403, "この依頼に参加していません。");
 const NOT_OWNER = fail(403, "依頼した本人だけができます。");
 
-/** 若者が参加する。すでに参加していれば、そのまま返す。 */
+/** 若者が参加する。すでに参加していれば、そのまま返す。雪かき中なら途中から加わる(状態は雪かき中のまま)。 */
 export function join(r: HelpRequest, input: JoinInput, now: Date): Result<HelpRequest> {
   if (findHelper(r, input.userId)) return succeed(r);
   if (r.userId === input.userId) return fail(400, "自分の依頼には参加できません。");
-  if (!isOpen(r)) return fail(409, "この依頼は、いまは参加を受け付けていません。");
+  if (!isJoinable(r)) return fail(409, "この依頼は、いまは参加を受け付けていません。");
   if (r.helpers.length >= MAX_HELPERS) return fail(409, `定員(${MAX_HELPERS} 人)に達しています。`);
   const helper: Helper = { ...input, joinedAt: now.toISOString(), arrivedAt: null };
-  return succeed({ ...r, status: "accepted", helpers: [...r.helpers, helper] });
+  const status = r.status === "working" ? "working" : "accepted";
+  return succeed({ ...r, status, helpers: [...r.helpers, helper] });
 }
 
 /** 参加をやめる(雪かきが始まる前だけ)。だれもいなくなったら募集中に戻る。 */

@@ -93,6 +93,9 @@ export const fail = (status: Failure["status"], error: string): Failure => ({
 export const isOpen = (r: HelpRequest): boolean =>
   r.status === "waiting" || r.status === "accepted";
 
+/** 参加を受け付けているか(始まる前に加えて、雪かき中も途中から参加できる)。 */
+export const isJoinable = (r: HelpRequest): boolean => isOpen(r) || r.status === "working";
+
 /** お年寄りから見て「まだ続いている」依頼か(取り消し・いいね済みは終わり)。 */
 export const isOngoingForElder = (r: HelpRequest): boolean =>
   r.status !== "cancelled" && r.thankedAt === null;

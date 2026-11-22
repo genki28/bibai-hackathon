@@ -1,267 +1,109 @@
 // 【若者】雪かき中のドット絵のアニメーション(Canvas 2D)。helper-working.js から startPixelSnow(canvas, ...) で動かす。
-// - 小さなキャンバス(160×120 ドット)に描いてから、画面のキャンバスへ拡大して写す(にじませない)
+// - 背景(images/working-bg.png)と主人公の 4 コマ(images/working-hero.png)は ChatGPT で作った画像。読み込めたら始める
+// - 背景の半分の大きさ(362×272)の小さなキャンバスに描いてから、画面のキャンバスへ拡大して写す(にじませない)
+// - いっしょに雪かきする人(参加者)の人数ぶん主人公を並べる。左右に交互に、真ん中の雪の山を向く(並べ方は pixel-crew.js)
+//   途中で人が増えたら、横から歩いて入ってきて「JOIN!」。頭の上に名前(自分は黄金色 + ▼、リーダーには王冠)
 // - 1 本の requestAnimationFrame のループで描く。画面が見えていないとき(document.hidden)は止める
-// - 雪がしんしんと降り、オーロラがゆれ、ときどきマガンの群れが横切る。若者がスコップで雪を投げ続ける
-// - 経過時間で玄関前の雪の山が減り、投げた先の山が増える
-// - タップすると、すばやく 1 回投げて「+1」、続けるとコンボ。タップの回数はスコアにもサーバーにも送らない(見た目だけ)
-// - 「動きを減らす」設定の人には、雪・鳥・オーロラを止め、タップの演出も控えめにする
+// - 雪がしんしんと降り、ときどきマガンの群れが横切る。全員が 差す → 持ち上げる → 振りかぶる → 投げる をくり返す(人ごとに少しずらす)
+// - 経過時間で真ん中の雪の山が減り、投げた雪は外側(それぞれの後ろ)に積もる
+// - タップすると、自分がすばやく 1 回投げて「+1」、続けるとコンボ。タップの回数はスコアにもサーバーにも送らない(見た目だけ)
+// - 「動きを減らす」設定の人には、雪・鳥・登場の歩きを止め、タップの演出も控えめにする
+// 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { prefersReducedMotion } from "./effects.js";
+import { MAX_CREW, crewFrameOffset, crewLayout, easeOut, lerp, shortName } from "./pixel-crew.js";
 import {
-  GROUND_Y,
-  SCENE_HEIGHT as H,
-  SCENE_WIDTH as W,
+  COLORS,
+  bakeImage,
+  bakeSprite,
   createLayer,
-  drawFrontLayer,
-  drawSkyLayer,
-} from "./pixel-backdrop.js";
+  createParticles,
+  createSnowflakes,
+  drawFlock,
+  drawMound,
+  drawParticles,
+  drawPopups,
+  drawSnowfall,
+  drawText,
+  textLeft,
+} from "./pixel-draw.js";
 import {
   EMPTY_COMBO,
+  HERO_CYCLE_MS,
+  HERO_FRAME_COUNT,
   PILE_MIN_REMAINING,
+  THROW_FRAME,
   cheerFor,
   comboAt,
   createRandom,
   digLevel,
-  flockSize,
+  frameRect,
+  heroFrameIndex,
+  moundSize,
   pileRemaining,
   registerTap,
 } from "./pixel-game.js";
-import { FONT, FONT_HEIGHT, GOOSE_FRAMES, HERO_FRAMES, PALETTE, TRANSPARENT, textWidth, toFontText } from "./pixel-sprites.js";
+import { CROWN, GOOSE_FRAMES } from "./pixel-sprites.js";
+
+const BACKGROUND_URL = new URL("./images/working-bg.png", import.meta.url).href;
+const HERO_URL = new URL("./images/working-hero.png", import.meta.url).href;
+
+/** 小さなキャンバスの大きさ(背景 724×543 の半分)。 */
+const W = 362;
+const H = 272;
 
 /** 描く間隔(1 秒に 30 回)。動きを減らす設定では 1 秒に 4 回。 */
 const FRAME_MS = 1000 / 30;
 const REDUCED_FRAME_MS = 250;
 
-/** 若者の位置(左上)と、自動で雪を投げる 1 回の長さ・コマの切り替え。 */
-const HERO_X = 74;
-const HERO_Y = GROUND_Y - 20;
-const CYCLE_MS = 1800;
-const LIFT_AT_MS = 700;
-const THROW_AT_MS = 1200;
-const THROW_END_MS = 1600;
-/** タップしたときの、すばやい 1 回(持ち上げ → 投げる)。 */
-const QUICK_LIFT_MS = 80;
-const QUICK_TOTAL_MS = 260;
+/** みんなが向き合う真ん中(雪の山の真ん中)と、いちばん手前の人の足の下端。 */
+const CENTER_X = 181;
+const FEET_Y = 236;
 
-/** 投げた雪の粒。投げ先(左の山)まで飛んで消える。 */
-const THROW_ORIGIN = { x: HERO_X + 11, y: HERO_Y };
-const THROW_TARGET_X = 34;
-const GRAVITY = 120; // ドット / 秒²
-const AUTO_PARTICLES = 5;
-const TAP_PARTICLES = 9;
-const MAX_PARTICLES = 80;
-
-/** 玄関前の雪の山(左のはしは固定)と、投げた先の山。 */
-const PILE_LEFT_EDGE = 86;
-const PILE_MAX_HALF_WIDTH = 20;
-const PILE_MAX_HEIGHT = 22;
-const THROWN_PILE_X = THROW_TARGET_X;
-
-/** 降る雪の数と、マガンの群れが来る間隔・横切る時間・最初に来るまで。 */
-const SNOW_COUNT = 36;
-const FLOCK_INTERVAL_MS = 35_000;
-const FLOCK_CROSS_MS = 12_000;
-const FLOCK_FIRST_DELAY_MS = 3000;
-
-/** オーロラの柱の幅(ドット)。 */
-const AURORA_COLUMN = 2;
-
-/** 文字の演出の長さ。 */
-const PLUS_ONE_MS = 650;
-const CHEER_MS = 1200;
-const MIN_COMBO_TO_SHOW = 2;
-
-const COLORS = Object.freeze({
-  pile: "#eef4ff",
-  pileTop: "#ffffff",
-  pileShade: "#c9d7f0",
-  flake: "#ffffff",
-  flakeSmall: "#cfe8ff",
-  particle: "#ffffff",
-  outline: "#0b1026",
-  gold: "#ffc94d",
-  ice: "#4fd1ff",
-  auroraIce: "#4fd1ff",
-  auroraPurple: "#8b5cf6",
-  aurora3: "#6ee7b7",
-  starBright: "#ffffff",
+/** 雪の山: 真ん中の大きな山と、玄関(背景の x≈315〜330, 下≈155)の前の小さな山。大きさは残りの割合で最小〜最大。 */
+const CENTER_MOUND = Object.freeze({ centerX: CENTER_X, baseY: 239, minHalfWidth: 8, maxHalfWidth: 32, minHeight: 3, maxHeight: 40 });
+const DOOR_MOUND = Object.freeze({ centerX: 318, baseY: 172, minHalfWidth: 4, maxHalfWidth: 16, minHeight: 2, maxHeight: 13 });
+/** 投げた雪が積もる、左右の外側の山(雪かきが進むほど大きくなる)。右は右側に人がいるときだけ。 */
+const THROWN_MOUNDS = Object.freeze({
+  left: { centerX: 20, baseY: 242, minHalfWidth: 5, maxHalfWidth: 30, minHeight: 2, maxHeight: 26 },
+  right: { centerX: 346, baseY: 242, minHalfWidth: 4, maxHalfWidth: 20, minHeight: 2, maxHeight: 20 },
 });
 
-/** スプライトを、そのまま貼れる小さなキャンバスにしておく(毎回 1 ドットずつ描かなくてよい)。 */
-function bakeSprite(rows, palette) {
-  const layer = createLayer(rows[0].length, rows.length);
-  rows.forEach((row, y) => {
-    [...row].forEach((ch, x) => {
-      if (ch === TRANSPARENT) return;
-      layer.ctx.fillStyle = palette[ch];
-      layer.ctx.fillRect(x, y, 1, 1);
-    });
-  });
-  return layer.canvas;
-}
+/** 振りかぶったスコップの位置(コマの中の割合。右向きのとき)。投げる雪の粒はここから外側へ飛ぶ。 */
+const SHOVEL_BACK_IN_FRAME = { x: 0.12, y: 0.15 };
+const AUTO_PARTICLES = 4;
+const TAP_PARTICLES = 12;
+const MAX_PARTICLES = 100;
 
-const bakeFrames = (frames) =>
-  Object.fromEntries(Object.entries(frames).map(([name, rows]) => [name, bakeSprite(rows, PALETTE)]));
+/** 登場(横から歩いて入る)と、人数が変わったときに位置をずらす時間。 */
+const ENTER_MS = 1600;
+const MOVE_MS = 700;
+const WALK_STEP_MS = 150;
 
-/** ドットの文字を書く。読みやすいように、まわりを濃い色でふちどる。 */
-function drawText(ctx, text, x, y, { color, scale = 1 }) {
-  const chars = [...toFontText(text)];
-  const paint = (fill, offsetX, offsetY) => {
-    ctx.fillStyle = fill;
-    chars.forEach((ch, i) => {
-      FONT[ch].forEach((row, gy) => {
-        [...row].forEach((dot, gx) => {
-          if (dot === TRANSPARENT) return;
-          ctx.fillRect(x + (i * 4 + gx) * scale + offsetX, y + gy * scale + offsetY, scale, scale);
-        });
-      });
-    });
-  };
-  [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(([dx, dy]) => paint(COLORS.outline, dx, dy));
-  paint(color, 0, 0);
-}
+/** 降る雪の数と、マガン・王冠の拡大の倍率。 */
+const SNOW_COUNT = 50;
+const GOOSE_SCALE = 2;
+const CROWN_SCALE = 2;
 
-const centeredX = (text, scale) => Math.round((W - textWidth(toFontText(text), scale)) / 2);
+/** 文字の演出の長さと大きさ(ドットの文字の拡大の倍率)。 */
+const PLUS_ONE_MS = 650;
+const CHEER_MS = 1200;
+const LEVEL_UP_MS = 1800;
+const JOIN_MS = 1400;
+const MIN_COMBO_TO_SHOW = 2;
+const TEXT_SCALE = Object.freeze({ plusOne: 2, combo: 3, cheer: 6, levelUp: 4, join: 2 });
 
-/** 決まった並びの雪(位置は時間から計算するので、覚えておく必要がない)。 */
-function createSnowflakes() {
-  const random = createRandom(11);
-  return Array.from({ length: SNOW_COUNT }, () => ({
-    x: random() * W,
-    y: random() * H,
-    speed: 5 + random() * 8,
-    sway: 1 + random() * 2.5,
-    phase: random() * Math.PI * 2,
-    isBig: random() < 0.3,
-  }));
-}
-
-const wrap = (value, size) => ((value % size) + size) % size;
-
-function drawSnowfall(ctx, flakes, seconds) {
-  flakes.forEach((flake) => {
-    const x = Math.round(wrap(flake.x + Math.sin(seconds * 0.8 + flake.phase) * flake.sway - seconds * 2, W));
-    const y = Math.round(wrap(flake.y + seconds * flake.speed, H + 4) - 2);
-    ctx.fillStyle = flake.isBig ? COLORS.flake : COLORS.flakeSmall;
-    ctx.fillRect(x, y, flake.isBig ? 2 : 1, flake.isBig ? 2 : 1);
+/** 画像を読み込む(読み込めたら終わる、失敗したらエラー)。 */
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`画像を読み込めませんでした: ${url}`));
+    image.src = url;
   });
 }
 
-/** オーロラ(2 本の光の帯が、ゆっくり波打つ)。 */
-function drawAurora(ctx, ms) {
-  const bands = [
-    { base: 22, color: COLORS.auroraIce, alpha: 0.28, speed: 0.0006, height: 7 },
-    { base: 30, color: COLORS.auroraPurple, alpha: 0.38, speed: -0.0004, height: 6 },
-    { base: 18, color: COLORS.aurora3, alpha: 0.14, speed: 0.0009, height: 4 },
-  ];
-  bands.forEach((band) => {
-    ctx.globalAlpha = band.alpha;
-    ctx.fillStyle = band.color;
-    // 2 ドットずつの柱で描く(描く回数を半分にして軽くする)
-    for (let x = 0; x < W; x += AURORA_COLUMN) {
-      const y = band.base + 4 * Math.sin(x * 0.06 + ms * band.speed) + 2 * Math.sin(x * 0.15 - ms * band.speed * 1.5);
-      ctx.fillRect(x, Math.round(y), AURORA_COLUMN, band.height);
-    }
-  });
-  ctx.globalAlpha = 1;
-}
-
-/** マガンの群れ(V の字)。レベルが上がるほど仲間が増える。 */
-function drawFlock(ctx, geese, sinceStartMs, level) {
-  const local = wrap(sinceStartMs - FLOCK_FIRST_DELAY_MS, FLOCK_INTERVAL_MS);
-  if (local > FLOCK_CROSS_MS) return;
-  const leadX = -30 + (local / FLOCK_CROSS_MS) * (W + 60);
-  const leadY = 24 + 3 * Math.sin(local / 900);
-  const frame = Math.floor(local / 220) % 2 === 0 ? geese.up : geese.down;
-  Array.from({ length: flockSize(level) }, (_, i) => {
-    const rank = Math.ceil(i / 2);
-    const side = i % 2 === 0 ? 1 : -1;
-    return { x: leadX - rank * 8, y: leadY + side * rank * 4 };
-  }).forEach(({ x, y }) => ctx.drawImage(frame, Math.round(x), Math.round(y)));
-}
-
-/** 半円の雪の山(上のふちは白く、右側は少し影)。 */
-function drawMound(ctx, centerX, halfWidth, height) {
-  const half = Math.max(1, Math.round(halfWidth));
-  for (let dx = -half; dx <= half; dx += 1) {
-    const column = Math.round(height * Math.sqrt(Math.max(0, 1 - (dx / half) ** 2)));
-    if (column <= 0) continue;
-    const x = Math.round(centerX + dx);
-    ctx.fillStyle = dx > half * 0.35 ? COLORS.pileShade : COLORS.pile;
-    ctx.fillRect(x, GROUND_Y + 1 - column, 1, column);
-    ctx.fillStyle = COLORS.pileTop;
-    ctx.fillRect(x, GROUND_Y + 1 - column, 1, 1);
-  }
-}
-
-function drawPiles(ctx, elapsedMs) {
-  const remaining = pileRemaining(elapsedMs);
-  const halfWidth = 6 + (PILE_MAX_HALF_WIDTH - 6) * remaining;
-  drawMound(ctx, PILE_LEFT_EDGE + halfWidth, halfWidth, 2 + (PILE_MAX_HEIGHT - 2) * remaining);
-  const moved = (1 - remaining) / (1 - PILE_MIN_REMAINING);
-  if (moved > 0.02) drawMound(ctx, THROWN_PILE_X, 3 + 12 * moved, 1 + 12 * moved);
-}
-
-/** 投げた雪の粒を作る(投げ先の山の近くに落ちるように、速さを決める)。 */
-function createParticles(count, now, random) {
-  return Array.from({ length: count }, () => {
-    const flightSeconds = 0.8 + random() * 0.45;
-    const landX = THROW_TARGET_X + (random() - 0.5) * 18;
-    const landY = GROUND_Y - 2 - random() * 6;
-    return {
-      born: now,
-      lifeMs: flightSeconds * 1000,
-      x: THROW_ORIGIN.x + random() * 3,
-      y: THROW_ORIGIN.y + random() * 2,
-      vx: (landX - THROW_ORIGIN.x) / flightSeconds,
-      vy: (landY - THROW_ORIGIN.y - 0.5 * GRAVITY * flightSeconds ** 2) / flightSeconds,
-      isBig: random() < 0.35,
-    };
-  });
-}
-
-function drawParticles(ctx, particles, now) {
-  ctx.fillStyle = COLORS.particle;
-  particles.forEach((p) => {
-    const t = (now - p.born) / 1000;
-    const size = p.isBig ? 2 : 1;
-    ctx.fillRect(Math.round(p.x + p.vx * t), Math.round(p.y + p.vy * t + 0.5 * GRAVITY * t * t), size, size);
-  });
-}
-
-/** 文字の演出(「+1」「COOL!」「LEVEL UP!」など)。時間がたつと上へ浮かんで消える。 */
-function drawPopups(ctx, popups, now, isReduced) {
-  popups.forEach((popup) => {
-    const progress = Math.min(1, (now - popup.born) / popup.lifeMs);
-    const rise = isReduced ? 0 : Math.round(popup.rise * progress);
-    ctx.globalAlpha = progress > 0.7 ? 1 - (progress - 0.7) / 0.3 : 1;
-    drawText(ctx, popup.text, popup.x, popup.y - rise, { color: popup.color, scale: popup.scale });
-  });
-  ctx.globalAlpha = 1;
-}
-
-/** 今の若者のコマ。タップ直後はすばやい 1 回、それ以外は自動のくり返し。 */
-function heroFrameName({ now, quickStartedAt, isReduced }) {
-  const sinceQuick = now - quickStartedAt;
-  if (sinceQuick < QUICK_TOTAL_MS) return sinceQuick < QUICK_LIFT_MS ? "lift" : "throw";
-  if (isReduced) return "dig";
-  const phase = now % CYCLE_MS;
-  if (phase < LIFT_AT_MS) return "dig";
-  if (phase < THROW_AT_MS) return "lift";
-  return phase < THROW_END_MS ? "throw" : "dig";
-}
-
-/** ときどき光る(またたく)星。 */
-function drawTwinkles(ctx, stars, ms) {
-  ctx.fillStyle = COLORS.starBright;
-  stars.forEach((star, i) => {
-    if (Math.floor(ms / 700 + i * 1.7) % 3 !== 0) return;
-    ctx.fillRect(star.x - 1, star.y, 3, 1);
-    ctx.fillRect(star.x, star.y - 1, 1, 3);
-  });
-}
-
-/** 画面のキャンバスの大きさを、端末の細かさ(devicePixelRatio)に合わせる。160 の整数倍にして、くっきり拡大する。 */
+/** 画面のキャンバスの大きさを、端末の細かさ(devicePixelRatio)に合わせる。W の整数倍にして、くっきり拡大する。 */
 function fitCanvas(canvas) {
   const ratio = window.devicePixelRatio || 1;
   const cssWidth = canvas.clientWidth || W;
@@ -275,35 +117,92 @@ function fitCanvas(canvas) {
   return ctx;
 }
 
+/** 主人公の 4 コマを、大きさと向きごとに 1 回だけ用意する(同じ大きさなら使い回す)。 */
+function createHeroFrames(image) {
+  const frameWidth = image.naturalWidth / HERO_FRAME_COUNT;
+  const frameHeight = image.naturalHeight;
+  const cache = new Map();
+  return {
+    aspect: frameWidth / frameHeight,
+    get({ width, height, isFlipped }) {
+      const key = `${width}x${height}:${isFlipped}`;
+      if (!cache.has(key)) {
+        const frames = Array.from({ length: HERO_FRAME_COUNT }, (_, i) =>
+          bakeImage(image, frameRect(i, frameWidth, frameHeight), width, height, isFlipped),
+        );
+        cache.set(key, frames);
+      }
+      return cache.get(key);
+    },
+  };
+}
+
+/** 画面の外(左の人は左、右の人は右)の位置。登場のときはここから歩いて入ってくる。 */
+const offscreenOf = (place) => ({ left: place.side === "left" ? -place.width - 10 : W + 10, top: place.top });
+
+/** 参加者の並び(id・名前・順番)が同じか。同じなら並べ直さない。 */
+const crewKey = (people) => people.map((p) => `${p.id}:${p.name}:${p.isMe}:${p.isLeader}`).join("|");
+
+/** 名前の札(HTML)。キャンバスの上に、% で位置を決めて重ねる。 */
+function renderLabels(container, crew) {
+  if (!container) return;
+  container.replaceChildren(
+    ...crew.map((member) => {
+      const label = document.createElement("span");
+      label.className = ["crew-name", member.isMe ? "is-me" : "", member.isEntering ? "is-hidden" : ""].join(" ").trim();
+      // 札の下のはし: 頭の上(リーダーは王冠の上)。自分は ▼ の分だけさらに上
+      const bottomY = member.place.top + (member.isLeader ? -10 : 2) - (member.isMe ? 7 : 0);
+      label.style.left = `${(member.place.bodyX / W) * 100}%`;
+      label.style.top = `${(bottomY / H) * 100}%`;
+      const name = document.createElement("span");
+      name.textContent = shortName(member.name);
+      label.append(name);
+      if (member.isMe) {
+        const mark = document.createElement("span");
+        mark.className = "crew-me-mark";
+        mark.textContent = "▼";
+        label.append(mark);
+      }
+      return label;
+    }),
+  );
+}
+
 /**
- * ドット絵のアニメーションを始める。
+ * ドット絵のアニメーションを始める。画像が読み込めなければエラーで終わる(呼んだ側で絵を隠す)。
  * @param {HTMLCanvasElement} canvas 画面に出すキャンバス
- * @param {{ getElapsedMs: () => number }} options 雪かきを始めてからの時間(サーバーの開始時刻から計算)
- * @returns {{ stop: () => void }} 止める関数
+ * @param {{
+ *   getElapsedMs: () => number,
+ *   crew: Array<{ id: string, name: string, isMe: boolean, isLeader: boolean }>,
+ *   labels?: HTMLElement | null,
+ * }} options 経過時間(サーバーの開始時刻から計算)・参加者(参加した順)・名前の札を入れる場所
+ * @returns {Promise<{ stop: () => void, setCrew: (crew: Array<{ id: string, name: string, isMe: boolean, isLeader: boolean }>) => void }>}
  */
-export function startPixelSnow(canvas, { getElapsedMs }) {
+export async function startPixelSnow(canvas, { getElapsedMs, crew: firstCrew, labels = null }) {
+  const [backgroundImage, heroImage] = await Promise.all([loadImage(BACKGROUND_URL), loadImage(HERO_URL)]);
   const isReduced = prefersReducedMotion();
   const random = createRandom(Date.now() & 0xffff);
-  const buffer = createLayer();
-  const sky = drawSkyLayer();
-  const front = drawFrontLayer();
-  const hero = bakeFrames(HERO_FRAMES);
-  const geese = bakeFrames(GOOSE_FRAMES);
-  const flakes = createSnowflakes();
-  const twinkles = [
-    { x: 20, y: 10 },
-    { x: 58, y: 6 },
-    { x: 96, y: 12 },
-    { x: 118, y: 40 },
-  ];
+  const buffer = createLayer(W, H);
+  const background = bakeImage(
+    backgroundImage,
+    { sx: 0, sy: 0, sw: backgroundImage.naturalWidth, sh: backgroundImage.naturalHeight },
+    W,
+    H,
+  );
+  const heroFrames = createHeroFrames(heroImage);
+  const sceneSize = { sceneHeight: H, centerX: CENTER_X, feetY: FEET_Y, frameAspect: heroFrames.aspect };
+  const geese = { up: bakeSprite(GOOSE_FRAMES.up, GOOSE_SCALE), down: bakeSprite(GOOSE_FRAMES.down, GOOSE_SCALE) };
+  const crown = bakeSprite(CROWN, CROWN_SCALE);
+  const flakes = createSnowflakes(SNOW_COUNT, W, H);
   const startedAt = performance.now();
 
   let screen = fitCanvas(canvas);
+  let crew = [];
+  let shownCrewKey = "";
   let combo = EMPTY_COMBO;
   let particles = [];
   let popups = [];
   let quickStartedAt = Number.NEGATIVE_INFINITY;
-  let thrownCycle = -1;
   let shownLevel = digLevel(getElapsedMs());
   let frameId = 0;
   let lastDrawAt = 0;
@@ -311,49 +210,144 @@ export function startPixelSnow(canvas, { getElapsedMs }) {
   const addPopup = (popup) => {
     popups = [...popups, popup];
   };
-  const addParticles = (count, now) => {
-    if (isReduced) return;
-    particles = [...particles, ...createParticles(count, now, random)].slice(-MAX_PARTICLES);
-  };
 
-  /** 自動で投げるコマに入ったとき(1 回につき 1 度だけ)、雪の粒を飛ばす。 */
-  function throwAutomatically(now) {
-    if (isReduced || now - quickStartedAt < QUICK_TOTAL_MS) return;
-    const cycle = Math.floor(now / CYCLE_MS);
-    if (now % CYCLE_MS < THROW_AT_MS || cycle === thrownCycle) return;
-    thrownCycle = cycle;
-    addParticles(AUTO_PARTICLES, now);
+  /** 今の位置(登場や並べ直しの途中なら、その途中の位置)。 */
+  function positionOf(member, now) {
+    const progress = easeOut((now - member.movedAt) / member.moveMs);
+    const isWalking = member.isEntering && progress < 1;
+    const bob = isWalking ? Math.round(Math.abs(Math.sin(now / 110)) * 3) : 0;
+    return {
+      left: Math.round(lerp(member.from.left, member.place.left, progress)),
+      top: Math.round(lerp(member.from.top, member.place.top, progress)) - bob,
+      isArrived: progress >= 1,
+    };
+  }
+
+  /** 参加者を並べ直す。新しく来た人は横から歩いて入ってくる(最初の表示と、動きを減らす設定では、すぐその場に出る)。 */
+  function setCrew(people, now = performance.now()) {
+    const list = people.slice(0, MAX_CREW);
+    const key = crewKey(list);
+    if (list.length === 0 || key === shownCrewKey) return;
+    const isFirst = shownCrewKey === "";
+    shownCrewKey = key;
+    const layout = crewLayout(list.length, sceneSize);
+    crew = list.map((person, index) => {
+      const place = layout[index];
+      const old = crew.find((member) => member.id === person.id);
+      const isEntering = !old && !isFirst && !isReduced;
+      const from = old ? positionOf(old, now) : isEntering ? offscreenOf(place) : place;
+      return {
+        ...person,
+        index,
+        place,
+        from: { left: from.left, top: from.top },
+        movedAt: now,
+        moveMs: isEntering ? ENTER_MS : MOVE_MS,
+        isEntering,
+        lastFrame: old?.lastFrame ?? 0,
+      };
+    });
+    renderLabels(labels, crew);
+  }
+
+  /** 歩いて入ってきた人が着いたら、「JOIN!」を出して名前の札を見せる。 */
+  function finishEntering(now) {
+    const arrived = crew.filter((member) => member.isEntering && positionOf(member, now).isArrived);
+    if (arrived.length === 0) return;
+    crew = crew.map((member) => (arrived.includes(member) ? { ...member, isEntering: false } : member));
+    arrived.forEach((member) => {
+      const scale = TEXT_SCALE.join;
+      addPopup({ text: "JOIN!", x: textLeft("JOIN!", scale, member.place.bodyX), y: member.place.top - 4, color: COLORS.ice, scale, born: now, lifeMs: JOIN_MS, rise: 14 });
+    });
+    renderLabels(labels, crew);
+  }
+
+  const isQuickThrowing = (now) => heroFrameIndex({ now, quickStartedAt, isReduced: true }) !== 0;
+
+  /** その人のいまのコマ。歩いている間は 0 と 1 を交互に、それ以外は人ごとにずらしてくり返す。 */
+  function frameOf(member, now, position) {
+    if (member.isEntering && !position.isArrived) return Math.floor(now / WALK_STEP_MS) % 2;
+    const offset = crewFrameOffset(member.index, HERO_CYCLE_MS);
+    const quick = member.isMe ? quickStartedAt + offset : Number.NEGATIVE_INFINITY;
+    return heroFrameIndex({ now: now + offset, quickStartedAt: quick, isReduced });
+  }
+
+  /** その人の後ろ(外側)へ、雪の粒を飛ばす。 */
+  function throwSnow(member, position, count, now) {
+    if (isReduced) return;
+    const { width, height, isFlipped, side } = member.place;
+    const origin = {
+      x: position.left + width * (isFlipped ? 1 - SHOVEL_BACK_IN_FRAME.x : SHOVEL_BACK_IN_FRAME.x),
+      y: position.top + height * SHOVEL_BACK_IN_FRAME.y,
+    };
+    const target = THROWN_MOUNDS[side];
+    const spread = target.maxHalfWidth;
+    const next = createParticles(count, now, random, { origin, landX: target.centerX, landY: target.baseY - 2, spread });
+    particles = [...particles, ...next].slice(-MAX_PARTICLES);
   }
 
   function checkLevelUp(level, now) {
     if (level <= shownLevel) return;
     shownLevel = level;
-    addPopup({ text: "LEVEL UP!", x: centeredX("LEVEL UP!", 2), y: 52, color: COLORS.gold, scale: 2, born: now, lifeMs: 1800, rise: 10 });
+    const scale = TEXT_SCALE.levelUp;
+    addPopup({ text: "LEVEL UP!", x: textLeft("LEVEL UP!", scale, W / 2), y: 118, color: COLORS.gold, scale, born: now, lifeMs: LEVEL_UP_MS, rise: 16 });
+  }
+
+  function drawPiles(ctx, elapsedMs) {
+    const remaining = pileRemaining(elapsedMs);
+    drawMound(ctx, DOOR_MOUND.centerX, DOOR_MOUND.baseY, moundSize(remaining, DOOR_MOUND));
+    const moved = (1 - remaining) / (1 - PILE_MIN_REMAINING);
+    if (moved > 0.02) {
+      const sides = new Set(crew.map((member) => member.place.side));
+      [...sides].forEach((side) => {
+        const mound = THROWN_MOUNDS[side];
+        drawMound(ctx, mound.centerX, mound.baseY, moundSize(moved, mound));
+      });
+    }
+    drawMound(ctx, CENTER_MOUND.centerX, CENTER_MOUND.baseY, moundSize(remaining, CENTER_MOUND));
+  }
+
+  /** 参加者を、奥(外側)の人から順に描く。投げるコマに入ったら雪の粒を飛ばす。 */
+  function drawCrew(ctx, now) {
+    const isQuick = isQuickThrowing(now);
+    const order = [...crew].sort((a, b) => b.place.rank - a.place.rank || a.index - b.index);
+    const lastFrames = new Map();
+    order.forEach((member) => {
+      const position = positionOf(member, now);
+      const frame = frameOf(member, now, position);
+      const isTapping = member.isMe && isQuick;
+      if (frame === THROW_FRAME && member.lastFrame !== THROW_FRAME && !isTapping && position.isArrived) {
+        throwSnow(member, position, AUTO_PARTICLES, now);
+      }
+      lastFrames.set(member.id, frame);
+      ctx.drawImage(heroFrames.get(member.place)[frame], position.left, position.top);
+      if (member.isLeader && position.isArrived) {
+        ctx.drawImage(crown, Math.round(member.place.bodyX - crown.width / 2), member.place.top - crown.height + 4);
+      }
+    });
+    crew = crew.map((member) => ({ ...member, lastFrame: lastFrames.get(member.id) ?? member.lastFrame }));
   }
 
   function drawScene(now) {
     const ms = isReduced ? 0 : now - startedAt;
     const elapsedMs = getElapsedMs();
     const level = digLevel(elapsedMs);
-    const ctx = buffer.ctx;
+    finishEntering(now);
     checkLevelUp(level, now);
-    throwAutomatically(now);
     particles = particles.filter((p) => now - p.born < p.lifeMs);
     popups = popups.filter((p) => now - p.born < p.lifeMs);
 
-    ctx.drawImage(sky, 0, 0);
-    drawAurora(ctx, ms);
-    drawTwinkles(ctx, twinkles, ms);
+    const ctx = buffer.ctx;
+    ctx.drawImage(background, 0, 0);
     if (!isReduced) drawFlock(ctx, geese, ms, level);
-    ctx.drawImage(front, 0, 0);
     drawPiles(ctx, elapsedMs);
-    ctx.drawImage(hero[heroFrameName({ now, quickStartedAt, isReduced })], HERO_X, HERO_Y);
+    drawCrew(ctx, now);
     drawParticles(ctx, particles, now);
     drawSnowfall(ctx, flakes, ms / 1000);
     const count = comboAt(combo, now);
     if (count >= MIN_COMBO_TO_SHOW) {
       const text = `COMBO x${count}`;
-      drawText(ctx, text, centeredX(text, 2), 4, { color: COLORS.ice, scale: 2 });
+      drawText(ctx, text, textLeft(text, TEXT_SCALE.combo, W / 2), 8, { color: COLORS.ice, scale: TEXT_SCALE.combo });
     }
     drawPopups(ctx, popups, now, isReduced);
 
@@ -377,7 +371,7 @@ export function startPixelSnow(canvas, { getElapsedMs }) {
     frameId = 0;
   }
 
-  /** タップ: その場ですばやく 1 回投げて「+1」。コンボの節目で声が出る(スコアには入らない)。 */
+  /** タップ: 自分がすばやく 1 回投げて「+1」。コンボの節目で声が出る(スコアには入らない)。 */
   function onTap(event) {
     const now = performance.now();
     const box = canvas.getBoundingClientRect();
@@ -385,13 +379,16 @@ export function startPixelSnow(canvas, { getElapsedMs }) {
     const tapY = ((event.clientY - box.top) / box.height) * H;
     combo = registerTap(combo, now);
     quickStartedAt = now;
-    addParticles(TAP_PARTICLES, now);
-    const plusX = Math.round(Math.min(W - 10, Math.max(2, tapX - 3)));
-    const plusY = Math.round(Math.min(H - 8, Math.max(16, tapY - 6)));
-    addPopup({ text: "+1", x: plusX, y: plusY, color: COLORS.gold, scale: 1, born: now, lifeMs: PLUS_ONE_MS, rise: 12 });
+    const me = crew.find((member) => member.isMe) ?? crew[0];
+    if (me) throwSnow(me, positionOf(me, now), TAP_PARTICLES, now);
+    const plus = TEXT_SCALE.plusOne;
+    const plusX = Math.round(Math.min(W - 20, Math.max(4, tapX - 7)));
+    const plusY = Math.round(Math.min(H - 16, Math.max(40, tapY - 12)));
+    addPopup({ text: "+1", x: plusX, y: plusY, color: COLORS.gold, scale: plus, born: now, lifeMs: PLUS_ONE_MS, rise: 24 });
     const cheer = cheerFor(combo.count);
     if (cheer) {
-      addPopup({ text: cheer, x: centeredX(cheer, 3), y: 36, color: COLORS.gold, scale: 3, born: now, lifeMs: CHEER_MS, rise: 6 });
+      const scale = TEXT_SCALE.cheer;
+      addPopup({ text: cheer, x: textLeft(cheer, scale, W / 2), y: 70, color: COLORS.gold, scale, born: now, lifeMs: CHEER_MS, rise: 12 });
     }
     if (isReduced) drawScene(now);
   }
@@ -401,6 +398,7 @@ export function startPixelSnow(canvas, { getElapsedMs }) {
     screen = fitCanvas(canvas);
   });
 
+  setCrew(firstCrew);
   canvas.addEventListener("pointerdown", onTap);
   document.addEventListener("visibilitychange", onVisibility);
   resizeObserver.observe(canvas);
@@ -408,6 +406,7 @@ export function startPixelSnow(canvas, { getElapsedMs }) {
   start();
 
   return {
+    setCrew: (people) => setCrew(people),
     stop() {
       pause();
       canvas.removeEventListener("pointerdown", onTap);

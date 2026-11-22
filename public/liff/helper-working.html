@@ -7,7 +7,7 @@
     <!--
       【若者】雪かき中(helper-working.html?id=依頼ID)。経過時間は、サーバーに残した開始時刻から計算するので、
       画面を閉じて開き直しても続きから表示される。[雪かきを終える] で範囲の画面(snow-area.html)へ。
-      雪かきの様子はドット絵(pixel-snow.js が Canvas に描く)。タップするとコンボの演出が出る(見た目だけで、スコアには入らない)。
+      雪かきの様子はドット絵(pixel-snow.js が Canvas に描く。背景と主人公は ChatGPT で作った画像 images/working-*.png)。参加者の人数ぶん主人公が並ぶ。タップするとコンボの演出が出る(見た目だけで、スコアには入らない)。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
     <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
@@ -75,13 +75,59 @@
       #pixel-canvas {
         display: block;
         width: 100%;
-        aspect-ratio: 4 / 3;
+        aspect-ratio: 724 / 543;
         image-rendering: pixelated;
         image-rendering: crisp-edges;
         touch-action: manipulation;
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
         user-select: none;
+      }
+      /* 画像が読み込めなかったときは、絵の場所ごと隠す(経過時間とボタンは使える) */
+      .pixel-stage.is-unavailable {
+        display: none;
+      }
+      .pixel-frame {
+        position: relative;
+      }
+      /* 頭の上の名前の札(pixel-snow.js が位置を % で決める) */
+      .crew-labels {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      .crew-name {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        max-width: 30%;
+        padding: 0 4px;
+        font-family: var(--font-display);
+        font-size: 0.68rem;
+        font-weight: 800;
+        line-height: 1.25;
+        white-space: nowrap;
+        color: var(--snow);
+        background: rgba(11, 16, 38, 0.78);
+        box-shadow: 0 0 0 1px rgba(244, 248, 255, 0.5);
+        transform: translate(-50%, -100%);
+        transition: opacity 0.3s;
+      }
+      .crew-name.is-me {
+        color: var(--gold);
+        box-shadow: 0 0 0 2px var(--gold);
+      }
+      .crew-name.is-hidden {
+        opacity: 0;
+      }
+      .crew-me-mark {
+        position: absolute;
+        top: 100%;
+        font-size: 0.6rem;
+        line-height: 1;
+        color: var(--gold);
+        text-shadow: 0 1px 0 var(--night-top);
       }
       #elapsed {
         margin: 0;
@@ -111,7 +157,10 @@
         <div id="level-bar" class="pixel-bar" aria-hidden="true"></div>
       </div>
       <div class="pixel-stage">
-        <canvas id="pixel-canvas" width="160" height="120" aria-hidden="true"></canvas>
+        <div class="pixel-frame">
+          <canvas id="pixel-canvas" width="362" height="272" aria-hidden="true"></canvas>
+          <div id="crew-labels" class="crew-labels" aria-hidden="true"></div>
+        </div>
       </div>
       <p class="elapsed-label center">経過時間</p>
       <p id="elapsed" class="big-number" role="timer">--:--</p>

@@ -4,7 +4,7 @@ export type Palette = Readonly<Record<string, string>>;
 
 export const PALETTE: Palette;
 export const TRANSPARENT: string;
-export const HERO_FRAMES: Readonly<{ dig: Sprite; lift: Sprite; throw: Sprite }>;
+export const CROWN: Sprite;
 export const GOOSE_FRAMES: Readonly<{ up: Sprite; down: Sprite }>;
 export const FONT_PALETTE: Palette;
 export const FONT_WIDTH: number;

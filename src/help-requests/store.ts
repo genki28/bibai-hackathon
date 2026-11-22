@@ -5,7 +5,7 @@
  * ここはそれらをつなぐだけで、ルールは書かない。
  */
 import { randomUUID } from "node:crypto";
-import { fail, isOngoingForElder, isOpen, MAX_HELPERS } from "./model.js";
+import { fail, isJoinable, isOngoingForElder, MAX_HELPERS } from "./model.js";
 import type { HelpRequest, HelpRequestInput, Ratings, Result } from "./model.js";
 import type { FinishInput, JoinInput } from "./inputs.js";
 import { createMemoryHelpRequestRepository, ONGOING_STATUSES } from "./repository.js";
@@ -130,8 +130,8 @@ export function createHelpRequestStore(
     listFinished: () => repo.listByStatus(["done"]),
     listWaiting: () => repo.listByStatus(["waiting"]),
     listOpen: async () =>
-      (await repo.listByStatus(["waiting", "accepted"])).filter(
-        (r) => isOpen(r) && r.helpers.length < MAX_HELPERS,
+      (await repo.listByStatus(["waiting", "accepted", "working"])).filter(
+        (r) => isJoinable(r) && r.helpers.length < MAX_HELPERS,
       ),
     findMine: async (userId) =>
       (await repo.listByUser(userId)).filter(isOngoingForElder).at(-1) ?? null,

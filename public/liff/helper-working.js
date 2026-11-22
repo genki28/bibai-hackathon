@@ -45,12 +45,31 @@ function startTimer(startedAt) {
   return getElapsedMs;
 }
 
-/** ドット絵の雪かきを動かす。うまく動かなくても、経過時間とボタンは使えるようにする。 */
-function startScene(getElapsedMs) {
+/** 依頼の参加者を、ドット絵に並べる形にする(参加した順。先頭がリーダー)。 */
+function crewOf(request, userId) {
+  const leaderId = request.leaderUserId ?? request.helpers[0]?.userId;
+  const crew = request.helpers.map((helper) => ({
+    id: helper.userId,
+    name: helper.displayName,
+    isMe: helper.userId === userId,
+    isLeader: helper.userId === leaderId,
+  }));
+  // 参加者が読めなかったときも、自分 1 人は描く
+  return crew.length > 0 ? crew : [{ id: userId, name: "あなた", isMe: true, isLeader: false }];
+}
+
+function showHelperNames(request) {
+  byId("helper-names").textContent = `いっしょに: ${request.helpers.map((h) => h.displayName).join("、")}`;
+}
+
+/** ドット絵の雪かきを動かす。画像が読み込めないなどで動かなければ、絵を隠す(経過時間とボタンは使える)。 */
+async function startScene(getElapsedMs, crew) {
   try {
-    startPixelSnow(byId("pixel-canvas"), { getElapsedMs });
+    return await startPixelSnow(byId("pixel-canvas"), { getElapsedMs, crew, labels: byId("crew-labels") });
   } catch (error) {
     console.error("ドット絵のアニメーションを動かせませんでした", error);
+    document.querySelector(".pixel-stage")?.classList.add("is-unavailable");
+    return null;
   }
 }
 
@@ -77,12 +96,19 @@ async function main() {
   const userId = await userIdPromise;
   const request = await fetchRequest(id, userId);
   if (moveIfNeeded(request, id)) return;
-  startScene(startTimer(request.startedAt));
-  byId("helper-names").textContent = `いっしょに: ${request.helpers.map((h) => h.displayName).join("、")}`;
+  const scenePromise = startScene(startTimer(request.startedAt), crewOf(request, userId));
+  showHelperNames(request);
   byId("finish-button").addEventListener("click", () => {
     navigateTo(pageUrl("snow-area.html", id));
   });
-  startPolling(async () => moveIfNeeded(await fetchRequest(id, userId), id), POLL_INTERVAL_MS);
+  // 数秒ごとに読み直す。終わっていれば次の画面へ。途中で人が増えたら、絵にも登場させる
+  startPolling(async () => {
+    const latest = await fetchRequest(id, userId);
+    if (moveIfNeeded(latest, id)) return true;
+    showHelperNames(latest);
+    (await scenePromise)?.setCrew(crewOf(latest, userId));
+    return false;
+  }, POLL_INTERVAL_MS);
 }
 
 main()

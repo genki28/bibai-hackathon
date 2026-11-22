@@ -92,3 +92,48 @@ export function createRandom(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+// ---- 主人公の画像(working-hero.png。4 コマが横に等間隔)のコマの選び方 ----
+
+/** コマの数と番号(0 = 差す、1 = 持ち上げる、2 = 振りかぶる、3 = 投げる)。 */
+export const HERO_FRAME_COUNT = 4;
+export const THROW_FRAME = 3;
+/** 自動でくり返す 1 回の長さと、各コマが始まる時刻(ミリ秒)。 */
+export const HERO_CYCLE_MS = 1800;
+export const HERO_FRAME_STARTS = Object.freeze([0, 600, 1050, 1350]);
+/** タップしたときの、すばやい 1 回(持ち上げる → 振りかぶる → 投げる)の長さと、各コマが始まる時刻。 */
+export const QUICK_THROW_MS = 300;
+export const QUICK_FRAME_STARTS = Object.freeze([0, 60, 130]);
+
+/** starts(小さい順)のうち、t 以下でいちばん後ろのものの番号。 */
+const indexAt = (starts, t) => starts.reduce((found, start, i) => (t >= start ? i : found), 0);
+
+/**
+ * 時刻 now に見せるコマの番号(0〜3)。タップの直後はすばやい 1 回、それ以外は自動のくり返し。
+ * 動きを減らす設定(isReduced)のときは、タップの直後以外は 0 のまま。
+ */
+export function heroFrameIndex({ now, quickStartedAt, isReduced }) {
+  const sinceQuick = now - quickStartedAt;
+  if (sinceQuick >= 0 && sinceQuick < QUICK_THROW_MS) return 1 + indexAt(QUICK_FRAME_STARTS, sinceQuick);
+  if (isReduced) return 0;
+  return indexAt(HERO_FRAME_STARTS, ((now % HERO_CYCLE_MS) + HERO_CYCLE_MS) % HERO_CYCLE_MS);
+}
+
+/** 横に並んだコマの画像から、index 番目のコマを切り出す位置。 */
+export function frameRect(index, frameWidth, frameHeight) {
+  return { sx: index * frameWidth, sy: 0, sw: frameWidth, sh: frameHeight };
+}
+
+/** 縦横の比をそのままに、高さが targetHeight になる大きさ(整数)。 */
+export function fitToHeight(width, height, targetHeight) {
+  return { width: Math.round((width * targetHeight) / height), height: Math.round(targetHeight) };
+}
+
+/** 雪の山の大きさ。remaining(残りの割合 0〜1)に合わせて、最小〜最大の間で決める。 */
+export function moundSize(remaining, { minHalfWidth, maxHalfWidth, minHeight, maxHeight }) {
+  const r = clamp(remaining, 0, 1);
+  return {
+    halfWidth: minHalfWidth + (maxHalfWidth - minHalfWidth) * r,
+    height: minHeight + (maxHeight - minHeight) * r,
+  };
+}

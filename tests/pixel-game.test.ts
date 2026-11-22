@@ -5,15 +5,25 @@ import {
   EMPTY_COMBO,
   FLOCK_MAX_SIZE,
   FLOCK_MIN_SIZE,
+  HERO_CYCLE_MS,
+  HERO_FRAME_COUNT,
+  HERO_FRAME_STARTS,
   MAX_LEVEL,
   PILE_MIN_REMAINING,
+  QUICK_FRAME_STARTS,
+  QUICK_THROW_MS,
+  THROW_FRAME,
   cheerFor,
   comboAt,
   createRandom,
   digLevel,
   flockSize,
+  fitToHeight,
   formatElapsed,
+  frameRect,
+  heroFrameIndex,
   levelProgress,
+  moundSize,
   pileRemaining,
   registerTap,
 } from "../public/liff/pixel-game.js";
@@ -130,5 +140,73 @@ describe("マガンの群れと乱数", () => {
     // Assert
     expect(listA).toEqual(listB);
     expect(listA.every((n) => n >= 0 && n < 1)).toBe(true);
+  });
+});
+
+describe("主人公のコマの選び方", () => {
+  const auto = (now: number) => heroFrameIndex({ now, quickStartedAt: Number.NEGATIVE_INFINITY, isReduced: false });
+
+  test("自動では 差す → 持ち上げる → 振りかぶる → 投げる をくり返す", () => {
+    // Arrange
+    const times = HERO_FRAME_STARTS.map((start) => start + 10);
+
+    // Act
+    const frames = times.map(auto);
+
+    // Assert
+    expect(frames).toEqual([0, 1, 2, THROW_FRAME]);
+    expect(auto(HERO_CYCLE_MS + 10)).toBe(0);
+  });
+
+  test("タップの直後は、すばやく 持ち上げる → 振りかぶる → 投げる、終わると自動に戻る", () => {
+    // Arrange
+    const quickStartedAt = 100;
+    const at = (t: number) => heroFrameIndex({ now: quickStartedAt + t, quickStartedAt, isReduced: false });
+
+    // Act
+    const frames = [0, ...QUICK_FRAME_STARTS.slice(1)].map((t) => at(t + 1));
+
+    // Assert
+    expect(frames).toEqual([1, 2, THROW_FRAME]);
+    expect(at(QUICK_THROW_MS)).toBe(auto(quickStartedAt + QUICK_THROW_MS));
+  });
+
+  test("動きを減らす設定では、タップの直後以外は 0 のまま", () => {
+    // Arrange / Act
+    const still = heroFrameIndex({ now: 1_400, quickStartedAt: Number.NEGATIVE_INFINITY, isReduced: true });
+    const tapped = heroFrameIndex({ now: 1_200, quickStartedAt: 1_000, isReduced: true });
+
+    // Assert
+    expect(still).toBe(0);
+    expect(tapped).toBe(THROW_FRAME);
+  });
+
+  test("コマの数は 4 で、index 番目のコマは横に frameWidth ずつずれた位置から切り出す", () => {
+    // Arrange / Act
+    const rect = frameRect(2, 271, 247);
+
+    // Assert
+    expect(HERO_FRAME_COUNT).toBe(4);
+    expect(rect).toEqual({ sx: 542, sy: 0, sw: 271, sh: 247 });
+  });
+});
+
+describe("配置の計算", () => {
+  test("縦横の比をそのままに、決めた高さに合わせる", () => {
+    // Arrange / Act
+    const size = fitToHeight(271, 247, 109);
+
+    // Assert
+    expect(size).toEqual({ width: 120, height: 109 });
+  });
+
+  test("雪の山は残りの割合に合わせて、最小〜最大の大きさになる", () => {
+    // Arrange
+    const range = { minHalfWidth: 10, maxHalfWidth: 50, minHeight: 4, maxHeight: 44 };
+
+    // Act / Assert
+    expect(moundSize(1, range)).toEqual({ halfWidth: 50, height: 44 });
+    expect(moundSize(0.5, range)).toEqual({ halfWidth: 30, height: 24 });
+    expect(moundSize(-1, range)).toEqual({ halfWidth: 10, height: 4 });
   });
 });
