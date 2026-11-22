@@ -131,6 +131,8 @@ export function createApp(config: AppConfig, options: AppOptions = {}): Express 
       listReferrals: inviteStore.listReferrals,
       // 参加を取り消したら本人確認も取り消す(次に参加するときは、もう一度顔の照合が必要)
       onLeave: identityStore.remove,
+      // 音の合言葉は、サーバーだけが知っている LINE のチャネルシークレットから作る
+      arrivalCodeSecret: config.channelSecret,
     }),
   );
   // 友だちを誘う(招待コード・招待の記録)。勧誘ポイントはランキングで数える
