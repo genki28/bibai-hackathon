@@ -16,6 +16,8 @@ const CONFIG: AppConfig = {
   channelAccessToken: "",
   liffId: "",
   port: 0,
+  supabaseUrl: "",
+  supabaseSecretKey: "",
 };
 
 /** Open-Meteo の応答の形を真似したテスト用データを作る。 */

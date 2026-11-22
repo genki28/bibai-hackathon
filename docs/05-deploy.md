@@ -56,16 +56,37 @@ npm run dev:worker
 
 http://127.0.0.1:8787/liff/ で開けます。`.env` の値がそのまま使われます。
 
-## 注意: データが残らない
+## データの保存先(Supabase)
 
-いまは役割・依頼・本人確認の結果を **サーバーのメモリ** に置いています。
-Cloudflare Workers はリクエストごとに別の場所で動くことがあるため、公開先では次のことが起きます。
+役割・依頼・本人確認の結果は **Supabase**(= ネット上のデータベース)に保存します。
+Cloudflare Workers はリクエストごとに別の場所で動くことがあるので、サーバーのメモリに置くとデータが消えたり、人によって見え方が違ったりします。Supabase に置けば全員が同じデータを見られます。
 
-- 登録した役割や依頼が、しばらくすると消える
-- 人によって(またはタイミングによって)見えるデータが違う
+### 最初の 1 回だけ: 表を作る
 
-ちゃんと残すには **Supabase につなぐ** 必要があります(決定済み・未実装)。それまでは「画面の流れを見せるデモ」として使ってください。
-LINE 側のリッチメニューの切り替えは LINE に保存されるので、こちらは消えません。
+1. Supabase のダッシュボードでプロジェクトを開き、左のメニューの **SQL Editor** を開く
+2. `supabase/migrations/0001_init.sql` の中身を全部貼り付けて **Run** を押す(何度実行しても壊れません)
+3. 左のメニューの **Table Editor** に `help_requests`・`identity_verifications`・`user_roles` の 3 つの表ができていれば成功
+
+すべての表で RLS(= 行ごとの読み書きの許可)を有効にし、許可は 1 つも作っていません。
+ブラウザ用の公開キー(publishable キー)からは読み書きできず、サーバーだけが secret キーで読み書きします。
+
+### 最初の 1 回だけ: secret キーを Cloudflare に登録する
+
+secret キーは **Project Settings → API Keys** にある `sb_secret_...` の形の値です(⚠ 秘密の値。チャットや画面に出さない)。
+
+```bash
+npx wrangler secret put SUPABASE_SECRET_KEY
+```
+
+プロジェクトの URL(`SUPABASE_URL`)は公開してよい値なので、`wrangler.jsonc` の `vars` に書いてあります。
+
+### 手元で Supabase を使う
+
+`.env` に `SUPABASE_URL` と `SUPABASE_SECRET_KEY` を入れると、`npm run dev` でも Supabase に保存します。
+どちらかが空なら、これまでどおりサーバーのメモリに置きます(再起動で消えます)。
+起動したときのログの「保存先」で、どちらを使っているか分かります。
+
+LINE 側のリッチメニューの切り替えは、Supabase とは別に LINE に保存されます。
 
 ## うまくいかないとき
 

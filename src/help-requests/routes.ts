@@ -52,6 +52,7 @@ function readUserIdQuery(value: unknown): string | null | undefined {
 
 /**
  * 雪かきの依頼の API。すべて { success, data } か { success: false, error } で返す。
+ * 保存先(Supabase など)でエラーが起きたときは、app.ts のエラー処理が 500 と日本語のエラーを返す。
  * ⚠ いまは送られてきた userId をそのまま信じている(LINE の ID トークンでの確認は未実装)。
  * 一覧・詳細・書き込みの一覧は docs/features/pages.md を参照。
  */
@@ -62,36 +63,37 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
   const router = express.Router();
   router.use("/api/help-requests", express.json());
 
-  router.post("/api/help-requests", (req, res) => {
+  router.post("/api/help-requests", async (req, res) => {
     const input = parseHelpRequestInput(req.body);
     if (!input) {
       sendError(res, 400, "依頼の内容が正しくありません。");
       return;
     }
-    res.status(201).json({ success: true, data: store.create(input, now()) });
+    res.status(201).json({ success: true, data: await store.create(input, now()) });
   });
 
-  router.get("/api/help-requests", (_req, res) => {
-    res.json({ success: true, data: store.listOpen().map(toPublicView) });
+  router.get("/api/help-requests", async (_req, res) => {
+    const open = await store.listOpen();
+    res.json({ success: true, data: open.map(toPublicView) });
   });
 
-  router.get("/api/help-requests/mine/:userId", (req, res) => {
+  router.get("/api/help-requests/mine/:userId", async (req, res) => {
     const { userId } = req.params;
     if (!isValidUserId(userId)) {
       sendError(res, 400, INVALID_USER_ID);
       return;
     }
-    const mine = store.findMine(userId);
+    const mine = await store.findMine(userId);
     res.json({ success: true, data: mine ? toMemberView(mine, "elder") : null });
   });
 
-  router.get("/api/help-requests/:id", (req, res) => {
+  router.get("/api/help-requests/:id", async (req, res) => {
     const userId = readUserIdQuery(req.query.userId);
     if (!isValidRequestId(req.params.id) || userId === undefined) {
       sendError(res, 400, userId === undefined ? INVALID_USER_ID : INVALID_REQUEST_ID);
       return;
     }
-    const request = store.findById(req.params.id);
+    const request = await store.findById(req.params.id);
     if (!request) {
       sendError(res, 404, NOT_FOUND);
       return;
@@ -117,7 +119,7 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
   };
 
   const withUserId =
-    (run: (id: string, userId: string, at: Date) => Result<HelpRequest>): Action =>
+    (run: (id: string, userId: string, at: Date) => Promise<Result<HelpRequest>>): Action =>
     async (id, body, at) => {
       const userId = parseUserIdInput(body);
       return userId ? run(id, userId, at) : null;
@@ -135,7 +137,7 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
     const input = parseFinishInput(body);
     if (!input) return null;
     // 先に依頼の有無と権限を見てから、天気予報を問い合わせる
-    const request = store.findById(id);
+    const request = await store.findById(id);
     const isHelper = request !== null && viewerOf(request, input.userId) === "helper";
     const snowDepthM = isHelper && request.status === "working" ? await getSnowDepthM() : 0;
     return store.finish(id, input, snowDepthM, at);
@@ -145,14 +147,15 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
     return input ? store.thank(id, input.userId, input.ratings, at) : null;
   });
 
-  router.get("/api/ranking", (req, res) => {
+  router.get("/api/ranking", async (req, res) => {
     const period = req.query.period ?? "total";
     const userId = readUserIdQuery(req.query.userId);
     if (!isRankingPeriod(period) || userId === undefined) {
       sendError(res, 400, userId === undefined ? INVALID_USER_ID : "期間(period)は daily か total を指定してください。");
       return;
     }
-    res.json({ success: true, data: buildRanking(store.listAll(), period, now(), userId) });
+    const finished = await store.listFinished();
+    res.json({ success: true, data: buildRanking(finished, period, now(), userId) });
   });
 
   return router;

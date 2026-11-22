@@ -10,6 +10,8 @@ const CONFIG: AppConfig = {
   channelAccessToken: "",
   liffId: "",
   port: 0,
+  supabaseUrl: "",
+  supabaseSecretKey: "",
 };
 // テスト用の架空のユーザー ID
 const ELDER_ID = `U${"d".repeat(32)}`;
@@ -60,12 +62,12 @@ test("ユーザー ID や雪の量がおかしい入力は受け付けない", (
   invalid.forEach((input) => expect(parseHelpRequestInput(input)).toBeNull());
 });
 
-test("依頼を登録すると「待っている」状態で保存され、一覧に出る", () => {
+test("依頼を登録すると「待っている」状態で保存され、一覧に出る", async () => {
   // Arrange
   const store = createHelpRequestStore();
 
   // Act
-  const created = store.create({ userId: ELDER_ID, amount: "little" }, NOW);
+  const created = await store.create({ userId: ELDER_ID, amount: "little" }, NOW);
 
   // Assert
   expect(created).toMatchObject({
@@ -75,20 +77,20 @@ test("依頼を登録すると「待っている」状態で保存され、一�
     createdAt: "2026-11-23T07:00:00.000Z",
   });
   expect(created.id).toMatch(/^[0-9a-f-]{36}$/);
-  expect(store.listWaiting()).toEqual([created]);
+  expect(await store.listWaiting()).toEqual([created]);
 });
 
-test("同じ人が待っている依頼を出していたら、新しく作らず同じ依頼を返す", () => {
+test("同じ人が待っている依頼を出していたら、新しく作らず同じ依頼を返す", async () => {
   // Arrange
   const store = createHelpRequestStore();
-  const first = store.create({ userId: ELDER_ID, amount: "normal" }, NOW);
+  const first = await store.create({ userId: ELDER_ID, amount: "normal" }, NOW);
 
   // Act
-  const second = store.create({ userId: ELDER_ID, amount: "lots" }, NOW);
+  const second = await store.create({ userId: ELDER_ID, amount: "lots" }, NOW);
 
   // Assert
   expect(second).toEqual(first);
-  expect(store.listWaiting()).toHaveLength(1);
+  expect(await store.listWaiting()).toHaveLength(1);
 });
 
 test("POST /api/help-requests で依頼を登録し、GET で一覧が取れる", async () => {
@@ -127,15 +129,15 @@ test("POST /api/help-requests は入力がおかしいと 400 と日本語のエ
   });
 });
 
-test("その人の「待っている」依頼を探す。なければ null", () => {
+test("その人の「待っている」依頼を探す。なければ null", async () => {
   // Arrange
   const store = createHelpRequestStore();
   const otherId = `U${"f".repeat(32)}`;
-  const created = store.create({ userId: ELDER_ID, amount: "normal" }, NOW);
+  const created = await store.create({ userId: ELDER_ID, amount: "normal" }, NOW);
 
   // Act & Assert
-  expect(store.findWaiting(ELDER_ID)).toEqual(created);
-  expect(store.findWaiting(otherId)).toBeNull();
+  expect(await store.findWaiting(ELDER_ID)).toEqual(created);
+  expect(await store.findWaiting(otherId)).toBeNull();
 });
 
 test("GET /api/help-requests/mine/:userId は自分の待っている依頼を返し、なければ null を返す", async () => {

@@ -23,15 +23,17 @@
 
 ## 技術スタック
 
-**LINE Bot + LIFF**(Node.js + TypeScript + Express + @line/bot-sdk)。データの保存先と公開方法は未定です。詳しくは `docs/decisions.md`。
+**LINE Bot + LIFF**(Node.js + TypeScript + Express + @line/bot-sdk)。データの保存先は **Supabase**(@supabase/supabase-js)、公開先は **Cloudflare Workers**。詳しくは `docs/decisions.md`。
 
 - コードを書く前に必ず `docs/decisions.md` と `docs/product.md` を読む。
-- 未定の項目(データの保存先・公開方法)が必要になったら、勝手に選ばず `/decide-stack` を提案する。
+- 新しい技術(ライブラリ・サービス)が必要になったら、勝手に選ばず `/decide-stack` を提案する。
 - Express サーバー 1 つで Bot と LIFF の両方を動かしている。主な場所:
   - `src/bot/reply.ts` — Bot の返事を作るところ(Bot の中身を変えるならまずここ)
   - `src/bot/webhook.ts` — LINE からの通知を受けて返信するところ
   - `src/app.ts` — URL ごとの処理の一覧 / `src/server.ts` — 起動 / `src/config.ts` — `.env` の読み込み
   - `public/liff/` — LIFF の画面(HTML と JavaScript)
+  - `src/storage.ts` — 保存先を選ぶ(`SUPABASE_URL` と `SUPABASE_SECRET_KEY` があれば Supabase、なければメモリ)。各 `store.ts` がメモリ版、`supabase-*.ts` が Supabase 版
+  - `supabase/migrations/` — Supabase の表の設計図(SQL)。表を変えたら新しい番号のファイルを足す
   - `tests/` — テスト
 - `/webhook` より前に `express.json()` を入れない(LINE の署名確認が壊れる)。
 - LIFF の画面にユーザー由来の文字を入れるときは `textContent` を使う(`innerHTML` は使わない)。

@@ -4,7 +4,14 @@ import { afterEach, expect, test } from "vitest";
 import { createApp } from "../src/app.js";
 import type { AppConfig } from "../src/config.js";
 
-const CONFIG: AppConfig = { channelSecret: "", channelAccessToken: "", liffId: "", port: 0 };
+const CONFIG: AppConfig = {
+  channelSecret: "",
+  channelAccessToken: "",
+  liffId: "",
+  port: 0,
+  supabaseUrl: "",
+  supabaseSecretKey: "",
+};
 // テスト用の架空のユーザー ID
 const ELDER_ID = `U${"d".repeat(32)}`;
 const HELPER_A = `U${"a".repeat(32)}`;

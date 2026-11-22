@@ -1,5 +1,6 @@
 import { createApp } from "./app.js";
-import { isBotConfigured, isLiffConfigured, loadConfig } from "./config.js";
+import { isBotConfigured, isLiffConfigured, isSupabaseConfigured, loadConfig } from "./config.js";
+import { STORAGE_LABELS } from "./storage.js";
 
 const config = loadConfig();
 const app = createApp(config);
@@ -18,6 +19,7 @@ const server = app.listen(config.port, () => {
     `  LINE Bot   : ${describe(isBotConfigured(config), "LINE_CHANNEL_SECRET / LINE_CHANNEL_ACCESS_TOKEN")}`,
   );
   console.log(`  LIFF       : ${describe(isLiffConfigured(config), "LIFF_ID")}`);
+  console.log(`  保存先     : ${STORAGE_LABELS[isSupabaseConfigured(config) ? "supabase" : "memory"]}`);
 });
 
 server.on("error", (err: NodeJS.ErrnoException) => {

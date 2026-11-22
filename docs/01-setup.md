@@ -81,6 +81,13 @@ LINE Bot + LIFF を Node.js で作ることに決まったので、次の準備�
 4. **`.env` に値を入れる。** 入れる値の取り方は [LINE の準備](04-line-setup.md) を見てください。
    `.env` は秘密の値を入れるファイルで、Git には入りません。チャットや画面共有で中身を見せないようにしましょう。
 
+   データの保存先(Supabase)を使うときは、次の 2 つも入れます(空ならサーバーのメモリに保存し、再起動で消えます)。表の作り方は [公開する](05-deploy.md) を見てください。
+
+   | 名前 | 入れる値 |
+   | --- | --- |
+   | `SUPABASE_URL` | Supabase のプロジェクトの URL(`https://〜.supabase.co`)。公開してよい値 |
+   | `SUPABASE_SECRET_KEY` | Supabase の secret キー(`sb_secret_...` の形)。**秘密の値**。Project Settings → API Keys にある |
+
 5. **動かしてみる。** 値が空のままでも起動できます。
 
    ```bash

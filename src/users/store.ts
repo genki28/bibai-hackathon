@@ -2,25 +2,27 @@ import type { Role } from "./roles.js";
 
 /**
  * 「誰がどの役割か」を覚えておく場所。
- * いまはサーバーのメモリに置いているので、再起動すると消える(Supabase につなぐときに置き換える)。
- * ただし LINE 側に紐付けたリッチメニューは残るので、利用者の見た目は変わらない。
+ * 保存先は 2 種類: メモリ版(このファイル。テストや Supabase 未設定のとき用。再起動で消える)と
+ * Supabase 版(supabase-store.ts)。
+ * リッチメニューの紐付けはこことは別に LINE 側に保存される。
  */
 export type RoleStore = {
-  readonly getRole: (userId: string) => Role | null;
-  readonly setRole: (userId: string, role: Role) => void;
+  readonly getRole: (userId: string) => Promise<Role | null>;
+  readonly setRole: (userId: string, role: Role) => Promise<void>;
   /** 登録を取り消す(メニューを最初に戻すとき)。 */
-  readonly clearRole: (userId: string) => void;
+  readonly clearRole: (userId: string) => Promise<void>;
 };
 
+/** メモリ版。 */
 export function createRoleStore(): RoleStore {
   let roles: ReadonlyMap<string, Role> = new Map();
 
   return {
-    getRole: (userId) => roles.get(userId) ?? null,
-    setRole: (userId, role) => {
+    getRole: async (userId) => roles.get(userId) ?? null,
+    setRole: async (userId, role) => {
       roles = new Map([...roles, [userId, role]]);
     },
-    clearRole: (userId) => {
+    clearRole: async (userId) => {
       roles = new Map([...roles].filter(([id]) => id !== userId));
     },
   };

@@ -37,7 +37,7 @@ export function createUsersRouter(deps: UsersRouterDeps): Router {
     try {
       const userId = await deps.verifyIdToken(idToken, channelId);
       await deps.unlinkMenu(userId);
-      deps.roleStore.clearRole(userId);
+      await deps.roleStore.clearRole(userId);
       res.json({ success: true, data: { reset: true } });
     } catch (error: unknown) {
       if (error instanceof InvalidIdTokenError) {

@@ -46,35 +46,35 @@ test("経過時間は分(小数第 1 位まで)。時刻が逆なら 0", () => {
   expect(elapsedMinutes(startedAt, new Date("2026-11-23T06:00:00Z"))).toBe(0);
 });
 
-test("日本時間の日付にする(UTC の 15 時は日本の翌日 0 時)", () => {
+test("日本時間の日付にする(UTC の 15 時は日本の翌日 0 時)", async () => {
   // Arrange & Act & Assert
   expect(toJstDate(new Date("2026-11-23T14:59:00Z"))).toBe("2026-11-23");
   expect(toJstDate(new Date("2026-11-23T15:00:00Z"))).toBe("2026-11-24");
 });
 
 /** 終わった(いいねも済んだ)依頼を 1 つ作る。 */
-function finishedRequests(): readonly HelpRequest[] {
+async function finishedRequests(): Promise<readonly HelpRequest[]> {
   const store = createHelpRequestStore();
-  const old = store.create({ userId: ELDER_ID, amount: "normal" }, YESTERDAY);
-  store.join(old.id, { userId: HELPER_B, displayName: "あおい" }, YESTERDAY);
-  store.start(old.id, HELPER_B, YESTERDAY);
+  const old = await store.create({ userId: ELDER_ID, amount: "normal" }, YESTERDAY);
+  await store.join(old.id, { userId: HELPER_B, displayName: "あおい" }, YESTERDAY);
+  await store.start(old.id, HELPER_B, YESTERDAY);
   // 30 分・雪なし → 3000 pt(昨日)
-  store.finish(old.id, { userId: HELPER_B, areaM2: 0 }, 0, new Date(YESTERDAY.getTime() + 30 * 60_000));
+  await store.finish(old.id, { userId: HELPER_B, areaM2: 0 }, 0, new Date(YESTERDAY.getTime() + 30 * 60_000));
 
-  const today = store.create({ userId: ELDER_ID, amount: "lots" }, NOW);
-  store.join(today.id, { userId: HELPER_A, displayName: "ゆきお" }, NOW);
-  store.join(today.id, { userId: HELPER_B, displayName: "あおい" }, NOW);
-  store.start(today.id, HELPER_A, NOW);
+  const today = await store.create({ userId: ELDER_ID, amount: "lots" }, NOW);
+  await store.join(today.id, { userId: HELPER_A, displayName: "ゆきお" }, NOW);
+  await store.join(today.id, { userId: HELPER_B, displayName: "あおい" }, NOW);
+  await store.start(today.id, HELPER_A, NOW);
   // 10 分・雪なし → 1000 pt(今日)を 2 人に
-  store.finish(today.id, { userId: HELPER_A, areaM2: 0 }, 0, new Date(NOW.getTime() + 10 * 60_000));
+  await store.finish(today.id, { userId: HELPER_A, areaM2: 0 }, 0, new Date(NOW.getTime() + 10 * 60_000));
   // ゆきおに星 5 → +500(今日)
-  store.thank(today.id, ELDER_ID, { [HELPER_A]: 5 }, NOW);
-  return store.listAll();
+  await store.thank(today.id, ELDER_ID, { [HELPER_A]: 5 }, NOW);
+  return store.listFinished();
 }
 
-test("total ランキングは全期間の合計ポイントの多い順で、名前と自分の印が付く", () => {
+test("total ランキングは全期間の合計ポイントの多い順で、名前と自分の印が付く", async () => {
   // Arrange
-  const requests = finishedRequests();
+  const requests = await finishedRequests();
 
   // Act
   const ranking = buildRanking(requests, "total", NOW, HELPER_A);
@@ -86,9 +86,9 @@ test("total ランキングは全期間の合計ポイントの多い順で、�
   ]);
 });
 
-test("daily ランキングは日本時間の今日の分だけ数える", () => {
+test("daily ランキングは日本時間の今日の分だけ数える", async () => {
   // Arrange
-  const requests = finishedRequests();
+  const requests = await finishedRequests();
 
   // Act
   const ranking = buildRanking(requests, "daily", NOW);
@@ -100,18 +100,18 @@ test("daily ランキングは日本時間の今日の分だけ数える", () =>
   ]);
 });
 
-test("同じポイントの人は同じ順位になり、終わっていない依頼は数えない", () => {
+test("同じポイントの人は同じ順位になり、終わっていない依頼は数えない", async () => {
   // Arrange
   const store = createHelpRequestStore();
-  const r = store.create({ userId: ELDER_ID, amount: "normal" }, NOW);
-  store.join(r.id, { userId: HELPER_A, displayName: "A" }, NOW);
-  store.join(r.id, { userId: HELPER_B, displayName: "B" }, NOW);
-  const beforeFinish = buildRanking(store.listAll(), "total", NOW);
-  store.start(r.id, HELPER_A, NOW);
-  store.finish(r.id, { userId: HELPER_B, areaM2: 10 }, 0.3, NOW);
+  const r = await store.create({ userId: ELDER_ID, amount: "normal" }, NOW);
+  await store.join(r.id, { userId: HELPER_A, displayName: "A" }, NOW);
+  await store.join(r.id, { userId: HELPER_B, displayName: "B" }, NOW);
+  const beforeFinish = buildRanking(await store.listFinished(), "total", NOW);
+  await store.start(r.id, HELPER_A, NOW);
+  await store.finish(r.id, { userId: HELPER_B, areaM2: 10 }, 0.3, NOW);
 
   // Act
-  const ranking = buildRanking(store.listAll(), "total", NOW);
+  const ranking = buildRanking(await store.listFinished(), "total", NOW);
 
   // Assert
   expect(beforeFinish).toEqual([]);

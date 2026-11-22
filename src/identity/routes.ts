@@ -16,22 +16,22 @@ export function createIdentityRouter(
   const router = express.Router();
   router.use(express.json());
 
-  router.post("/api/identity/mock-verify", (req, res) => {
+  router.post("/api/identity/mock-verify", async (req, res) => {
     const userId: unknown = req.body?.userId;
     if (!isValidUserId(userId)) {
       res.status(400).json({ success: false, error: INVALID_USER_ID_MESSAGE });
       return;
     }
-    res.json({ success: true, data: store.markVerified(userId, new Date()) });
+    res.json({ success: true, data: await store.markVerified(userId, new Date()) });
   });
 
-  router.get("/api/identity/:userId", (req, res) => {
+  router.get("/api/identity/:userId", async (req, res) => {
     const { userId } = req.params;
     if (!isValidUserId(userId)) {
       res.status(400).json({ success: false, error: INVALID_USER_ID_MESSAGE });
       return;
     }
-    res.json({ success: true, data: store.getStatus(userId) });
+    res.json({ success: true, data: await store.getStatus(userId) });
   });
 
   return router;

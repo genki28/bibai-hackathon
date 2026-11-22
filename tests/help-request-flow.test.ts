@@ -24,9 +24,9 @@ function valueOf(result: Result<HelpRequest>): HelpRequest {
   return result.value;
 }
 
-function setUp() {
+async function setUp() {
   const store = createHelpRequestStore();
-  const request = store.create({ userId: ELDER_ID, amount: "normal" }, NOW);
+  const request = await store.create({ userId: ELDER_ID, amount: "normal" }, NOW);
   return { store, id: request.id };
 }
 
@@ -87,16 +87,16 @@ test("参加・終了・いいねの入力を確かめる", () => {
   });
 });
 
-test("参加 → 到着 → 開始 → 終了 と状態が進み、もとの依頼は書き換わらない", () => {
+test("参加 → 到着 → 開始 → 終了 と状態が進み、もとの依頼は書き換わらない", async () => {
   // Arrange
-  const { store, id } = setUp();
-  const before = store.findById(id);
+  const { store, id } = await setUp();
+  const before = await store.findById(id);
 
   // Act
-  const joined = valueOf(store.join(id, { userId: HELPER_A, displayName: "ゆきお" }, NOW));
-  const arrived = valueOf(store.arrive(id, HELPER_A, minutesLater(5)));
-  const started = valueOf(store.start(id, HELPER_A, minutesLater(6)));
-  const finished = valueOf(store.finish(id, { userId: HELPER_A, areaM2: 20 }, 0.5, minutesLater(36)));
+  const joined = valueOf(await store.join(id, { userId: HELPER_A, displayName: "ゆきお" }, NOW));
+  const arrived = valueOf(await store.arrive(id, HELPER_A, minutesLater(5)));
+  const started = valueOf(await store.start(id, HELPER_A, minutesLater(6)));
+  const finished = valueOf(await store.finish(id, { userId: HELPER_A, areaM2: 20 }, 0.5, minutesLater(36)));
 
   // Assert
   expect(before?.status).toBe("waiting");
@@ -116,59 +116,59 @@ test("参加 → 到着 → 開始 → 終了 と状態が進み、もとの依�
   });
 });
 
-test("最初に参加した人がリーダーで、リーダー以外は開始できない", () => {
+test("最初に参加した人がリーダーで、リーダー以外は開始できない", async () => {
   // Arrange
-  const { store, id } = setUp();
-  store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
-  store.join(id, { userId: HELPER_B, displayName: "B" }, NOW);
+  const { store, id } = await setUp();
+  await store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
+  await store.join(id, { userId: HELPER_B, displayName: "B" }, NOW);
 
   // Act
-  const byOther = store.start(id, HELPER_B, NOW);
-  const byLeader = store.start(id, HELPER_A, NOW);
+  const byOther = await store.start(id, HELPER_B, NOW);
+  const byLeader = await store.start(id, HELPER_A, NOW);
 
   // Assert
   expect(byOther).toMatchObject({ ok: false, status: 403 });
   expect(byLeader.ok).toBe(true);
 });
 
-test(`定員(${MAX_HELPERS} 人)を超えて参加できず、満員の依頼は一覧から消える`, () => {
+test(`定員(${MAX_HELPERS} 人)を超えて参加できず、満員の依頼は一覧から消える`, async () => {
   // Arrange
-  const { store, id } = setUp();
-  Array.from({ length: MAX_HELPERS }, (_, i) =>
-    store.join(id, { userId: userIdOf(i + 10), displayName: `若者${i}` }, NOW),
-  );
+  const { store, id } = await setUp();
+  for (let i = 0; i < MAX_HELPERS; i += 1) {
+    await store.join(id, { userId: userIdOf(i + 10), displayName: `若者${i}` }, NOW);
+  }
 
   // Act
-  const overflow = store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
+  const overflow = await store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
 
   // Assert
   expect(overflow).toMatchObject({ ok: false, status: 409 });
-  expect(store.listOpen()).toEqual([]);
+  expect(await store.listOpen()).toEqual([]);
 });
 
-test("同じ人が 2 回参加しても 1 人として数え、自分の依頼には参加できない", () => {
+test("同じ人が 2 回参加しても 1 人として数え、自分の依頼には参加できない", async () => {
   // Arrange
-  const { store, id } = setUp();
+  const { store, id } = await setUp();
 
   // Act
-  store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
-  const again = valueOf(store.join(id, { userId: HELPER_A, displayName: "A" }, NOW));
-  const self = store.join(id, { userId: ELDER_ID, displayName: "本人" }, NOW);
+  await store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
+  const again = valueOf(await store.join(id, { userId: HELPER_A, displayName: "A" }, NOW));
+  const self = await store.join(id, { userId: ELDER_ID, displayName: "本人" }, NOW);
 
   // Assert
   expect(again.helpers).toHaveLength(1);
   expect(self).toMatchObject({ ok: false, status: 400 });
 });
 
-test("全員が参加をやめると募集中に戻り、リーダーがやめると次の人がリーダーになる", () => {
+test("全員が参加をやめると募集中に戻り、リーダーがやめると次の人がリーダーになる", async () => {
   // Arrange
-  const { store, id } = setUp();
-  store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
-  store.join(id, { userId: HELPER_B, displayName: "B" }, NOW);
+  const { store, id } = await setUp();
+  await store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
+  await store.join(id, { userId: HELPER_B, displayName: "B" }, NOW);
 
   // Act
-  const afterLeaderLeft = valueOf(store.leave(id, HELPER_A));
-  const afterAllLeft = valueOf(store.leave(id, HELPER_B));
+  const afterLeaderLeft = valueOf(await store.leave(id, HELPER_A));
+  const afterAllLeft = valueOf(await store.leave(id, HELPER_B));
 
   // Assert
   expect(afterLeaderLeft.helpers[0]?.userId).toBe(HELPER_B);
@@ -176,57 +176,57 @@ test("全員が参加をやめると募集中に戻り、リーダーがやめ�
   expect(afterAllLeft.status).toBe("waiting");
 });
 
-test("雪かきが始まったら参加も、参加の取り消しもできない", () => {
+test("雪かきが始まったら参加も、参加の取り消しもできない", async () => {
   // Arrange
-  const { store, id } = setUp();
-  store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
-  store.start(id, HELPER_A, NOW);
+  const { store, id } = await setUp();
+  await store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
+  await store.start(id, HELPER_A, NOW);
 
   // Act & Assert
-  expect(store.join(id, { userId: HELPER_B, displayName: "B" }, NOW)).toMatchObject({ status: 409 });
-  expect(store.leave(id, HELPER_A)).toMatchObject({ status: 409 });
+  expect(await store.join(id, { userId: HELPER_B, displayName: "B" }, NOW)).toMatchObject({ status: 409 });
+  expect(await store.leave(id, HELPER_A)).toMatchObject({ status: 409 });
 });
 
-test("始まる前は終了できず、参加していない人も終了できない", () => {
+test("始まる前は終了できず、参加していない人も終了できない", async () => {
   // Arrange
-  const { store, id } = setUp();
-  store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
+  const { store, id } = await setUp();
+  await store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
 
   // Act & Assert
-  expect(store.finish(id, { userId: HELPER_A, areaM2: 10 }, 0.3, NOW)).toMatchObject({ status: 409 });
-  expect(store.finish(id, { userId: HELPER_B, areaM2: 10 }, 0.3, NOW)).toMatchObject({ status: 403 });
+  expect(await store.finish(id, { userId: HELPER_A, areaM2: 10 }, 0.3, NOW)).toMatchObject({ status: 409 });
+  expect(await store.finish(id, { userId: HELPER_B, areaM2: 10 }, 0.3, NOW)).toMatchObject({ status: 403 });
 });
 
-test("取り消せるのは依頼した本人だけ。取り消した依頼は一覧にも待機画面にも出ない", () => {
+test("取り消せるのは依頼した本人だけ。取り消した依頼は一覧にも待機画面にも出ない", async () => {
   // Arrange
-  const { store, id } = setUp();
+  const { store, id } = await setUp();
 
   // Act
-  const byOther = store.cancel(id, HELPER_A, NOW);
-  const byOwner = store.cancel(id, ELDER_ID, NOW);
-  const twice = store.cancel(id, ELDER_ID, NOW);
+  const byOther = await store.cancel(id, HELPER_A, NOW);
+  const byOwner = await store.cancel(id, ELDER_ID, NOW);
+  const twice = await store.cancel(id, ELDER_ID, NOW);
 
   // Assert
   expect(byOther).toMatchObject({ ok: false, status: 403 });
   expect(valueOf(byOwner).status).toBe("cancelled");
   expect(twice).toMatchObject({ ok: false, status: 409 });
-  expect(store.listOpen()).toEqual([]);
-  expect(store.findMine(ELDER_ID)).toBeNull();
+  expect(await store.listOpen()).toEqual([]);
+  expect(await store.findMine(ELDER_ID)).toBeNull();
 });
 
-test("いいねは依頼した本人が、終わった依頼に 1 回だけ送れる", () => {
+test("いいねは依頼した本人が、終わった依頼に 1 回だけ送れる", async () => {
   // Arrange
-  const { store, id } = setUp();
-  store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
-  const early = store.thank(id, ELDER_ID, { [HELPER_A]: 5 }, NOW);
-  store.start(id, HELPER_A, NOW);
-  store.finish(id, { userId: HELPER_A, areaM2: 10 }, 0.3, minutesLater(10));
+  const { store, id } = await setUp();
+  await store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
+  const early = await store.thank(id, ELDER_ID, { [HELPER_A]: 5 }, NOW);
+  await store.start(id, HELPER_A, NOW);
+  await store.finish(id, { userId: HELPER_A, areaM2: 10 }, 0.3, minutesLater(10));
 
   // Act
-  const byOther = store.thank(id, HELPER_A, { [HELPER_A]: 5 }, NOW);
-  const stranger = store.thank(id, ELDER_ID, { [HELPER_B]: 5 }, NOW);
-  const first = store.thank(id, ELDER_ID, { [HELPER_A]: 4 }, NOW);
-  const second = store.thank(id, ELDER_ID, { [HELPER_A]: 5 }, NOW);
+  const byOther = await store.thank(id, HELPER_A, { [HELPER_A]: 5 }, NOW);
+  const stranger = await store.thank(id, ELDER_ID, { [HELPER_B]: 5 }, NOW);
+  const first = await store.thank(id, ELDER_ID, { [HELPER_A]: 4 }, NOW);
+  const second = await store.thank(id, ELDER_ID, { [HELPER_A]: 5 }, NOW);
 
   // Assert
   expect(early).toMatchObject({ ok: false, status: 409 });
@@ -234,26 +234,26 @@ test("いいねは依頼した本人が、終わった依頼に 1 回だけ送�
   expect(stranger).toMatchObject({ ok: false, status: 400 });
   expect(valueOf(first).ratings).toEqual({ [HELPER_A]: 4 });
   expect(second).toMatchObject({ ok: false, status: 409 });
-  expect(store.findMine(ELDER_ID)).toBeNull();
+  expect(await store.findMine(ELDER_ID)).toBeNull();
 });
 
-test("終わったがいいね前の依頼は、待機画面用(findMine)に残る", () => {
+test("終わったがいいね前の依頼は、待機画面用(findMine)に残る", async () => {
   // Arrange
-  const { store, id } = setUp();
-  store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
-  store.start(id, HELPER_A, NOW);
+  const { store, id } = await setUp();
+  await store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
+  await store.start(id, HELPER_A, NOW);
 
   // Act
-  store.finish(id, { userId: HELPER_A, areaM2: 10 }, 0.3, NOW);
+  await store.finish(id, { userId: HELPER_A, areaM2: 10 }, 0.3, NOW);
 
   // Assert
-  expect(store.findMine(ELDER_ID)?.status).toBe("done");
+  expect((await store.findMine(ELDER_ID))?.status).toBe("done");
 });
 
-test("一覧向けの形では、名前・住所・正確な位置・ユーザー ID を見せない", () => {
+test("一覧向けの形では、名前・住所・正確な位置・ユーザー ID を見せない", async () => {
   // Arrange
   const store = createHelpRequestStore();
-  const request = store.create(
+  const request = await store.create(
     {
       userId: ELDER_ID,
       amount: "lots",

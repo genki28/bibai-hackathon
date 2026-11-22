@@ -7,6 +7,10 @@ export type AppConfig = {
   readonly channelAccessToken: string;
   readonly liffId: string;
   readonly port: number;
+  /** Supabase のプロジェクトの URL(公開してよい値)。 */
+  readonly supabaseUrl: string;
+  /** Supabase の secret キー(sb_secret_...)。秘密の値。 */
+  readonly supabaseSecretKey: string;
 };
 
 type Env = Readonly<Record<string, string | undefined>>;
@@ -23,6 +27,8 @@ export function readConfig(env: Env): AppConfig {
     channelAccessToken: env.LINE_CHANNEL_ACCESS_TOKEN?.trim() ?? "",
     liffId: env.LIFF_ID?.trim() ?? "",
     port: parsePort(env.PORT),
+    supabaseUrl: env.SUPABASE_URL?.trim() ?? "",
+    supabaseSecretKey: env.SUPABASE_SECRET_KEY?.trim() ?? "",
   };
 }
 
@@ -38,4 +44,9 @@ export function isBotConfigured(config: AppConfig): boolean {
 
 export function isLiffConfigured(config: AppConfig): boolean {
   return config.liffId !== "";
+}
+
+/** URL と secret キーの両方があるときだけ Supabase を使う(なければメモリに保存)。 */
+export function isSupabaseConfigured(config: AppConfig): boolean {
+  return config.supabaseUrl !== "" && config.supabaseSecretKey !== "";
 }

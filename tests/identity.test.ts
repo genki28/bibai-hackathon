@@ -10,6 +10,8 @@ const CONFIG: AppConfig = {
   channelAccessToken: "",
   liffId: "",
   port: 0,
+  supabaseUrl: "",
+  supabaseSecretKey: "",
 };
 // テスト用の架空のユーザー ID(LINE のユーザー ID と同じ形: U + 英数字 32 文字)
 const USER_ID = `U${"a".repeat(32)}`;
@@ -49,15 +51,15 @@ test("LINE のユーザー ID の形だけを正しい ID として扱う", () =
   invalid.forEach((id) => expect(isValidUserId(id)).toBe(false));
 });
 
-test("確認していない人は未確認、確認した人は確認日時つきで確認済みになる", () => {
+test("確認していない人は未確認、確認した人は確認日時つきで確認済みになる", async () => {
   // Arrange
   const store = createIdentityStore();
   const now = new Date("2026-11-22T10:00:00Z");
 
   // Act
-  const before = store.getStatus(USER_ID);
-  const saved = store.markVerified(USER_ID, now);
-  const after = store.getStatus(USER_ID);
+  const before = await store.getStatus(USER_ID);
+  const saved = await store.markVerified(USER_ID, now);
+  const after = await store.getStatus(USER_ID);
 
   // Assert
   expect(before).toEqual({ verified: false, verifiedAt: null, method: null });
