@@ -28,6 +28,7 @@ AI(Claude など)に日本語でお願いしながら作る「バイブコーデ
 - 何を作るか: [docs/product.md](docs/product.md)
 - 機能ごとの説明: [docs/features/README.md](docs/features/README.md)
 - 技術的な課題: [docs/technical-challenges.md](docs/technical-challenges.md)
+- ハック要素の提案(未実装): [docs/proposals/README.md](docs/proposals/README.md)
 - お年寄りのフォームを Gemini で作る人へ: [docs/guides/help-request-form-for-gemini.md](docs/guides/help-request-form-for-gemini.md)
 - 何で作るか・決めたことの記録: [docs/decisions.md](docs/decisions.md)
 
