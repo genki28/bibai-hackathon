@@ -8,6 +8,7 @@ import {
   parseFinishInput,
   parseHelpRequestInput,
   parseJoinInput,
+  parseScoopsInput,
   parseThanksInput,
   parseUserIdInput,
 } from "./inputs.js";
@@ -194,6 +195,11 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
     const canAsk = request !== null && request.status === "working" && canFinish(request, input.userId);
     const snowDepthM = canAsk ? await getSnowDepthM() : 0;
     return store.finish(id, input, snowDepthM, at);
+  });
+  // スコップ計: その参加者のすくった回数を残す(雪かき中だけ。ポイントには入れない)
+  post("scoops", async (id, body) => {
+    const input = parseScoopsInput(body);
+    return input ? store.recordScoops(id, input.userId, input.count) : null;
   });
   post("thanks", async (id, body, at) => {
     const input = parseThanksInput(body);

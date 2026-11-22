@@ -3,7 +3,7 @@
  * ここを通った値だけを、ストア(依頼を覚えておく場所)に渡す。
  */
 import { isValidUserId } from "../identity/store.js";
-import { MAX_AREA_M2, MAX_STARS, MIN_STARS } from "./model.js";
+import { MAX_AREA_M2, MAX_SCOOPS, MAX_STARS, MIN_STARS } from "./model.js";
 import type { HelpRequestExtras, HelpRequestInput, Ratings, SnowAmount } from "./model.js";
 
 const SNOW_AMOUNTS: readonly SnowAmount[] = ["little", "normal", "lots"];
@@ -97,6 +97,17 @@ export function parseFinishInput(raw: unknown): FinishInput | null {
   const areaM2 = optionalNumber(body.areaM2, 0, MAX_AREA_M2);
   if (areaM2 === undefined || areaM2 === INVALID) return null;
   return { userId: body.userId, areaM2 };
+}
+
+export type ScoopsInput = { readonly userId: string; readonly count: number };
+
+/** スコップ計の回数の入力。回数は 0〜上限の整数。 */
+export function parseScoopsInput(raw: unknown): ScoopsInput | null {
+  const body = asBody(raw);
+  if (!isValidUserId(body.userId)) return null;
+  const count = body.count;
+  const isCount = Number.isInteger(count) && (count as number) >= 0 && (count as number) <= MAX_SCOOPS;
+  return isCount ? { userId: body.userId, count: count as number } : null;
 }
 
 export type ThanksInput = { readonly userId: string; readonly ratings: Ratings };
