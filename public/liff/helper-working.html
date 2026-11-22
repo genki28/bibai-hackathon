@@ -9,7 +9,7 @@
       画面を閉じて開き直しても続きから表示される。[雪かきを終える] を押すと、リーダーは範囲の画面(snow-area.html)へ。
       リーダー以外は「リーダー(〇〇さん)が範囲に丸を付けています」の表示になり、終わったら自動でお疲れ様の画面へ
       (?wait=1 が付いていると、最初からその表示)。リーダーは開始したときにランダムで決まり、ドット絵でも王冠が付く。
-      雪かきの様子はドット絵(pixel-snow.js が Canvas に描く。背景と主人公は ChatGPT で作った画像 images/working-*.png)。参加者の人数ぶん主人公が並ぶ。タップするとコンボの演出が出る(見た目だけで、スコアには入らない)。
+      雪かきの様子はドット絵(pixel-snow.js が Canvas に描く。背景と主人公は ChatGPT で作った画像 images/working-*.png)。参加者の人数ぶん主人公が並ぶ。タップするとコンボの演出が出る隠し機能(画面には説明を出さない。見た目だけで、スコアには入らない)。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
     <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
@@ -81,7 +81,6 @@
         image-rendering: pixelated;
         image-rendering: crisp-edges;
         touch-action: manipulation;
-        cursor: pointer;
         -webkit-tap-highlight-color: transparent;
         user-select: none;
       }
@@ -188,7 +187,6 @@
         <p class="elapsed-label center">経過時間</p>
         <p id="elapsed" class="big-number" role="timer">--:--</p>
         <p id="helper-names" class="note center"></p>
-        <p class="note center">絵をタップすると、雪をすばやく投げられます。連続でコンボ!</p>
         <p id="leader-role" class="leader-role center" aria-live="polite"></p>
         <button id="finish-button" class="button" type="button">雪かきを終える</button>
       </div>

@@ -8,6 +8,7 @@ import { renderCommunityGauge } from "./community-gauge.js";
 import { pageReady } from "./loading.js";
 import { inviteFriends } from "./invite-share.js";
 import { el, showError } from "./request-page.js";
+import { resumeIfActive } from "./resume.js";
 import { userIdPromise } from "./template.js";
 
 const PERIODS = ["daily", "total"];
@@ -124,5 +125,12 @@ function showSafely(period) {
 
 PERIODS.forEach((period) => byId(`${period}-button`).addEventListener("click", () => showSafely(period)));
 setUpInviteButton();
-// ランキングと仲間ゲージの両方がそろってから画面を見せる
-Promise.allSettled([showSafely("daily"), renderCommunityGauge(byId("community-gauge"))]).then(pageReady);
+async function main() {
+  // 参加中の雪かきがあれば、ランキングを見せずにその段階の画面へ移る(?list=1 なら移らない)
+  if (await resumeIfActive()) return;
+  // ランキングと仲間ゲージの両方がそろってから画面を見せる
+  await Promise.allSettled([showSafely("daily"), renderCommunityGauge(byId("community-gauge"))]);
+  pageReady();
+}
+
+main();

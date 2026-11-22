@@ -22,32 +22,83 @@ export const fetchRequest = (id, userId) =>
 export const postAction = (id, action, data) => postJson(`/api/help-requests/${id}/${action}`, data);
 
 /**
+ * スリープ・LINE を閉じる・別のアプリへ切り替えるなどで画面が隠れたあと、また見えるようになった瞬間に fn を呼ぶ
+ * (visibilitychange と、「戻る」やアプリの切り替えで保存されていた画面が戻ってきたときの pageshow)。
+ * やめるときは返り値の関数を呼ぶ。
+ */
+export function onPageVisible(fn) {
+  const onVisibility = () => {
+    if (!document.hidden) fn();
+  };
+  const onPageShow = (event) => {
+    if (event.persisted) fn();
+  };
+  document.addEventListener("visibilitychange", onVisibility);
+  window.addEventListener("pageshow", onPageShow);
+  return () => {
+    document.removeEventListener("visibilitychange", onVisibility);
+    window.removeEventListener("pageshow", onPageShow);
+  };
+}
+
+/**
  * 一定の間隔で fn を呼び続ける。fn が true を返したら止める。エラーは表示して続ける。
  * onFirstDone は 1 回目が終わったとき(うまくいってもエラーでも)に 1 度だけ呼ぶ(pageReady を渡す用)。
+ * 画面が隠れている間は止めて(電池の節約)、見えるようになった瞬間にすぐ 1 回読み直してから再開する。
  */
 export function startPolling(fn, intervalMs, onError, onFirstDone) {
   let timer = null;
   let isStopped = false;
+  let isRunning = false;
   let isFirst = true;
+  let stopWatchingVisibility = () => {};
+
+  const stop = () => {
+    isStopped = true;
+    clearTimeout(timer);
+    stopWatchingVisibility();
+  };
+  const scheduleNext = () => {
+    clearTimeout(timer);
+    // 隠れている間は次を予約しない(見えたら onPageVisible からすぐ呼ぶ)
+    if (!isStopped && !document.hidden) timer = setTimeout(tick, intervalMs);
+  };
   const tick = async () => {
+    // 前の読み直しが終わっていないとき(見えた瞬間と予約が重なったなど)は、重ねて呼ばない
+    if (isStopped || isRunning) return;
+    isRunning = true;
+    clearTimeout(timer);
+    let isDone = false;
     try {
-      if (await fn()) return;
+      isDone = Boolean(await fn());
     } catch (error) {
       console.error(error);
       onError?.(error);
     } finally {
+      isRunning = false;
       if (isFirst) {
         isFirst = false;
         onFirstDone?.();
       }
     }
-    if (!isStopped) timer = setTimeout(tick, intervalMs);
+    if (isDone) {
+      stop();
+      return;
+    }
+    scheduleNext();
+  };
+  // 隠れた瞬間に予約を取り消す。見えた瞬間にすぐ読み直す
+  const pauseWhenHidden = () => {
+    if (document.hidden) clearTimeout(timer);
+  };
+  document.addEventListener("visibilitychange", pauseWhenHidden);
+  const stopResumeOnVisible = onPageVisible(tick);
+  stopWatchingVisibility = () => {
+    document.removeEventListener("visibilitychange", pauseWhenHidden);
+    stopResumeOnVisible();
   };
   tick();
-  return () => {
-    isStopped = true;
-    clearTimeout(timer);
-  };
+  return stop;
 }
 
 /** id="error" の場所にメッセージを出す(空なら隠す)。 */
@@ -67,7 +118,7 @@ export function showMessageOnly(title, message) {
   text.textContent = message;
   const link = document.createElement("a");
   link.className = "button";
-  link.href = "./go-help.html";
+  link.href = "./go-help.html?list=1";
   link.textContent = "ほかの依頼をさがす";
   main.replaceChildren(heading, text, link);
 }

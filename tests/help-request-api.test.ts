@@ -265,3 +265,37 @@ test("ランキングは period を省略すると total になる", async () =>
   // Assert
   expect(ranking).toEqual({ status: 200, body: { success: true, data: [] } });
 });
+
+test("参加中の雪かき(active)は、参加 → 到着 → 開始 → 終了で同じ依頼を返し、1 時間を過ぎると null", async () => {
+  // Arrange
+  const app = await startApp();
+  const id = await createRequest(app);
+  const path = `/api/help-requests/${id}`;
+  const active = (userId: string) => app.get(`/api/help-requests/active/${userId}`);
+
+  // Act
+  const before = await active(HELPER_A);
+  await app.post(`${path}/join`, { userId: HELPER_A, displayName: "ゆきお" });
+  const afterJoin = await active(HELPER_A);
+  await app.post(`${path}/arrive`, { userId: HELPER_A });
+  const afterArrive = await active(HELPER_A);
+  await app.post(`${path}/start`, { userId: HELPER_A });
+  const afterStart = await active(HELPER_A);
+  const forOther = await active(HELPER_B);
+  await app.post(`${path}/finish`, { userId: HELPER_A, areaM2: 25 });
+  const afterFinish = await active(HELPER_A);
+  app.advanceMinutes(61);
+  const later = await active(HELPER_A);
+  const invalid = await app.get("/api/help-requests/active/abc");
+
+  // Assert
+  expect(before.body).toEqual({ success: true, data: null });
+  expect(afterJoin.body.data).toMatchObject({ id, status: "accepted", viewer: "helper" });
+  expect(afterJoin.body.data.helpers[0].arrivedAt).toBeNull();
+  expect(afterArrive.body.data.helpers[0].arrivedAt).not.toBeNull();
+  expect(afterStart.body.data).toMatchObject({ id, status: "working", leaderUserId: HELPER_A });
+  expect(forOther.body).toEqual({ success: true, data: null });
+  expect(afterFinish.body.data).toMatchObject({ id, status: "done" });
+  expect(later.body).toEqual({ success: true, data: null });
+  expect(invalid.status).toBe(400);
+});

@@ -5,6 +5,7 @@
  * ここはそれらをつなぐだけで、ルールは書かない。
  */
 import { randomUUID } from "node:crypto";
+import { ACTIVE_CANDIDATE_STATUSES, findActiveFor } from "./active.js";
 import { fail, isJoinable, isOngoingForElder, MAX_HELPERS } from "./model.js";
 import type { HelpRequest, HelpRequestInput, Ratings, Result } from "./model.js";
 import type { FinishInput, JoinInput } from "./inputs.js";
@@ -30,6 +31,8 @@ export type HelpRequestStore = {
   readonly findWaiting: (userId: string) => Promise<HelpRequest | null>;
   /** お年寄りの待機画面用。取り消し・いいね済みを除いた、いちばん新しい依頼。なければ null。 */
   readonly findMine: (userId: string) => Promise<HelpRequest | null>;
+  /** 若者がいま参加している雪かき(参加中・雪かき中・終わって 1 時間以内)。なければ null。判定は active.ts。 */
+  readonly findActive: (userId: string, now: Date) => Promise<HelpRequest | null>;
   readonly join: (id: string, input: JoinInput, now: Date) => Promise<Result<HelpRequest>>;
   readonly leave: (id: string, userId: string) => Promise<Result<HelpRequest>>;
   readonly arrive: (id: string, userId: string, now: Date) => Promise<Result<HelpRequest>>;
@@ -145,6 +148,8 @@ export function createHelpRequestStore(
       ),
     findMine: async (userId) =>
       (await repo.listByUser(userId)).filter(isOngoingForElder).at(-1) ?? null,
+    findActive: async (userId, now) =>
+      findActiveFor(await repo.listByStatus(ACTIVE_CANDIDATE_STATUSES), userId, now),
     join: (id, input, now) => update(id, (r) => transitions.join(r, input, now)),
     leave: (id, userId) => update(id, (r) => transitions.leave(r, userId)),
     arrive: (id, userId, now) => update(id, (r) => transitions.arrive(r, userId, now)),
