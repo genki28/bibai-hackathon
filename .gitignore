@@ -25,3 +25,8 @@ build/
 __pycache__/
 .venv/
 *.log
+
+# Cloudflare Workers(wrangler)が作るファイル
+.wrangler/
+.dev.vars
+.dev.vars.*

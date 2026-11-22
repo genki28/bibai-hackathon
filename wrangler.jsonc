@@ -1,0 +1,22 @@
+// Cloudflare Workers の設定。公開(デプロイ)は npm run deploy。
+// 詳しくは docs/05-deploy.md
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "bibai-yukikaki",
+  "main": "src/worker.ts",
+  "compatibility_date": "2025-09-15",
+  // Express など Node.js 向けの部品を Workers で動かすための設定
+  "compatibility_flags": ["nodejs_compat"],
+  // public/ の中の画面ファイルは Cloudflare がそのまま配信する(/liff/ → public/liff/index.html)
+  "assets": {
+    "directory": "./public"
+  },
+  // 公開してよい設定値。秘密の値(チャネルシークレット・アクセストークン)はここに書かず、
+  // npx wrangler secret put で Cloudflare に登録する
+  "vars": {
+    "LIFF_ID": "2012745330-FLjYEkeQ"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

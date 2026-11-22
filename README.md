@@ -11,7 +11,8 @@ AI(Claude など)に日本語でお願いしながら作る「バイブコーデ
 2. [作業の流れ](docs/02-workflow.md) — 「始める → 作る → 保存する」の 3 ステップ
 3. [AI への頼み方](docs/03-prompting.md) — うまく作ってもらうコツ
 4. [LINE の準備](docs/04-line-setup.md) — LINE Bot と LIFF を動かすための設定
-5. [用語集](docs/glossary.md) — わからない言葉が出てきたら
+5. [公開する(デプロイ)](docs/05-deploy.md) — Cloudflare Workers に公開する手順
+6. [用語集](docs/glossary.md) — わからない言葉が出てきたら
 
 ## 合言葉(Claude Code で使えるコマンド)
 

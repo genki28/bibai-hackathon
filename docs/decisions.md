@@ -10,7 +10,7 @@ AI はコードを書く前にこのファイルを読みます。
 | 作るものの種類(Web / スマホアプリ / ほか) | LINE Bot + LIFF(= LINE の中で開く Web 画面) | 使う人が新しいアプリを入れなくても、いつもの LINE で使えるため |
 | 言語・フレームワーク | Node.js + TypeScript + Express + @line/bot-sdk | LINE 公式の道具(SDK)があり、サーバー 1 つで Bot と LIFF の両方を動かせるため |
 | データの保存先 | Supabase(= ネット上の無料で使えるデータベース) | チーム全員が同じデータを見られ、無料枠で足りるため |
-| 公開方法(デプロイ) | Cloudflare Workers(候補。移行するか検討中) | LINE とつなぐには https の公開 URL が必要。詳しくは [LINE の準備](04-line-setup.md) |
+| 公開方法(デプロイ) | Cloudflare Workers | LINE とつなぐには https の公開 URL が必要。詳しくは [LINE の準備](04-line-setup.md) |
 
 ## 決定ログ
 
@@ -23,3 +23,4 @@ AI はコードを書く前にこのファイルを読みます。
 | 2026-11-22 | LINE の送信数の上限は、ハッカソン中はあまり気にしない | デモの規模なら無料枠で足りる見込みのため |
 | 2026-11-22 | 天気予報は Open-Meteo を使う | 登録不要・無料で、美唄の降雪量の予報が取れるため |
 | 2026-11-22 | 雪の通知は毎日夕方 17 時に判定し、明日のお昼までに 10 cm 以上降りそうなら送る(お昼以降は見ない) | 翌朝の雪かきに備えてもらうため |
+| 2026-11-22 | 公開先は Cloudflare Workers にする(Express を httpServerHandler で動かし、画面ファイルは Cloudflare が配信) | 無料で固定の URL が持て、決まった時間に動かす仕組み(Cron Triggers)もあるため。手順は [05-deploy.md](05-deploy.md) |

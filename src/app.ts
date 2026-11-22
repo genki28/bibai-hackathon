@@ -15,7 +15,6 @@ import { createWeatherRouter } from "./weather/routes.js";
 import type { WeatherRouterOptions } from "./weather/routes.js";
 import type { AppConfig } from "./config.js";
 
-const PUBLIC_DIR = fileURLToPath(new URL("../public", import.meta.url));
 
 const BOT_NOT_CONFIGURED_MESSAGE =
   "LINE Bot の設定がまだです。.env に LINE_CHANNEL_SECRET と LINE_CHANNEL_ACCESS_TOKEN を入れて、サーバーを再起動してください。";
@@ -56,7 +55,13 @@ const handleError: ErrorRequestHandler = (err, req, res, _next) => {
 /** Express アプリ(= サーバーの本体)を組み立てて返す。 */
 /** テストで外とのやりとりを偽物に差し替えるための設定。ふだんは何も渡さなくてよい。 */
 export type AppOptions = WeatherRouterOptions &
-  Partial<Pick<UsersRouterDeps, "roleStore" | "verifyIdToken" | "unlinkMenu">>;
+  Partial<Pick<UsersRouterDeps, "roleStore" | "verifyIdToken" | "unlinkMenu">> & {
+    /**
+     * public/ の画面ファイルを Express から配信するか(ふだんは true)。
+     * Cloudflare Workers では Cloudflare 側が配信するので false にする(src/worker.ts)。
+     */
+    readonly serveStatic?: boolean;
+  };
 
 export function createApp(config: AppConfig, options: AppOptions = {}): Express {
   const app = express();
@@ -103,7 +108,9 @@ export function createApp(config: AppConfig, options: AppOptions = {}): Express 
   app.get("/", (_req, res) => {
     res.redirect("/liff/");
   });
-  app.use(express.static(PUBLIC_DIR));
+  if (options.serveStatic !== false) {
+    app.use(express.static(fileURLToPath(new URL("../public", import.meta.url))));
+  }
 
   app.use(notFound);
   app.use(handleError);

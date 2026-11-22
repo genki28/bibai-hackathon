@@ -48,6 +48,8 @@ Node.js 22 以上が必要です。すべてリポジトリの一番上のフォ
 | テスト | `npm test` |
 | 型チェック(= 書き間違いの自動チェック) | `npm run typecheck` |
 | リッチメニュー(= トーク画面下のメニュー)3 種類を LINE に登録し直す(全員が登録メニューに戻るので注意) | `npm run richmenu` |
+| 公開(デプロイ)する(手順は docs/05-deploy.md) | `npm run deploy` |
+| 公開先と同じ仕組みで手元で動かす | `npm run dev:worker` |
 | 天気の通知のおためし(送らずに文面だけ表示) | `npm run notify:weather` |
 | 天気の通知を友だち全員に送る(大雪のときだけ。人間に確認してから) | `npm run notify:weather -- --send` |
 | 天気の通知のテスト送信(大雪でなくても送る。人間に確認してから) | `npm run notify:weather -- --send --force` |
