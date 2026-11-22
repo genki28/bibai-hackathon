@@ -27,9 +27,9 @@
   --warm-deeper: #9a3223;
   --radius: 8px;
   --radius-small: 6px;
-  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --font-body: "DotGothic16", "Hiragino Sans", "Yu Gothic", sans-serif;
   --font-display: var(--font-body);
-  --font-number: "Barlow Condensed", "Arial Narrow", var(--font-body);
+  --font-number: var(--font-body);
 }
 * { box-sizing: border-box; }
 button, input, select, textarea { font-family: var(--font-body); }
@@ -40,6 +40,7 @@ body, body.for-elder {
   color: var(--ink);
   background: var(--paper);
   font-family: var(--font-body);
+  font-synthesis: none;
   font-size: 1rem;
   font-weight: 400;
   line-height: 1.8;
@@ -78,7 +79,7 @@ main, body.for-elder main {
 .brand-line a {
   color: var(--ink);
   font-size: .9375rem;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: .04em;
   text-decoration: none;
 }
@@ -86,14 +87,14 @@ h1, body.for-helper h1, body.for-elder h1 {
   margin: 0 0 16px;
   font-family: var(--font-body);
   font-size: clamp(1.65rem, 7.4vw, 2rem);
-  font-weight: 700;
+  font-weight: 400;
   line-height: 1.5;
   letter-spacing: -.035em;
   text-align: left;
   text-shadow: none;
 }
-h2 { margin: 22px 0 12px; font-size: 1.125rem; font-weight: 500; letter-spacing: 0; }
-strong, .display { font-weight: 700; }
+h2 { margin: 22px 0 12px; font-size: 1.125rem; font-weight: 400; letter-spacing: 0; }
+strong, .display { font-weight: 400; }
 .page-head { margin: 36px 0 24px; }
 .note, body .step .note { color: var(--muted); font-size: .875rem; font-weight: 400; opacity: 1; }
 .card, body.for-elder .card {
@@ -120,7 +121,7 @@ strong, .display { font-weight: 700; }
   background: var(--vermillion);
   font-family: var(--font-body);
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 400;
   box-shadow: none;
   animation: none;
   transition: background .15s, transform .15s;
@@ -149,7 +150,7 @@ strong, .display { font-weight: 700; }
 .big-number {
   font-family: var(--font-number);
   font-size: 4rem;
-  font-weight: 600;
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
   letter-spacing: -.025em;
@@ -158,7 +159,7 @@ strong, .display { font-weight: 700; }
 .row { gap: 20px; padding: 16px 0; }
 .row > span { min-width: 0; overflow-wrap: anywhere; }
 .row > span:first-child { color: var(--muted); font-size: .9375rem; }
-.row > span:last-child { font-weight: 500; }
+.row > span:last-child { font-weight: 400; }
 .badge {
   padding: 0;
   border: 0;
@@ -197,7 +198,7 @@ select option { color: var(--ink); background: var(--paper); }
   border-radius: 0;
   color: var(--muted);
   font-family: var(--font-body);
-  font-weight: 500;
+  font-weight: 400;
   background: none;
 }
 .toggle button[aria-pressed="true"] {
@@ -228,7 +229,7 @@ body.has-tab-bar { padding-bottom: calc(var(--tab-height) + 56px + env(safe-area
   border-top: 2px solid transparent;
   font-family: var(--font-body);
   font-size: .9375rem;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--muted);
 }
 .tab-bar a[aria-current="page"] { color: var(--vermillion); border-top-color: var(--vermillion); background: none; box-shadow: none; }
@@ -263,11 +264,11 @@ body .overlay .dialog {
   box-shadow: none;
   text-align: left;
 }
-body #confirm-title { margin: 0 0 20px; font-size: 1.25rem; font-weight: 500; }
-body #confirm-summary { padding: 16px 0; border-block: 1px solid var(--rule); border-radius: 0; background: none; font-weight: 500; }
+body #confirm-title { margin: 0 0 20px; font-size: 1.25rem; font-weight: 400; }
+body #confirm-summary { padding: 16px 0; border-block: 1px solid var(--rule); border-radius: 0; background: none; font-weight: 400; }
 .map-box { margin: 16px 0; border: 0; border-radius: 6px; background: var(--wash); }
 body #waiting-count { margin: 0 0 26px; text-align: left; color: var(--muted); font-size: 1rem; font-weight: 400; }
-#waiting-count strong { margin-right: 8px; font: 600 3.5rem/1 var(--font-number); color: var(--ink); }
+#waiting-count strong { margin-right: 8px; font: 400 3.5rem/1 var(--font-number); color: var(--ink); }
 body .pick-list { margin: 12px 0 28px; }
 body .pick-list .quest-card {
   margin: 0;
@@ -283,12 +284,12 @@ body .pick-list .quest-card {
 body .pick-list .quest-card:active { transform: none; background: var(--wash); }
 body .pick-list li:last-child .quest-card { border-bottom: 1px solid var(--rule); }
 body .quest-tag { padding: 0; background: none; color: var(--muted); font-family: var(--font-body); font-size: .875rem; font-weight: 400; letter-spacing: 0; }
-body .quest-title { font-size: 1.375rem; font-weight: 500; }
+body .quest-title { font-size: 1.375rem; font-weight: 400; }
 body .quest-difficulty { color: var(--muted); font-size: .9375rem; text-shadow: none; }
 body .quest-meta { margin-top: 6px; color: var(--muted); font-size: .875rem; }
 body .party-pips { display: none; }
 .empty-state { padding: 32px 0; border-block: 1px solid var(--rule); }
-.empty-state strong { font-weight: 500; }
+.empty-state strong { font-weight: 400; }
 .empty-state p { margin-bottom: 0; color: var(--muted); font-size: .9375rem; }
 /* 順位は飾りのメダルではなく、数字で見せる。 */
 body #my-rank {
@@ -310,8 +311,8 @@ body #my-rank {
   font-weight: 400;
   text-align: left;
 }
-.my-position { font: 600 2rem/1.2 var(--font-number); }
-.my-points { margin-left: auto; font: 500 1.5rem/1.2 var(--font-number); color: var(--vermillion); }
+.my-position { font: 400 2rem/1.2 var(--font-number); }
+.my-points { margin-left: auto; font: 400 1.5rem/1.2 var(--font-number); color: var(--vermillion); }
 body .podium { gap: 0; margin: 36px 0; }
 body .podium-card {
   padding: 12px 8px;
@@ -323,23 +324,23 @@ body .podium-card {
 }
 body .podium-card.place-1 { min-height: 205px; border-inline: 1px solid var(--rule); }
 body .podium-card.place-2, body .podium-card.place-3 { min-height: 170px; }
-body .podium-medal, body .place-1 .podium-medal { font: 500 3.5rem/1 var(--font-number); color: var(--ink); animation: none; }
+body .podium-medal, body .place-1 .podium-medal { font: 400 3.5rem/1 var(--font-number); color: var(--ink); animation: none; }
 body .place-1 .podium-medal { font-size: 4.75rem; color: var(--vermillion); }
-body .podium-name { font-size: .9375rem; font-weight: 500; margin-top: 16px; }
-body .podium-points { margin-top: 6px; font: 500 clamp(1.125rem, 5vw, 1.5rem)/1.3 var(--font-number); color: var(--ink); }
+body .podium-name { font-size: .9375rem; font-weight: 400; margin-top: 16px; }
+body .podium-points { margin-top: 6px; font: 400 clamp(1.125rem, 5vw, 1.5rem)/1.3 var(--font-number); color: var(--ink); }
 body .podium-card .badge { font-size: .8125rem; margin-top: 6px; }
 body .rank-row { margin: 0; padding: 16px 0; border: 0; border-bottom: 1px solid var(--rule); border-radius: 0; background: none; }
-body .rank-number { font: 500 1.75rem/1 var(--font-number); background: none; border-radius: 0; }
-body .rank-points { font: 500 1.5rem/1 var(--font-number); color: var(--ink); }
+body .rank-number { font: 400 1.75rem/1 var(--font-number); background: none; border-radius: 0; }
+body .rank-points { font: 400 1.5rem/1 var(--font-number); color: var(--ink); }
 body .is-me { box-shadow: none; }
 body .me-tag { padding: 0 4px; background: var(--wash); color: var(--vermillion); font-size: .75rem; font-weight: 400; border-radius: 2px; }
 .quiet-details { margin: 14px 0; color: var(--muted); font-size: .875rem; text-align: left; }
 .quiet-details summary { min-height: 44px; padding: 10px 0; cursor: pointer; }
 .quiet-details .note { margin: 6px 0 16px; }
 #community-gauge { padding: 24px 0; border-block: 1px solid var(--rule); }
-.gauge-title { font-size: 1rem; font-weight: 500; }
+.gauge-title { font-size: 1rem; font-weight: 400; }
 .gauge-numbers { font-size: .875rem; font-weight: 400; color: var(--muted); }
-.gauge-numbers strong { margin-right: 4px; font: 600 2rem/1 var(--font-number); color: var(--ink); }
+.gauge-numbers strong { margin-right: 4px; font: 400 2rem/1 var(--font-number); color: var(--ink); }
 .gauge-times, .gauge-flock { display: none; }
 .gauge-bar { height: 4px; margin: 18px 0 12px; border-radius: 0; background: var(--rule); }
 .gauge-fill { background: var(--ink); border-radius: 0; box-shadow: none; }
@@ -350,37 +351,37 @@ body .party-stage { width: 100%; height: auto; margin: 24px 0; }
 body .party-stage::before { display: none; }
 body .party-center { position: static; display: block; padding: 12px 0 28px; border-radius: 0; background: none; }
 body .party-center > div { display: flex; align-items: baseline; gap: 10px; }
-body #gather-count { font: 600 5rem/1 var(--font-number); color: var(--ink); }
+body #gather-count { font: 400 5rem/1 var(--font-number); color: var(--ink); }
 body .gather-label { color: var(--muted); font-weight: 400; font-size: .9375rem; }
 body .party-ring { display: grid; gap: 0; }
 body .party-member { position: static; display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 12px; width: 100%; padding: 16px 0; align-items: center; border-top: 1px solid var(--rule); transform: none; text-align: left; }
-body .avatar { width: 36px; height: 36px; border: 0; border-radius: 50%; font-size: 1rem; font-weight: 500; color: var(--muted); background: var(--wash); opacity: 1; }
+body .avatar { width: 36px; height: 36px; border: 0; border-radius: 50%; font-size: 1rem; font-weight: 400; color: var(--muted); background: var(--wash); opacity: 1; }
 body .party-member.arrived .avatar { color: var(--ink); background: #e5ebf0; box-shadow: none; animation: none; }
-body .member-name { font-size: 1rem; font-weight: 500; white-space: normal; overflow-wrap: anywhere; }
+body .member-name { font-size: 1rem; font-weight: 400; white-space: normal; overflow-wrap: anywhere; }
 body .party-member.is-me .member-name { color: var(--ink); }
 body .member-status { color: var(--muted); font-size: .875rem; }
 body .party-member.arrived .member-status { color: var(--vermillion); }
 /* 作業中と成果にはゲームの動きを残す。文字・装飾の光は使わない。 */
 body .pixel-stage { padding: 0; border: 0; border-radius: 6px; background: var(--ink); box-shadow: none; overflow: hidden; }
-body .pixel-hud { margin: 24px 0 16px; gap: 20px; font-weight: 500; }
+body .pixel-hud { margin: 24px 0 16px; gap: 20px; font-weight: 400; }
 body .pixel-level { padding: 0; border: 0; color: var(--ink); background: none; box-shadow: none; font-family: var(--font-number); font-size: 1.5rem; }
 body .pixel-level small { font-family: var(--font-body); font-size: .875rem; color: var(--muted); font-weight: 400; }
 body .pixel-bar { height: 5px; padding: 0; background: none; box-shadow: none; }
 body .pixel-bar span { background: var(--rule); }
 body .pixel-bar span.is-on { background: var(--ink); }
 body .elapsed-label { margin-top: 28px; font-size: .875rem; letter-spacing: 0; font-weight: 400; }
-body #elapsed { margin: 4px 0 20px; font: 500 clamp(4rem, 22vw, 6rem)/1 var(--font-number); color: var(--ink); text-shadow: none; }
-body .leader-role { color: var(--ink); font-size: .9375rem; font-weight: 500; }
+body #elapsed { margin: 4px 0 20px; font: 400 clamp(4rem, 22vw, 6rem)/1 var(--font-number); color: var(--ink); text-shadow: none; }
+body .leader-role { color: var(--ink); font-size: .9375rem; font-weight: 400; }
 .rest-note { margin: 24px 0; color: var(--muted); font-size: .875rem; text-align: center; }
-body .clear-banner { margin: 40px 0 12px; color: var(--vermillion); background: none; font: 600 5rem/1 var(--font-number); letter-spacing: -.02em; text-shadow: none; filter: none; animation: clear-in .5s ease-out both; }
-body:has(.clear-banner) h1 { text-align: center; font-size: 1.375rem; font-weight: 500; }
+body .clear-banner { margin: 40px 0 12px; color: var(--vermillion); background: none; font: 400 5rem/1 var(--font-number); letter-spacing: -.02em; text-shadow: none; filter: none; animation: clear-in .5s ease-out both; }
+body:has(.clear-banner) h1 { text-align: center; font-size: 1.375rem; font-weight: 400; }
 body .score-card { margin: 32px 0; padding: 28px 20px; border: 0; border-radius: 6px; background: var(--ink); color: #fff; box-shadow: none; }
 .score-card > p:first-child { margin: 0 0 12px; font-size: .875rem; }
-body .score { margin: 0; color: #fff; font: 600 clamp(3.5rem, 17vw, 5rem)/1.1 var(--font-number); overflow-wrap: anywhere; }
+body .score { margin: 0; color: #fff; font: 400 clamp(3.5rem, 17vw, 5rem)/1.1 var(--font-number); overflow-wrap: anywhere; }
 body .stats { gap: 0 20px; }
 body .stats .row { gap: 4px; padding: 18px 0; border: 0; border-bottom: 1px solid var(--rule); border-radius: 0; background: none; }
 body .stats .row > span:first-child { font-size: .875rem; }
-body .stats .row > span:last-child { font: 500 1.75rem/1.4 var(--font-number); color: var(--ink); }
+body .stats .row > span:last-child { font: 400 1.75rem/1.4 var(--font-number); color: var(--ink); }
 body .stats .row.wide > span:last-child { font-family: var(--font-body); font-size: 1rem; }
 body .icon { background: var(--wash); border: 0; border-radius: 50%; box-shadow: none; }
 body .demo-banner { color: #705226; background: #faf4e9; border: 0; border-radius: 6px; font-size: .875rem; }
@@ -398,12 +399,12 @@ body .spinner { border-color: var(--rule); border-top-color: var(--vermillion); 
 body .weather .weather-note { margin-top: 12px; font-size: .8125rem; }
 /* お年寄り側も同じ紙面。文字と操作を大きくし、状態を一か所にまとめる。 */
 body.for-elder { font-size: 1.1875rem; }
-body.for-elder h1 { margin-top: 36px; font-weight: 500; }
+body.for-elder h1 { margin-top: 36px; font-weight: 400; }
 body.for-elder .button { min-height: 72px; font-size: 1.25rem; }
 body.for-elder .note { font-size: 1rem; line-height: 1.8; }
 body .elder-steps { margin: 28px 0 36px; gap: 8px; }
 body .elder-steps li { font-size: .875rem; font-weight: 400; color: var(--muted); }
-body .elder-steps li::before { width: 32px; height: 32px; margin-bottom: 8px; border: 1px solid var(--rule); color: var(--muted); background: var(--paper); font: 500 1.25rem/1 var(--font-number); }
+body .elder-steps li::before { width: 32px; height: 32px; margin-bottom: 8px; border: 1px solid var(--rule); color: var(--muted); background: var(--paper); font: 400 1.25rem/1 var(--font-number); }
 body[data-status] .elder-steps li { color: var(--muted); }
 body[data-status="waiting"] li[data-step="waiting"]::before,
 body[data-status="accepted"] li:is([data-step="waiting"], [data-step="accepted"])::before,
@@ -412,12 +413,12 @@ body[data-status="done"] .elder-steps li::before { border-color: var(--ink); col
 body .elder-steps li[aria-current="step"]::before { background: var(--vermillion); border-color: var(--vermillion); }
 .elder-status-panel { padding: 28px 0; border-block: 1px solid var(--rule); }
 body #status-icon { display: none; }
-body #request-status { margin: 0; color: var(--ink); font-size: 1.5rem; font-weight: 500; line-height: 1.8; white-space: pre-line; text-align: left; }
+body #request-status { margin: 0; color: var(--ink); font-size: 1.5rem; font-weight: 400; line-height: 1.8; white-space: pre-line; text-align: left; }
 body #request-helpers { margin: 16px 0 0; font-size: 1.125rem; font-weight: 400; text-align: left; overflow-wrap: anywhere; }
 body #request-helpers:empty { display: none; }
 body #request-detail { padding: 12px 0; color: var(--muted); text-align: left; font-size: 1rem; white-space: pre-line; }
 body.for-elder .helper-rating { margin: 28px 0; padding: 24px 0; border: 0; border-block: 1px solid var(--rule); border-radius: 0; background: none; }
-body.for-elder .helper-rating p { margin: 0 0 16px; font-size: 1.25rem; font-weight: 500; overflow-wrap: anywhere; }
+body.for-elder .helper-rating p { margin: 0 0 16px; font-size: 1.25rem; font-weight: 400; overflow-wrap: anywhere; }
 body .helper-rating .stars { gap: 6px; }
 body .helper-rating .stars label { display: grid; place-items: center; width: 48px; min-height: 56px; padding: 0; font-size: 2.5rem; color: #929ba6; }
 body .stars label:has(input:checked), body .stars label:has(input:checked) ~ label { color: var(--vermillion); text-shadow: none; }
@@ -447,3 +448,10 @@ html:has(> body.for-elder)::after { color: var(--vermillion); }
 body .map-wrap.is-drawing .mode-badge { color: #fff; background: var(--vermillion); box-shadow: none; }
 body #area-map.is-drawing { box-shadow: none; }
 body .area-vertex { box-shadow: 0 0 0 2px var(--ink); }
+
+/* スコップ計も同じ書体・配色。センサーや保存の処理はそのまま。 */
+body .scoop-card { padding: 24px 0; border-block: 1px solid var(--rule); }
+body .scoop-label { font-weight: 400; letter-spacing: 0; }
+body .scoop-numbers { font-family: var(--font-number); font-weight: 400; line-height: 1.6; }
+body #scoop-count { color: var(--vermillion); font-weight: 400; text-shadow: none; }
+body .scoop-kg { color: var(--ink); font-size: 1.125rem; }

@@ -1,4 +1,4 @@
-/* 比較用のドット絵案。指定のない通常画面には適用しない。 */
+/* 通常表示のドット絵デザイン。比較用の誌面レイアウトとは枠と図形を切り替える。 */
 html[data-design="pixel"] {
   --font-body: "DotGothic16", "Hiragino Sans", "Yu Gothic", sans-serif;
   --font-pixel: var(--font-body);
