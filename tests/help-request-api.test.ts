@@ -32,6 +32,8 @@ async function startApp() {
   const server = createApp(CONFIG, {
     now: () => current,
     fetchForecast: async () => FORECAST,
+    // 乱数 0 → リーダーは「到着した人のうち、参加した順の先頭」
+    random: () => 0,
   }).listen(0);
   servers.push(server);
   await new Promise((resolve) => server.once("listening", resolve));
@@ -85,15 +87,24 @@ test("依頼 → 参加 → 到着 → 開始 → 終了 → いいね → ラ�
   const ranking = await app.get(`/api/ranking?period=daily&userId=${HELPER_A}`);
 
   // Assert
-  expect(joined.body.data).toMatchObject({ status: "accepted", leaderUserId: HELPER_A, viewer: "helper" });
+  // 開始前はリーダーがいない(王冠も出さない)。開始した瞬間に決まる
+  expect(joined.body.data).toMatchObject({ status: "accepted", leaderUserId: null, viewer: "helper" });
   expect(arrived.body.data.helpers[0].arrivedAt).not.toBeNull();
-  expect(started.body.data.status).toBe("working");
-  // 30 分 × 100 + (25㎡ × 0.4m × 100 = 1000kg) × 10
-  expect(finished.body.data.result).toMatchObject({ minutes: 30, snowKg: 1000, workPoints: 13000 });
+  expect(started.body.data).toMatchObject({ status: "working", leaderUserId: HELPER_A });
+  // 30 分 × 100 + (25㎡ × 0.4m × 100 = 1000kg) × 2
+  expect(finished.body.data.result).toMatchObject({ minutes: 30, snowKg: 1000, workPoints: 5000 });
   expect(thanked.body.data.ratings).toEqual({ [HELPER_A]: 5 });
   expect(ranking.body).toEqual({
     success: true,
-    data: [{ rank: 1, displayName: "ゆきお", points: 13500, isMe: true }],
+    data: [
+      {
+        rank: 1,
+        displayName: "ゆきお",
+        points: 5500,
+        breakdown: { work: 5000, rating: 500, recruit: 0, reunion: 0 },
+        isMe: true,
+      },
+    ],
   });
 });
 
@@ -133,7 +144,7 @@ test("お年寄りの待機画面用 API は、取り消すと null を返す", 
   expect(list.body.data).toEqual([]);
 });
 
-test("他人は取り消せず(403)、リーダー以外は開始できず(403)、いいねは 1 回だけ(409)", async () => {
+test("他人は取り消せず(403)、到着前は開始できず(403)、リーダー以外は終了できず(403)、いいねは 1 回だけ(409)", async () => {
   // Arrange
   const app = await startApp();
   const id = await createRequest(app);
@@ -143,15 +154,25 @@ test("他人は取り消せず(403)、リーダー以外は開始できず(403)�
 
   // Act
   const cancelByOther = await app.post(`${path}/cancel`, { userId: HELPER_A });
-  const startByMember = await app.post(`${path}/start`, { userId: HELPER_B });
-  await app.post(`${path}/start`, { userId: HELPER_A });
-  await app.post(`${path}/finish`, { userId: HELPER_B, areaM2: 10 });
+  const startBeforeArrival = await app.post(`${path}/start`, { userId: HELPER_B });
+  await app.post(`${path}/arrive`, { userId: HELPER_A });
+  await app.post(`${path}/arrive`, { userId: HELPER_B });
+  // B が開始 → リーダーは A(乱数 0)
+  const startByB = await app.post(`${path}/start`, { userId: HELPER_B });
+  const finishByMember = await app.post(`${path}/finish`, { userId: HELPER_B, areaM2: 10 });
+  const finishByLeader = await app.post(`${path}/finish`, { userId: HELPER_A, areaM2: 10 });
   const firstThanks = await app.post(`${path}/thanks`, { userId: ELDER_ID, ratings: { [HELPER_B]: 3 } });
   const secondThanks = await app.post(`${path}/thanks`, { userId: ELDER_ID, ratings: { [HELPER_B]: 3 } });
 
   // Assert
   expect(cancelByOther).toEqual({ status: 403, body: { success: false, error: "依頼した本人だけができます。" } });
-  expect(startByMember.status).toBe(403);
+  expect(startBeforeArrival).toEqual({ status: 403, body: { success: false, error: "到着してから開始してください。" } });
+  expect(startByB.body.data).toMatchObject({ status: "working", leaderUserId: HELPER_A });
+  expect(finishByMember).toEqual({
+    status: 403,
+    body: { success: false, error: "範囲に丸を付けて終われるのはリーダー(Aさん)だけです。" },
+  });
+  expect(finishByLeader.body.data.status).toBe("done");
   expect(firstThanks.status).toBe(200);
   expect(secondThanks).toEqual({ status: 409, body: { success: false, error: "いいねは 1 回だけ送れます。" } });
 });

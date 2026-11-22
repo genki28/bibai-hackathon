@@ -10,8 +10,11 @@ export type HelpRequestStatus = "waiting" | "accepted" | "working" | "done" | "c
 
 /** 1 つの依頼に参加できる人数(仮)。 */
 export const MAX_HELPERS = 5;
-/** 雪かきした範囲の面積の上限(㎡)。これより大きいのは入力ミスとみなす。 */
-export const MAX_AREA_M2 = 2000;
+/**
+ * 雪かきした範囲の面積の上限(㎡)。1 依頼あたり、家のまわり・道・屋根くらいまで(仮)。
+ * これより大きいのは入力ミスとみなす(public/liff/snow-area.js の MAX_AREA_M2 と同じ値)。
+ */
+export const MAX_AREA_M2 = 300;
 /** 評価の星の数の範囲。 */
 export const MIN_STARS = 1;
 export const MAX_STARS = 5;
@@ -31,7 +34,10 @@ export type HelpRequestInput = HelpRequestExtras & {
   readonly amount: SnowAmount;
 };
 
-/** 参加した若者。最初に参加した人(helpers の先頭)がリーダー。 */
+/**
+ * 参加した若者。リーダーは雪かきを開始した瞬間にランダムで決まる(HelpRequest.leaderUserId)。
+ * リーダーの役割は「雪かきを行った範囲に丸を付ける(= 終了する)」ことだけ。
+ */
 export type Helper = {
   readonly userId: string;
   readonly displayName: string;
@@ -66,6 +72,8 @@ export type HelpRequest = {
   readonly status: HelpRequestStatus;
   readonly createdAt: string;
   readonly helpers: readonly Helper[];
+  /** リーダーのユーザー ID。開始するまでは null(leader.ts でランダムに決める)。 */
+  readonly leaderUserId: string | null;
   readonly startedAt: string | null;
   readonly finishedAt: string | null;
   readonly cancelledAt: string | null;
@@ -100,7 +108,9 @@ export const isJoinable = (r: HelpRequest): boolean => isOpen(r) || r.status ===
 export const isOngoingForElder = (r: HelpRequest): boolean =>
   r.status !== "cancelled" && r.thankedAt === null;
 
-export const leaderOf = (r: HelpRequest): Helper | null => r.helpers[0] ?? null;
-
 export const findHelper = (r: HelpRequest, userId: string): Helper | null =>
   r.helpers.find((h) => h.userId === userId) ?? null;
+
+/** リーダー(開始前は null)。 */
+export const leaderOf = (r: HelpRequest): Helper | null =>
+  r.leaderUserId ? findHelper(r, r.leaderUserId) : null;

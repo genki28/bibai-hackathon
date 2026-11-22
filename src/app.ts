@@ -9,6 +9,9 @@ import { createSnowDepthProvider } from "./help-requests/snow-depth.js";
 import { createIdentityRouter } from "./identity/routes.js";
 import type { IdentityStore } from "./identity/store.js";
 import type { HelpRequestStore } from "./help-requests/store.js";
+import type { RandomSource } from "./help-requests/leader.js";
+import { createInviteRouter } from "./invites/routes.js";
+import type { InviteStore } from "./invites/store.js";
 import { createStores } from "./storage.js";
 import { createTestModeRouter } from "./test-mode/routes.js";
 import { TEST_USERS } from "./test-mode/users.js";
@@ -70,6 +73,9 @@ export type AppOptions = WeatherRouterOptions &
     /** 保存先の差し替え(テスト用)。渡さなければ設定に応じて Supabase かメモリを使う。 */
     readonly helpRequestStore?: HelpRequestStore;
     readonly identityStore?: IdentityStore;
+    readonly inviteStore?: InviteStore;
+    /** リーダーを選ぶときの乱数(テスト用)。helpRequestStore を渡したときは使わない。 */
+    readonly random?: RandomSource;
   };
 
 export function createApp(config: AppConfig, options: AppOptions = {}): Express {
@@ -77,10 +83,11 @@ export function createApp(config: AppConfig, options: AppOptions = {}): Express 
   const botConfigured = isBotConfigured(config);
   const liffConfigured = isLiffConfigured(config);
   // 保存先(Supabase / メモリ)。「誰がどの役割か」は Webhook とメニューを戻す API で同じものを使う
-  const stores = createStores(config);
+  const stores = createStores(config, { random: options.random });
   const roleStore = options.roleStore ?? stores.roleStore;
   const helpRequestStore = options.helpRequestStore ?? stores.helpRequestStore;
   const identityStore = options.identityStore ?? stores.identityStore;
+  const inviteStore = options.inviteStore ?? stores.inviteStore;
 
   app.get("/health", (_req, res) => {
     res.json({
@@ -109,7 +116,7 @@ export function createApp(config: AppConfig, options: AppOptions = {}): Express 
   // テスト用のデータを消す API(TEST_MODE が "true" のときだけ。オフなら下の notFound で 404)
   if (config.testMode) {
     app.use(
-      createTestModeRouter({ helpRequestStore, identityStore, roleStore }),
+      createTestModeRouter({ helpRequestStore, identityStore, roleStore, inviteStore }),
     );
   }
   // 美唄の雪の予報(Open-Meteo)
@@ -121,8 +128,11 @@ export function createApp(config: AppConfig, options: AppOptions = {}): Express 
       store: helpRequestStore,
       now,
       getSnowDepthM: createSnowDepthProvider(options.fetchForecast ?? fetchBibaiForecast, now),
+      listReferrals: inviteStore.listReferrals,
     }),
   );
+  // 友だちを誘う(招待コード・招待の記録)。勧誘ポイントはランキングで数える
+  app.use(createInviteRouter({ store: inviteStore, now }));
   // リッチメニューを最初(利用者登録)に戻す
   app.use(
     createUsersRouter({

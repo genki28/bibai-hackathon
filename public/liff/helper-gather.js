@@ -1,4 +1,5 @@
 // 【若者】待機中(集合待ち)の動き。数秒ごとに依頼を読み直し、開始されたら雪かき中の画面へ進む。
+// 開始は到着した人ならだれでも押せる。リーダーは開始した瞬間にサーバーがランダムで決める(開始前は王冠なし)。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId } from "./common.js";
@@ -19,7 +20,7 @@ import { userIdPromise } from "./template.js";
 const POLL_INTERVAL_MS = 3000;
 
 /** 参加者 1 人のアイコン(円の index 番目に置く)。到着した人は光る。 */
-function renderHelper(helper, { isLeader, isMe, index, total }) {
+function renderHelper(helper, { isMe, index, total }) {
   const item = el("li", undefined, "party-member");
   item.classList.toggle("arrived", Boolean(helper.arrivedAt));
   item.classList.toggle("is-me", isMe);
@@ -27,8 +28,7 @@ function renderHelper(helper, { isLeader, isMe, index, total }) {
   item.style.setProperty("--n", String(Math.max(total, 1)));
   const avatar = el("span", Array.from(helper.displayName)[0] ?? "?", "avatar");
   avatar.setAttribute("aria-hidden", "true");
-  if (isLeader) avatar.append(el("span", "👑", "crown"));
-  const name = `${isLeader ? "リーダー " : ""}${helper.displayName}${isMe ? "(あなた)" : ""}`;
+  const name = `${helper.displayName}${isMe ? "(あなた)" : ""}`;
   item.append(
     avatar,
     el("span", name, "member-name"),
@@ -45,14 +45,15 @@ function render(request, userId) {
   list.classList.toggle("is-complete", total > 0 && arrived === total);
   list.replaceChildren(
     ...request.helpers.map((h, index) =>
-      renderHelper(h, { isLeader: h.userId === request.leaderUserId, isMe: h.userId === userId, index, total }),
+      renderHelper(h, { isMe: h.userId === userId, index, total }),
     ),
   );
-  const isLeader = request.leaderUserId === userId;
-  byId("start-button").hidden = !isLeader;
-  byId("leader-note").textContent = isLeader
-    ? "あなたがリーダー(👑)です。みんながそろったら「雪かき開始」を押してください。"
-    : "リーダー(👑)が開始するのを待っています。";
+  const me = request.helpers.find((h) => h.userId === userId);
+  const hasArrived = Boolean(me?.arrivedAt);
+  byId("start-button").hidden = !hasArrived;
+  byId("leader-note").textContent = hasArrived
+    ? "みんながそろったら、だれが押してもOK!「雪かき開始」でリーダー(👑)がランダムに決まります。リーダーの役目は、終わったときに範囲に丸を付けることだけ。"
+    : "到着すると「雪かき開始」を押せるようになります。開始したときに、到着した人の中からリーダー(👑)がランダムに決まります。";
 }
 
 /** 1 回分の更新。次の画面へ進むか、続けられないときは true(= 更新をやめる)。 */

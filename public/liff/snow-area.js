@@ -17,7 +17,7 @@ import {
 import { userIdPromise } from "./template.js";
 
 /** サーバーが受け付ける面積の上限(㎡)。src/help-requests/model.ts の MAX_AREA_M2 と同じ値。 */
-const MAX_AREA_M2 = 2000;
+const MAX_AREA_M2 = 300;
 const MIN_POINTS = 3;
 /** [四角で始める] で置く四角形の 1 辺(m)。角をつまんで広げてもらう前提で小さめ。 */
 const START_SQUARE_SIZE_M = 15;
@@ -110,6 +110,12 @@ async function main() {
     navigateTo(pageUrl("finish.html", id), { replace: true });
     return;
   }
+  // 範囲に丸を付けるのはリーダーだけ。リーダー以外は「リーダーを待つ」表示へ
+  if (request.leaderUserId && request.leaderUserId !== userId) {
+    navigateTo(`${pageUrl("helper-working.html", id)}&wait=1`, { replace: true });
+    return;
+  }
+  byId("area-limit").textContent = `${MAX_AREA_M2.toLocaleString("ja-JP")} ㎡ まで(家のまわり・道くらい)`;
   byId("finish-button").addEventListener("click", () => onFinish(id, userId));
   const map = createMap(byId("area-map"), pointOf(request), DRAW_ZOOM);
   if (!map) {

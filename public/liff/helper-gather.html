@@ -6,7 +6,9 @@
     <title>待機中</title>
     <!--
       【若者】到着した後の待機中(helper-gather.html?id=依頼ID)。参加者と集合の人数を数秒ごとに更新する。
-      リーダー(最初に参加した人)だけ「雪かき開始」を押せる。開始されたら全員が雪かき中(helper-working.html)へ。
+      到着した人ならだれでも「雪かき開始」を押せる(到着していない人は押せない)。開始した瞬間に、
+      到着した人の中からランダムでリーダー(👑)が決まる。リーダーの役目は、終わったときに範囲に丸を付けることだけ。
+      開始前は王冠を出さない。開始されたら全員が雪かき中(helper-working.html)へ。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
     <!-- 見出し・数字の字(M PLUS Rounded 1c)。読み込めないときは端末の字で表示される -->
@@ -112,11 +114,6 @@
         50% {
           box-shadow: 0 0 30px rgba(139, 92, 246, 0.9);
         }
-      }
-      .crown {
-        position: absolute;
-        top: -16px;
-        font-size: 1.1rem;
       }
       .member-name {
         width: 100%;

@@ -1,10 +1,12 @@
 // 【若者】ランキングの動き。デイリー / 総合を切り替えて、順位・名前・ポイントを出す。
 // 上位 3 人は表彰台(金・銀・銅)、4 位から下は 1 行ずつ。いちばん上に仲間ゲージ。
+// 自分の順位の下にポイントの内訳(雪かき・評価・勧誘・再会)。[友だちを誘う] は invite-share.js。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId, callApi, isPreviewMode } from "./common.js";
 import { renderCommunityGauge } from "./community-gauge.js";
 import { pageReady } from "./loading.js";
+import { inviteFriends } from "./invite-share.js";
 import { el, showError } from "./request-page.js";
 import { userIdPromise } from "./template.js";
 
@@ -64,6 +66,41 @@ function render(entries) {
   byId("my-rank").textContent = me
     ? `あなたは ${me.rank} 位 ・ ${formatPoints(me.points)} ・ 称号「${titleOf(me.points)}」`
     : "雪かきをすると、ここに順位が出ます。";
+  renderBreakdown(me?.breakdown);
+}
+
+/** 自分のポイントの内訳。勧誘には「はじめての雪かき」ボーナスも入る。 */
+function renderBreakdown(breakdown) {
+  const text = byId("my-breakdown");
+  text.hidden = !breakdown;
+  if (!breakdown) return;
+  const parts = [
+    ["雪かき", breakdown.work],
+    ["評価", breakdown.rating],
+    ["勧誘", breakdown.recruit],
+    ["再会", breakdown.reunion],
+  ];
+  text.textContent = `内訳: ${parts.map(([label, points]) => `${label} ${formatPoints(points)}`).join(" / ")}`;
+}
+
+function setUpInviteButton() {
+  const button = byId("invite-button");
+  const status = byId("invite-status");
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    status.hidden = true;
+    try {
+      status.textContent = isPreviewMode()
+        ? "(おためし表示では招待リンクを作りません)"
+        : await inviteFriends(await userIdPromise);
+    } catch (error) {
+      console.error(error);
+      status.textContent = `招待できませんでした: ${error.message}`;
+    } finally {
+      status.hidden = false;
+      button.disabled = false;
+    }
+  });
 }
 
 async function show(period) {
@@ -86,5 +123,6 @@ function showSafely(period) {
 }
 
 PERIODS.forEach((period) => byId(`${period}-button`).addEventListener("click", () => showSafely(period)));
+setUpInviteButton();
 // ランキングと仲間ゲージの両方がそろってから画面を見せる
 Promise.allSettled([showSafely("daily"), renderCommunityGauge(byId("community-gauge"))]).then(pageReady);

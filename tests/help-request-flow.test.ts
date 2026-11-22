@@ -24,8 +24,11 @@ function valueOf(result: Result<HelpRequest>): HelpRequest {
   return result.value;
 }
 
+/** 乱数をいつも 0 にして、リーダーは「到着した人のうち、参加した順の先頭」に決まるようにする。 */
+const FIRST_CANDIDATE = () => 0;
+
 async function setUp() {
-  const store = createHelpRequestStore();
+  const store = createHelpRequestStore(undefined, { random: FIRST_CANDIDATE });
   const request = await store.create({ userId: ELDER_ID, amount: "normal" }, NOW);
   return { store, id: request.id };
 }
@@ -77,7 +80,8 @@ test("参加・終了・いいねの入力を確かめる", () => {
     displayName: "ゆきお",
   });
   expect(parseJoinInput({ userId: HELPER_A, displayName: "" })).toBeNull();
-  expect(parseFinishInput({ userId: HELPER_A, areaM2: 2001 })).toBeNull();
+  expect(parseFinishInput({ userId: HELPER_A, areaM2: 301 })).toBeNull();
+  expect(parseFinishInput({ userId: HELPER_A, areaM2: 300 })).toEqual({ userId: HELPER_A, areaM2: 300 });
   expect(parseFinishInput({ userId: HELPER_A, areaM2: -1 })).toBeNull();
   expect(parseThanksInput({ userId: ELDER_ID, ratings: { [HELPER_A]: 6 } })).toBeNull();
   expect(parseThanksInput({ userId: ELDER_ID, ratings: {} })).toBeNull();
@@ -103,7 +107,11 @@ test("参加 → 到着 → 開始 → 終了 と状態が進み、もとの依�
   expect(before?.helpers).toEqual([]);
   expect(joined.status).toBe("accepted");
   expect(arrived.helpers[0]?.arrivedAt).toBe(minutesLater(5).toISOString());
-  expect(started).toMatchObject({ status: "working", startedAt: minutesLater(6).toISOString() });
+  expect(started).toMatchObject({
+    status: "working",
+    startedAt: minutesLater(6).toISOString(),
+    leaderUserId: HELPER_A,
+  });
   expect(finished.status).toBe("done");
   expect(finished.result).toEqual({
     minutes: 30,
@@ -111,24 +119,86 @@ test("参加 → 到着 → 開始 → 終了 と状態が進み、もとの依�
     snowDepthM: 0.5,
     snowKg: 1000,
     calories: 173,
-    workPoints: 30 * 100 + 1000 * 10,
+    workPoints: 30 * 100 + 1000 * 2,
     finishedBy: HELPER_A,
   });
 });
 
-test("最初に参加した人がリーダーで、リーダー以外は開始できない", async () => {
+test("開始は到着した人ならだれでも押せて、到着していない人は押せない", async () => {
   // Arrange
   const { store, id } = await setUp();
   await store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
   await store.join(id, { userId: HELPER_B, displayName: "B" }, NOW);
+  await store.arrive(id, HELPER_B, NOW);
 
   // Act
-  const byOther = await store.start(id, HELPER_B, NOW);
-  const byLeader = await store.start(id, HELPER_A, NOW);
+  const byNotArrived = await store.start(id, HELPER_A, NOW);
+  const byArrived = await store.start(id, HELPER_B, NOW);
 
   // Assert
-  expect(byOther).toMatchObject({ ok: false, status: 403 });
-  expect(byLeader.ok).toBe(true);
+  expect(byNotArrived).toMatchObject({ ok: false, status: 403, error: "到着してから開始してください。" });
+  expect(valueOf(byArrived).status).toBe("working");
+});
+
+test("開始前はリーダーがいない。開始した瞬間に、到着した人の中からリーダーが決まる", async () => {
+  // Arrange: A は向かっている途中、B と C は到着済み。乱数 0.99 → 候補(B, C)の最後 = C
+  const store = createHelpRequestStore(undefined, { random: () => 0.99 });
+  const { id } = await store.create({ userId: ELDER_ID, amount: "normal" }, NOW);
+  const HELPER_C = userIdOf(3);
+  await store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
+  await store.join(id, { userId: HELPER_B, displayName: "B" }, NOW);
+  await store.join(id, { userId: HELPER_C, displayName: "C" }, NOW);
+  await store.arrive(id, HELPER_B, NOW);
+  await store.arrive(id, HELPER_C, NOW);
+  const before = await store.findById(id);
+
+  // Act
+  const started = valueOf(await store.start(id, HELPER_B, NOW));
+
+  // Assert
+  expect(before?.leaderUserId).toBeNull();
+  expect(started.leaderUserId).toBe(HELPER_C);
+});
+
+test("範囲に丸を付けて終われるのはリーダーだけで、ほかの人は 403(リーダーの名前つき)", async () => {
+  // Arrange: 乱数 0 → 到着した人のうち参加した順の先頭(A)がリーダー
+  const { store, id } = await setUp();
+  await store.join(id, { userId: HELPER_A, displayName: "ゆきお" }, NOW);
+  await store.join(id, { userId: HELPER_B, displayName: "あおい" }, NOW);
+  await store.arrive(id, HELPER_A, NOW);
+  await store.arrive(id, HELPER_B, NOW);
+  await store.start(id, HELPER_B, NOW);
+
+  // Act
+  const byMember = await store.finish(id, { userId: HELPER_B, areaM2: 10 }, 0.3, minutesLater(10));
+  const byLeader = await store.finish(id, { userId: HELPER_A, areaM2: 10 }, 0.3, minutesLater(10));
+  const afterDone = await store.finish(id, { userId: HELPER_B, areaM2: 10 }, 0.3, minutesLater(11));
+
+  // Assert
+  expect(byMember).toMatchObject({
+    ok: false,
+    status: 403,
+    error: "範囲に丸を付けて終われるのはリーダー(ゆきおさん)だけです。",
+  });
+  expect(valueOf(byLeader).result?.finishedBy).toBe(HELPER_A);
+  // 終わったあとは、だれが押しても同じ結果を返す(画面がお疲れ様へ進めるように)
+  expect(valueOf(afterDone).status).toBe("done");
+});
+
+test("途中から参加した人はリーダーにならない", async () => {
+  // Arrange
+  const { store, id } = await setUp();
+  await store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
+  await store.arrive(id, HELPER_A, NOW);
+  await store.start(id, HELPER_A, NOW);
+
+  // Act
+  const joined = valueOf(await store.join(id, { userId: HELPER_B, displayName: "B" }, NOW));
+  const arrived = valueOf(await store.arrive(id, HELPER_B, NOW));
+
+  // Assert
+  expect(joined.leaderUserId).toBe(HELPER_A);
+  expect(arrived.leaderUserId).toBe(HELPER_A);
 });
 
 test(`定員(${MAX_HELPERS} 人)を超えて参加できず、満員の依頼は一覧から消える`, async () => {
@@ -160,7 +230,7 @@ test("同じ人が 2 回参加しても 1 人として数え、自分の依頼�
   expect(self).toMatchObject({ ok: false, status: 400 });
 });
 
-test("全員が参加をやめると募集中に戻り、リーダーがやめると次の人がリーダーになる", async () => {
+test("全員が参加をやめると募集中に戻る(開始前なのでリーダーはまだいない)", async () => {
   // Arrange
   const { store, id } = await setUp();
   await store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
@@ -171,8 +241,9 @@ test("全員が参加をやめると募集中に戻り、リーダーがやめ�
   const afterAllLeft = valueOf(await store.leave(id, HELPER_B));
 
   // Assert
-  expect(afterLeaderLeft.helpers[0]?.userId).toBe(HELPER_B);
+  expect(afterLeaderLeft.helpers.map((h) => h.userId)).toEqual([HELPER_B]);
   expect(afterLeaderLeft.status).toBe("accepted");
+  expect(afterLeaderLeft.leaderUserId).toBeNull();
   expect(afterAllLeft.status).toBe("waiting");
 });
 
@@ -180,6 +251,7 @@ test("雪かきが始まったあとでも途中から参加でき、状態は�
   // Arrange
   const { store, id } = await setUp();
   await store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
+  await store.arrive(id, HELPER_A, NOW);
   await store.start(id, HELPER_A, NOW);
 
   // Act
@@ -196,6 +268,7 @@ test("雪かきが始まったら、参加の取り消しはできない", async
   // Arrange
   const { store, id } = await setUp();
   await store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
+  await store.arrive(id, HELPER_A, NOW);
   await store.start(id, HELPER_A, NOW);
 
   // Act & Assert
@@ -234,6 +307,7 @@ test("いいねは依頼した本人が、終わった依頼に 1 回だけ送�
   const { store, id } = await setUp();
   await store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
   const early = await store.thank(id, ELDER_ID, { [HELPER_A]: 5 }, NOW);
+  await store.arrive(id, HELPER_A, NOW);
   await store.start(id, HELPER_A, NOW);
   await store.finish(id, { userId: HELPER_A, areaM2: 10 }, 0.3, minutesLater(10));
 
@@ -256,6 +330,7 @@ test("終わったがいいね前の依頼は、待機画面用(findMine)に残�
   // Arrange
   const { store, id } = await setUp();
   await store.join(id, { userId: HELPER_A, displayName: "A" }, NOW);
+  await store.arrive(id, HELPER_A, NOW);
   await store.start(id, HELPER_A, NOW);
 
   // Act
