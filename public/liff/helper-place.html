@@ -7,6 +7,7 @@
     <!--
       【若者】参加した依頼の場所・詳細(helper-place.html?id=依頼ID)。本人確認の後に来る。
       [取消] で参加をやめて「助けに行く」へ、[到着しました] で待機中(helper-gather.html)へ。
+      この画面を開いている間、共有を選んだ人は現在地をお年寄りに知らせる(location-share.js)。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
     <link rel="stylesheet" href="./template.css" />
@@ -37,7 +38,20 @@
         <div class="row"><span>参加者</span><span id="helper-count"></span></div>
         <p id="tools" class="note"></p>
       </div>
-      <p class="note center">着いたら、到着を知らせてください。</p>
+      <section id="share-card" class="card share-card" aria-label="位置の共有">
+        <h2>📍 位置の共有</h2>
+        <div id="share-ask" hidden>
+          <p>お年寄りにあなたの位置が見えます(到着するまで)。<br />向かっていることが伝わると、お年寄りが安心できます。</p>
+          <div class="button-row">
+            <button id="share-no" class="button secondary" type="button">共有しない</button>
+            <button id="share-yes" class="button" type="button">位置を共有する</button>
+          </div>
+        </div>
+        <p id="share-status" class="note" role="status"></p>
+        <button id="share-toggle" class="button secondary" type="button" hidden></button>
+        <button id="share-fake" class="button secondary" type="button" hidden>🧪 位置をまねる</button>
+      </section>
+            <p class="note center">着いたら、到着を知らせてください。</p>
       <div class="button-row">
         <button id="leave-button" class="button secondary" type="button">参加をやめる</button>
         <button id="arrive-button" class="button" type="button">到着しました</button>

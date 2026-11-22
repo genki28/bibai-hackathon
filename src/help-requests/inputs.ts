@@ -110,7 +110,34 @@ export function parseScoopsInput(raw: unknown): ScoopsInput | null {
   return isCount ? { userId: body.userId, count: count as number } : null;
 }
 
-export type ThanksInput = { readonly userId: string; readonly ratings: Ratings };
+/**
+ * 現在地として受け付ける範囲(日本のまわり)。これより外は入力ミスとみなす。
+ * 誤差は 0〜10km まで(それより大きい位置は役に立たない)。
+ */
+const JAPAN_LAT = { min: 20, max: 46 } as const;
+const JAPAN_LNG = { min: 122, max: 154 } as const;
+const MAX_ACCURACY_M = 10_000;
+
+export type LocationInput = {
+  readonly userId: string;
+  readonly lat: number;
+  readonly lng: number;
+  readonly accuracy: number | null;
+};
+
+/** 現在地の入力。緯度経度は日本のまわりだけ、誤差(accuracy)は省略できる。 */
+export function parseLocationInput(raw: unknown): LocationInput | null {
+  const body = asBody(raw);
+  if (!isValidUserId(body.userId)) return null;
+  const lat = optionalNumber(body.lat, JAPAN_LAT.min, JAPAN_LAT.max);
+  const lng = optionalNumber(body.lng, JAPAN_LNG.min, JAPAN_LNG.max);
+  const accuracy = optionalNumber(body.accuracy, 0, MAX_ACCURACY_M);
+  if (lat === undefined || lat === INVALID || lng === undefined || lng === INVALID) return null;
+  if (accuracy === INVALID) return null;
+  return { userId: body.userId, lat, lng, accuracy: accuracy ?? null };
+}
+
+export type ThanksInput ={ readonly userId: string; readonly ratings: Ratings };
 
 const isStars = (value: unknown): value is number =>
   Number.isInteger(value) && (value as number) >= MIN_STARS && (value as number) <= MAX_STARS;
