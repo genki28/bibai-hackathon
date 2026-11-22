@@ -15,7 +15,10 @@
   // ここに書かず、npx wrangler secret put で Cloudflare に登録する
   "vars": {
     "LIFF_ID": "2012745330-FLjYEkeQ",
-    "SUPABASE_URL": "https://bixvmqnwvtkpvizyttal.supabase.co"
+    "SUPABASE_URL": "https://bixvmqnwvtkpvizyttal.supabase.co",
+    // テスト用の利用者の切り替え(画面の「🧪 テスト」ボタン)。ハッカソン中だけ "true"。
+    // ⚠ 本番の前に必ず "false" にする(docs/05-deploy.md)
+    "TEST_MODE": "true"
   },
   "observability": {
     "enabled": true

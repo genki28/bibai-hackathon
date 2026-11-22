@@ -1,7 +1,10 @@
 // LIFF 画面の動き。画面を変えたいときは index.html とこのファイルを書き換えてください。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
+import { fetchAppConfig, resolveOwnProfile } from "./common.js";
+import { pageReady } from "./loading.js";
 import "./reset-menu-button.js";
+import "./test-mode.js";
 
 const byId = (id) => document.getElementById(id);
 
@@ -9,15 +12,6 @@ function showStatus(message, isError = false) {
   const status = byId("status");
   status.textContent = message;
   status.classList.toggle("error", isError);
-}
-
-async function fetchLiffId() {
-  const response = await fetch("/api/config");
-  if (!response.ok) {
-    throw new Error(`設定を取得できませんでした(${response.status})`);
-  }
-  const body = await response.json();
-  return body?.data?.liffId ?? "";
 }
 
 async function fetchDisplayName(liff) {
@@ -68,17 +62,20 @@ async function main() {
     showStatus("LIFF SDK を読み込めませんでした。ネット接続を確認してください。", true);
     return;
   }
-  const liffId = await fetchLiffId();
+  const { liffId } = await fetchAppConfig();
   if (!liffId) {
     showStatus("LIFF ID が未設定です。.env の LIFF_ID に値を入れて、サーバーを再起動してください。", true);
     return;
   }
-  await liff.init({ liffId });
+  // liff.init は common.js で 1 回だけ行う(テスト用の切り替えなど、ほかの部品と同じ準備を使う)
+  await resolveOwnProfile();
   await showDetails(liff);
   showStatus("LIFF の準備ができました。");
 }
 
-main().catch((error) => {
-  console.error(error);
-  showStatus(`エラーが起きました: ${error instanceof Error ? error.message : String(error)}`, true);
-});
+main()
+  .catch((error) => {
+    console.error(error);
+    showStatus(`エラーが起きました: ${error instanceof Error ? error.message : String(error)}`, true);
+  })
+  .finally(pageReady);

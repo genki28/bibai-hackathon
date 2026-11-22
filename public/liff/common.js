@@ -33,19 +33,35 @@ function getGuestUserId() {
   }
 }
 
-async function fetchLiffId() {
+const TEST_USER_KEY = "bibai-test-user-id";
+const EMPTY_CONFIG = { liffId: "", testMode: false, testUsers: [] };
+
+async function fetchConfig() {
   const response = await fetch("/api/config");
   if (!response.ok) throw new Error(`設定を取得できませんでした(${response.status})`);
   const body = await response.json();
-  return body?.data?.liffId ?? "";
+  const data = body?.data ?? {};
+  return {
+    liffId: data.liffId ?? "",
+    testMode: data.testMode === true,
+    testUsers: Array.isArray(data.testUsers) ? data.testUsers : [],
+  };
+}
+
+let configPromise = null;
+
+/** サーバーの設定 { liffId, testMode, testUsers }(1 回だけ取ってきて覚えておく)。おためし表示では空。 */
+export function fetchAppConfig() {
+  configPromise ??= isPreviewMode() ? Promise.resolve(EMPTY_CONFIG) : fetchConfig();
+  return configPromise;
 }
 
 /** LINE の外で使う表示名(「ゲスト」+ ID の末尾 4 文字)。 */
 const guestProfile = (userId) => ({ userId, displayName: `ゲスト${userId.slice(-4)}` });
 
-async function loadProfile() {
+async function loadOwnProfile() {
   const liff = window.liff;
-  const liffId = liff && !isPreviewMode() ? await fetchLiffId() : "";
+  const liffId = liff && !isPreviewMode() ? (await fetchAppConfig()).liffId : "";
   if (!liffId) return guestProfile(getGuestUserId());
   await liff.init({ liffId });
   if (!liff.isLoggedIn()) return guestProfile(getGuestUserId());
@@ -53,12 +69,60 @@ async function loadProfile() {
   return { userId: profile.userId, displayName: profile.displayName || guestProfile(profile.userId).displayName };
 }
 
+/** いま選んでいるテスト用の利用者の ID(🧪 テストの小窓で選ぶ)。選んでいなければ空文字。 */
+export function getSelectedTestUserId() {
+  try {
+    return localStorage.getItem(TEST_USER_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/** テスト用の利用者を選ぶ。空文字なら「自分」に戻す。 */
+export function setSelectedTestUserId(userId) {
+  try {
+    if (userId) {
+      localStorage.setItem(TEST_USER_KEY, userId);
+    } else {
+      localStorage.removeItem(TEST_USER_KEY);
+    }
+  } catch (error) {
+    console.error(error);
+    throw new Error("この端末では切り替えを覚えておけませんでした。");
+  }
+}
+
+/** テストモードで、テスト用の利用者を選んでいればそのプロフィール。そうでなければ null。 */
+async function loadTestProfile() {
+  const selected = getSelectedTestUserId();
+  if (!selected) return null;
+  const config = await fetchAppConfig();
+  if (!config.testMode) return null; // テストモードが切られたら、選んでいても使わない
+  const user = config.testUsers.find((u) => u.userId === selected);
+  return user ? { userId: user.userId, displayName: user.displayName, isTestUser: true } : null;
+}
+
+async function loadProfile() {
+  const own = await resolveOwnProfile();
+  return (await loadTestProfile()) ?? own;
+}
+
+let ownProfilePromise = null;
 let profilePromise = null;
 
 /**
- * この画面を開いている人の { userId, displayName }。
- * LINE にログインしていれば本物、していなければ仮の ID と「ゲスト〇〇〇〇」。
+ * 本当にこの画面を開いている人(テスト用の利用者を選んでいても、自分)の { userId, displayName }。
  * LIFF の準備(liff.init)は 1 回だけにしたいので、結果を覚えておく。
+ */
+export function resolveOwnProfile() {
+  ownProfilePromise ??= loadOwnProfile();
+  return ownProfilePromise;
+}
+
+/**
+ * この画面で使う人の { userId, displayName }。
+ * LINE にログインしていれば本物、していなければ仮の ID と「ゲスト〇〇〇〇」。
+ * テストモードでテスト用の利用者を選んでいれば、その人(isTestUser: true が付く)。
  */
 export function resolveProfile() {
   profilePromise ??= loadProfile();

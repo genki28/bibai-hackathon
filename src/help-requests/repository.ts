@@ -27,12 +27,18 @@ export type HelpRequestRepository = {
   readonly insert: (request: HelpRequest) => Promise<boolean>;
   /** version が expectedVersion のままなら書き換えて true。ほかの人が先に書いていたら false。 */
   readonly update: (request: HelpRequest, expectedVersion: number) => Promise<boolean>;
+  /** 依頼した人か参加者が userIds のだれかである依頼を消して、消した件数を返す(テスト用のデータを消すとき用)。 */
+  readonly deleteInvolving: (userIds: readonly string[]) => Promise<number>;
 };
 
 /** 「まだ終わっていない(雪かき前・雪かき中)」の状態。1 人 1 つまで。 */
 export const ONGOING_STATUSES: readonly HelpRequestStatus[] = ["waiting", "accepted", "working"];
 
 const isOngoing = (r: HelpRequest): boolean => ONGOING_STATUSES.includes(r.status);
+
+/** 依頼した人か参加者が userIds のだれかか。 */
+export const involvesAny = (r: HelpRequest, userIds: readonly string[]): boolean =>
+  userIds.includes(r.userId) || r.helpers.some((h) => userIds.includes(h.userId));
 
 /** メモリ版。サーバーを再起動すると消える。 */
 export function createMemoryHelpRequestRepository(): HelpRequestRepository {
@@ -56,6 +62,12 @@ export function createMemoryHelpRequestRepository(): HelpRequestRepository {
       const next: Versioned = { request, version: expectedVersion + 1 };
       rows = rows.map((row) => (row.request.id === request.id ? next : row));
       return true;
+    },
+    deleteInvolving: async (userIds) => {
+      const kept = rows.filter((row) => !involvesAny(row.request, userIds));
+      const deleted = rows.length - kept.length;
+      rows = kept;
+      return deleted;
     },
   };
 }

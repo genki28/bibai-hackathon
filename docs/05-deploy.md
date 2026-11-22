@@ -88,6 +88,20 @@ npx wrangler secret put SUPABASE_SECRET_KEY
 
 LINE 側のリッチメニューの切り替えは、Supabase とは別に LINE に保存されます。
 
+## テストモード(TEST_MODE)— ⚠ 本番の前に必ず false にする
+
+ハッカソン中は、1 台のスマホでお年寄り役と若者役を行き来してテストできるように、`wrangler.jsonc` の `vars` で `"TEST_MODE": "true"` にしています。
+オンの間は、だれでも画面の「🧪 テスト」ボタンからテスト用の利用者に切り替えられ、`POST /api/test/reset` でテスト用のデータを消せます(くわしくは [features/pages.md](features/pages.md) の「テスト用の利用者の切り替え」)。
+
+**本番(ハッカソンの後、実際に使ってもらう前)には、必ず次のようにしてから公開し直してください。**
+
+1. `wrangler.jsonc` の `"TEST_MODE": "true"` を `"TEST_MODE": "false"` にする
+2. `npm run deploy` で公開し直す
+3. 公開先の `/api/config` を開いて、`"testMode": false` になっていることを確かめる
+4. 残っているテスト用のデータは、オフにする前に「🧪 テスト」→「テストのデータを消す」で消しておく(オフにすると消す API も使えなくなる)
+
+手元では `.env` の `TEST_MODE=true` でオンになります(空ならオフ)。
+
 ## うまくいかないとき
 
 - 公開先のエラーの記録は `npx wrangler tail` で見られます(止めるときは `Ctrl + C`)

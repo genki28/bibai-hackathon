@@ -11,6 +11,11 @@ export type AppConfig = {
   readonly supabaseUrl: string;
   /** Supabase の secret キー(sb_secret_...)。秘密の値。 */
   readonly supabaseSecretKey: string;
+  /**
+   * テスト用の利用者の切り替えを使えるようにするか(TEST_MODE が "true" のときだけ true)。
+   * ⚠ 本番(ハッカソン後)では必ず false にする。docs/05-deploy.md を参照。
+   */
+  readonly testMode: boolean;
 };
 
 type Env = Readonly<Record<string, string | undefined>>;
@@ -29,6 +34,7 @@ export function readConfig(env: Env): AppConfig {
     port: parsePort(env.PORT),
     supabaseUrl: env.SUPABASE_URL?.trim() ?? "",
     supabaseSecretKey: env.SUPABASE_SECRET_KEY?.trim() ?? "",
+    testMode: env.TEST_MODE?.trim() === "true",
   };
 }
 

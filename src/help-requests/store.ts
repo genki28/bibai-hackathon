@@ -46,6 +46,8 @@ export type HelpRequestStore = {
     ratings: Ratings,
     now: Date,
   ) => Promise<Result<HelpRequest>>;
+  /** 依頼した人か参加者が userIds のだれかである依頼を消す(テスト用のデータを消すとき用)。消した件数を返す。 */
+  readonly deleteInvolving: (userIds: readonly string[]) => Promise<number>;
 };
 
 /** ほかの人と同時に書き換えてぶつかったとき、やり直す回数。 */
@@ -142,5 +144,6 @@ export function createHelpRequestStore(
     cancel: (id, userId, now) => update(id, (r) => transitions.cancel(r, userId, now)),
     thank: (id, userId, ratings, now) =>
       update(id, (r) => transitions.thank(r, userId, ratings, now)),
+    deleteInvolving: (userIds) => repo.deleteInvolving(userIds),
   };
 }

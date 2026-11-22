@@ -3,6 +3,7 @@
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId, callApi, isPreviewMode } from "./common.js";
+import { navigateTo, pageReady } from "./loading.js";
 import { createMap, ROUGH_ZOOM, showRoughArea } from "./map.js";
 import { el, postAction, showError } from "./request-page.js";
 import { profilePromise } from "./template.js";
@@ -110,7 +111,7 @@ async function onConfirm() {
     const { userId, displayName } = await profilePromise;
     await postAction(selected.id, "join", { userId, displayName });
     const next = new URLSearchParams({ next: NEXT_PAGE_AFTER_IDENTITY, id: selected.id });
-    location.href = `./identity.html?${next}`;
+    navigateTo(`./identity.html?${next}`);
   } catch (error) {
     console.error(error);
     byId("confirm-overlay").hidden = true;
@@ -157,7 +158,10 @@ byId("confirm-back-button").addEventListener("click", () => {
 });
 byId("confirm-button").addEventListener("click", onConfirm);
 
-loadRequests().catch((error) => {
-  console.error(error);
-  byId("waiting-count").textContent = "依頼を読み込めませんでした。画面を開き直してください。";
-});
+// 一覧がそろってから画面を見せる
+loadRequests()
+  .catch((error) => {
+    console.error(error);
+    byId("waiting-count").textContent = "依頼を読み込めませんでした。画面を開き直してください。";
+  })
+  .finally(pageReady);

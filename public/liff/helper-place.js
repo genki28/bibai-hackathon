@@ -2,6 +2,7 @@
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId } from "./common.js";
+import { navigateTo, pageReady } from "./loading.js";
 import { createMap, DETAIL_ZOOM, pointOf, showPin } from "./map.js";
 import {
   fetchRequest,
@@ -52,7 +53,7 @@ async function main() {
   const request = await fetchRequest(id, userId);
   if (stopIfUnavailable(request)) return;
   if (request.status === "working") {
-    location.replace(pageUrl("helper-working.html", id));
+    navigateTo(pageUrl("helper-working.html", id), { replace: true });
     return;
   }
   render(request);
@@ -61,18 +62,20 @@ async function main() {
     runWithButton("leave-button", async () => {
       if (!confirm("この依頼への参加を取り消しますか?")) return;
       await postAction(id, "leave", { userId });
-      location.href = "./go-help.html";
+      navigateTo("./go-help.html");
     }),
   );
   byId("arrive-button").addEventListener("click", () =>
     runWithButton("arrive-button", async () => {
       await postAction(id, "arrive", { userId });
-      location.href = pageUrl("helper-gather.html", id);
+      navigateTo(pageUrl("helper-gather.html", id));
     }),
   );
 }
 
-main().catch((error) => {
-  console.error(error);
-  showError(`読み込めませんでした: ${error.message}`);
-});
+main()
+  .catch((error) => {
+    console.error(error);
+    showError(`読み込めませんでした: ${error.message}`);
+  })
+  .finally(pageReady);

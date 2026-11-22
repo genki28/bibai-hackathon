@@ -4,6 +4,7 @@
 
 import { byId, callApi, isPreviewMode } from "./common.js";
 import { renderCommunityGauge } from "./community-gauge.js";
+import { pageReady } from "./loading.js";
 import { el, showError } from "./request-page.js";
 import { userIdPromise } from "./template.js";
 
@@ -78,12 +79,12 @@ async function show(period) {
 }
 
 function showSafely(period) {
-  show(period).catch((error) => {
+  return show(period).catch((error) => {
     console.error(error);
     showError(`ランキングを読み込めませんでした: ${error.message}`);
   });
 }
 
 PERIODS.forEach((period) => byId(`${period}-button`).addEventListener("click", () => showSafely(period)));
-showSafely("daily");
-renderCommunityGauge(byId("community-gauge"));
+// ランキングと仲間ゲージの両方がそろってから画面を見せる
+Promise.allSettled([showSafely("daily"), renderCommunityGauge(byId("community-gauge"))]).then(pageReady);

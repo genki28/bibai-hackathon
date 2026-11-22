@@ -18,6 +18,7 @@ const CONFIG: AppConfig = {
   port: 0,
   supabaseUrl: "",
   supabaseSecretKey: "",
+  testMode: false,
 };
 
 /** Open-Meteo の応答の形を真似したテスト用データを作る。 */

@@ -2,6 +2,7 @@
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId } from "./common.js";
+import { navigateTo, pageReady } from "./loading.js";
 import { createMap, DRAW_ZOOM, enableAreaDrawing, pointOf } from "./map.js";
 import {
   fetchRequest,
@@ -33,7 +34,7 @@ async function onFinish(id, userId) {
   button.disabled = true;
   try {
     await postAction(id, "finish", { userId, areaM2 });
-    location.replace(pageUrl("finish.html", id));
+    navigateTo(pageUrl("finish.html", id), { replace: true });
   } catch (error) {
     console.error(error);
     showError(`終了できませんでした: ${error.message}`);
@@ -51,7 +52,7 @@ async function main() {
   const request = await fetchRequest(id, userId);
   if (stopIfUnavailable(request)) return;
   if (request.status === "done") {
-    location.replace(pageUrl("finish.html", id));
+    navigateTo(pageUrl("finish.html", id), { replace: true });
     return;
   }
   byId("finish-button").addEventListener("click", () => onFinish(id, userId));
@@ -66,7 +67,9 @@ async function main() {
   byId("reset-button").addEventListener("click", drawing.reset);
 }
 
-main().catch((error) => {
-  console.error(error);
-  showError(`読み込めませんでした: ${error.message}`);
-});
+main()
+  .catch((error) => {
+    console.error(error);
+    showError(`読み込めませんでした: ${error.message}`);
+  })
+  .finally(pageReady);

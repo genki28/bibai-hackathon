@@ -3,6 +3,7 @@
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId, callApi, isPreviewMode } from "./common.js";
+import { pageReady } from "./loading.js";
 import { pageUrl, postAction, showError, startPolling } from "./request-page.js";
 import { userIdPromise } from "./template.js";
 
@@ -80,15 +81,21 @@ async function main() {
   byId("cancel-button").addEventListener("click", onCancel);
   if (isPreviewMode()) {
     render({ id: "", status: "waiting", amount: "normal", createdAt: new Date().toISOString(), helpers: [] });
+    pageReady();
     return;
   }
   const userId = await userIdPromise;
-  stopPolling = startPolling(() => refresh(userId), POLL_INTERVAL_MS, () =>
-    showError("様子を読み込めませんでした。しばらくすると、もう一度ためします。"),
+  // 1 回目の様子がそろったら画面を見せる
+  stopPolling = startPolling(
+    () => refresh(userId),
+    POLL_INTERVAL_MS,
+    () => showError("様子を読み込めませんでした。しばらくすると、もう一度ためします。"),
+    pageReady,
   );
 }
 
 main().catch((error) => {
   console.error(error);
+  pageReady();
   showError("様子を読み込めませんでした。画面を開き直してください。");
 });

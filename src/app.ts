@@ -10,6 +10,8 @@ import { createIdentityRouter } from "./identity/routes.js";
 import type { IdentityStore } from "./identity/store.js";
 import type { HelpRequestStore } from "./help-requests/store.js";
 import { createStores } from "./storage.js";
+import { createTestModeRouter } from "./test-mode/routes.js";
+import { TEST_USERS } from "./test-mode/users.js";
 import { verifyIdTokenWithLine } from "./users/idToken.js";
 import { createMenuUnlinker } from "./users/menu.js";
 import { createUsersRouter } from "./users/routes.js";
@@ -77,6 +79,8 @@ export function createApp(config: AppConfig, options: AppOptions = {}): Express 
   // 保存先(Supabase / メモリ)。「誰がどの役割か」は Webhook とメニューを戻す API で同じものを使う
   const stores = createStores(config);
   const roleStore = options.roleStore ?? stores.roleStore;
+  const helpRequestStore = options.helpRequestStore ?? stores.helpRequestStore;
+  const identityStore = options.identityStore ?? stores.identityStore;
 
   app.get("/health", (_req, res) => {
     res.json({
@@ -92,19 +96,29 @@ export function createApp(config: AppConfig, options: AppOptions = {}): Express 
   app.post("/webhook", ...webhookHandlers);
 
   // LIFF ID は公開してよい値。シークレットやアクセストークンは絶対に返さない。
+  // テストモードのときだけ、テスト用の利用者(架空の人)の一覧も返す(画面の「🧪 テスト」ボタン用)。
   app.get("/api/config", (_req, res) => {
-    res.json({ success: true, data: { liffId: config.liffId } });
+    res.json({
+      success: true,
+      data: { liffId: config.liffId, testMode: config.testMode, testUsers: config.testMode ? TEST_USERS : [] },
+    });
   });
 
   // 本人確認(マイナンバーカード)のデモ用 API。中で express.json() を使うので /webhook より後に置く。
-  app.use(createIdentityRouter(options.identityStore ?? stores.identityStore));
+  app.use(createIdentityRouter(identityStore));
+  // テスト用のデータを消す API(TEST_MODE が "true" のときだけ。オフなら下の notFound で 404)
+  if (config.testMode) {
+    app.use(
+      createTestModeRouter({ helpRequestStore, identityStore, roleStore }),
+    );
+  }
   // 美唄の雪の予報(Open-Meteo)
   app.use(createWeatherRouter(options));
   // お年寄りからの雪かきの依頼と、若者の参加・雪かき・ランキング
   const now = options.now ?? (() => new Date());
   app.use(
     createHelpRequestRouter({
-      store: options.helpRequestStore ?? stores.helpRequestStore,
+      store: helpRequestStore,
       now,
       getSnowDepthM: createSnowDepthProvider(options.fetchForecast ?? fetchBibaiForecast, now),
     }),

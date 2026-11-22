@@ -55,5 +55,19 @@ export function createSupabaseHelpRequestRepository(client: SupabaseClient): Hel
       // 1 行も更新されなければ、ほかの人が先に書き換えていた
       return (data ?? []).length === 1;
     },
+    deleteInvolving: async (userIds) => {
+      if (userIds.length === 0) return 0;
+      const byOwner = await table().delete().in("user_id", [...userIds]).select("id");
+      throwIfError(byOwner.error, "依頼を消す(依頼した人で)");
+      // helpers は jsonb の配列。[{ userId }] を含む行 = その人が参加している依頼
+      const byHelper = await Promise.all(
+        userIds.map((userId) =>
+          table().delete().contains("helpers", JSON.stringify([{ userId }])).select("id"),
+        ),
+      );
+      byHelper.forEach(({ error }) => throwIfError(error, "依頼を消す(参加者で)"));
+      const deletedIds = [byOwner, ...byHelper].flatMap(({ data }) => (data ?? []).map((row) => row.id));
+      return new Set(deletedIds).size;
+    },
   };
 }

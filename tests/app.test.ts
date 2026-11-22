@@ -14,6 +14,7 @@ const EMPTY_CONFIG: AppConfig = {
   port: 0,
   supabaseUrl: "",
   supabaseSecretKey: "",
+  testMode: false,
 };
 const BOT_CONFIG: AppConfig = {
   ...EMPTY_CONFIG,
@@ -59,7 +60,7 @@ test("GET /health は未設定でも ok を返し、Bot と LIFF が未設定だ
   });
 });
 
-test("GET /api/config は LIFF ID だけを返し、秘密情報は含めない", async () => {
+test("GET /api/config は LIFF ID とテストモードかどうかだけを返し、秘密情報は含めない", async () => {
   // Arrange
   const baseUrl = await startApp({ ...BOT_CONFIG, liffId: "dummy-liff-id" });
 
@@ -68,7 +69,10 @@ test("GET /api/config は LIFF ID だけを返し、秘密情報は含めない"
   const text = await response.text();
 
   // Assert
-  expect(JSON.parse(text)).toEqual({ success: true, data: { liffId: "dummy-liff-id" } });
+  expect(JSON.parse(text)).toEqual({
+    success: true,
+    data: { liffId: "dummy-liff-id", testMode: false, testUsers: [] },
+  });
   expect(text).not.toContain(BOT_CONFIG.channelSecret);
   expect(text).not.toContain(BOT_CONFIG.channelAccessToken);
 });

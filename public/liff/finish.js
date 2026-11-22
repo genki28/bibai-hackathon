@@ -4,6 +4,7 @@
 import { byId } from "./common.js";
 import { renderCommunityGauge } from "./community-gauge.js";
 import { countUp, snowConfetti } from "./effects.js";
+import { navigateTo, pageReady } from "./loading.js";
 import {
   fetchRequest,
   pageUrl,
@@ -46,14 +47,18 @@ async function main() {
   const request = await fetchRequest(id, userId);
   if (stopIfUnavailable(request)) return;
   if (request.status !== "done" || !request.result) {
-    location.replace(pageUrl("helper-working.html", id));
+    navigateTo(pageUrl("helper-working.html", id), { replace: true });
     return;
   }
+  // スコアのカウントアップと紙吹雪が見えるように、出す直前に画面を見せる(仲間ゲージはあとから伸びる)
+  pageReady();
   render(request, userId);
   renderCommunityGauge(byId("community-gauge"));
 }
 
-main().catch((error) => {
-  console.error(error);
-  showError(`読み込めませんでした: ${error.message}`);
-});
+main()
+  .catch((error) => {
+    console.error(error);
+    showError(`読み込めませんでした: ${error.message}`);
+  })
+  .finally(pageReady);

@@ -21,16 +21,25 @@ export const fetchRequest = (id, userId) =>
 /** POST /api/help-requests/:id/{action} を呼ぶ。 */
 export const postAction = (id, action, data) => postJson(`/api/help-requests/${id}/${action}`, data);
 
-/** 一定の間隔で fn を呼び続ける。fn が true を返したら止める。エラーは表示して続ける。 */
-export function startPolling(fn, intervalMs, onError) {
+/**
+ * 一定の間隔で fn を呼び続ける。fn が true を返したら止める。エラーは表示して続ける。
+ * onFirstDone は 1 回目が終わったとき(うまくいってもエラーでも)に 1 度だけ呼ぶ(pageReady を渡す用)。
+ */
+export function startPolling(fn, intervalMs, onError, onFirstDone) {
   let timer = null;
   let isStopped = false;
+  let isFirst = true;
   const tick = async () => {
     try {
       if (await fn()) return;
     } catch (error) {
       console.error(error);
       onError?.(error);
+    } finally {
+      if (isFirst) {
+        isFirst = false;
+        onFirstDone?.();
+      }
     }
     if (!isStopped) timer = setTimeout(tick, intervalMs);
   };

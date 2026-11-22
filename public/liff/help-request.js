@@ -12,8 +12,11 @@
 //   name="name"(名前)/ "address"(住所)/ "depth"(雪の深さ)/ "tools"(道具)
 //   name="lat" / "lng"(緯度・経度。ふつうは hidden。id="use-location-button" を押すと現在地が入る)
 
+// 読み込み中の覆いを一番先に出す(help-request.html は template.css を読まないので、ここで中身を隠す)
+import { navigateTo, pageReady } from "./loading.js";
 import { byId, callApi, closeScreen, isPreviewMode, postJson, resolveUserId, wait } from "./common.js";
 import "./reset-menu-button.js";
+import "./test-mode.js";
 
 const STEPS = ["ask", "sending", "done"];
 const PREVIEW_DELAY_MS = 1000;
@@ -101,7 +104,7 @@ async function onCall(userIdPromise) {
       return;
     }
     // 送れたら待機画面へ
-    location.href = WAITING_PAGE;
+    navigateTo(WAITING_PAGE);
   } catch (error) {
     console.error(error);
     showStep("ask");
@@ -109,11 +112,11 @@ async function onCall(userIdPromise) {
   }
 }
 
-/** すでに助けを呼んでいる人は、フォームではなく待機画面を出す。 */
+/** すでに助けを呼んでいる人は、フォームではなく待機画面を出す(フォームは見せないまま移る)。 */
 async function goToWaitingIfAlreadyCalled(userIdPromise) {
   const userId = await userIdPromise;
   const mine = await callApi(`/api/help-requests/mine/${userId}`);
-  if (mine) location.replace(WAITING_PAGE);
+  if (mine) navigateTo(WAITING_PAGE, { replace: true });
 }
 
 function main() {
@@ -121,15 +124,27 @@ function main() {
   // ユーザー ID は裏で先に取っておく(ボタンを押したときに待たせないため)
   const userIdPromise = isPreviewMode() ? Promise.resolve("") : resolveUserId();
   userIdPromise.catch((error) => console.error(error));
-  if (!isPreviewMode()) {
-    goToWaitingIfAlreadyCalled(userIdPromise).catch((error) => console.error(error));
-  }
 
   setUpLocationButton();
   byId("call-button").addEventListener("click", () => onCall(userIdPromise));
   byId("cancel-button").addEventListener("click", closeScreen);
   byId("close-button").addEventListener("click", closeScreen);
   showStep("ask");
+
+  if (isPreviewMode()) {
+    pageReady();
+    return;
+  }
+  // すでに呼んでいるか確かめてから、フォームを見せる(待機画面へ移るときは見せない)
+  goToWaitingIfAlreadyCalled(userIdPromise)
+    .catch((error) => console.error(error))
+    .finally(pageReady);
 }
 
-main();
+try {
+  main();
+} catch (error) {
+  console.error(error);
+  pageReady();
+  showError(`画面を準備できませんでした。開き直してください。(${error.message})`);
+}
