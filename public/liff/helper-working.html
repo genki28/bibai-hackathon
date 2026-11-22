@@ -10,6 +10,7 @@
       リーダー以外は「リーダー(〇〇さん)が範囲に丸を付けています」の表示になり、終わったら自動でお疲れ様の画面へ
       (?wait=1 が付いていると、最初からその表示)。リーダーは開始したときにランダムで決まり、ドット絵でも王冠が付く。
       雪かきの様子はドット絵(pixel-snow.js が Canvas に描く。背景と主人公は ChatGPT で作った画像 images/working-*.png)。参加者の人数ぶん主人公が並ぶ。タップするとコンボの演出が出る隠し機能(画面には説明を出さない。見た目だけで、スコアには入らない)。
+      スコップ計(scoop-meter.js): スマホの揺れで、すくった回数を数える。すくうたびに自分のキャラクターが雪を投げる(ポイントには入れない)。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
     <link rel="stylesheet" href="./template.css" />
@@ -151,6 +152,53 @@
           animation: none;
         }
       }
+      /* スコップ計(scoop-meter.js) */
+      .scoop-card {
+        margin: 12px 0;
+        text-align: center;
+      }
+      .scoop-card .button {
+        margin: 0;
+      }
+      .scoop-label {
+        margin: 0;
+        font-family: var(--font-display);
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        color: var(--sub);
+      }
+      .scoop-numbers {
+        margin: 4px 0 0;
+        font-family: var(--font-display);
+        font-weight: 800;
+        line-height: 1.2;
+      }
+      #scoop-count {
+        display: inline-block;
+        font-size: clamp(2.6rem, 14vw, 3.6rem);
+        color: var(--gold);
+        text-shadow: 3px 3px 0 var(--night-top);
+      }
+      #scoop-count.is-bump {
+        animation: scoop-bump 0.35s ease-out;
+      }
+      @keyframes scoop-bump {
+        40% {
+          transform: scale(1.25);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #scoop-count.is-bump {
+          animation: none;
+        }
+      }
+      .scoop-kg {
+        font-size: 1.4rem;
+        color: var(--snow);
+      }
+      #scoop-fake {
+        margin-top: 10px;
+      }
       .elapsed-label {
         margin: 0;
         font-family: var(--font-display);
@@ -185,6 +233,18 @@
         <p id="helper-names" class="note center"></p>
         <p id="leader-role" class="leader-role center" aria-live="polite"></p>
         <p class="rest-note">自分のペースで。疲れたらひと休み。</p>
+        <section id="scoop-meter" class="card scoop-card" aria-label="スコップ計">
+          <button id="scoop-on" class="button secondary" type="button">📱 スコップ計をオンにする</button>
+          <p id="scoop-unavailable" class="note" role="status" hidden></p>
+          <p id="scoop-guide" class="note" hidden>スマホを上着のポケットに入れて雪かきしてね</p>
+          <div id="scoop-live" hidden>
+            <p class="scoop-label">すくった回数</p>
+            <p class="scoop-numbers" aria-live="polite">
+              <span id="scoop-count">0</span> 回 <span class="scoop-kg">/ 約 <span id="scoop-kg">0</span> kg</span>
+            </p>
+          </div>
+          <button id="scoop-fake" class="button secondary" type="button" hidden>🧪 揺れをまねる</button>
+        </section>
         <button id="finish-button" class="button" type="button">雪かきを終える</button>
       </div>
       <section id="leader-wait" class="card center" aria-live="polite" hidden>

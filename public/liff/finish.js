@@ -14,6 +14,7 @@ import {
   stopIfUnavailable,
 } from "./request-page.js";
 import { markFinishSeen } from "./resume.js";
+import { scoopKg } from "./scoop-counter.js";
 import { userIdPromise } from "./template.js";
 
 /** 星 1 つあたりのポイント。src/help-requests/score.ts の POINTS_PER_STAR と同じ値。 */
@@ -37,6 +38,7 @@ async function loadPoints(id, userId, request) {
       reunion: { points: 0, partners: [] },
       firstFinishBonus: 0,
       total: workPoints + ratingPoints,
+      scoops: { mine: 0, total: 0 },
     };
   }
 }
@@ -47,6 +49,18 @@ function renderBonuses(points) {
     reunion.points > 0 ? `${format(reunion.points)} pt(${reunion.partners.join("、")}さんと再会!)` : "なし";
   byId("first-finish-row").hidden = points.firstFinishBonus <= 0;
   byId("first-finish-points").textContent = `${format(points.firstFinishBonus)} pt`;
+}
+
+/** スコップ計の回数(ポイントには入れない)。自分が使っていなければ(0 回なら)出さない。 */
+function renderScoops(scoops) {
+  const mine = scoops?.mine ?? 0;
+  const total = scoops?.total ?? 0;
+  const isShown = mine > 0;
+  byId("my-scoops-row").hidden = !isShown;
+  byId("all-scoops-row").hidden = !isShown;
+  byId("scoop-note").hidden = !isShown;
+  byId("my-scoops").textContent = `${format(mine)} 振り(約 ${format(scoopKg(mine))} kg)`;
+  byId("all-scoops").textContent = `${format(total)} 振り(約 ${format(scoopKg(total))} kg)`;
 }
 
 function render(request, points) {
@@ -62,6 +76,7 @@ function render(request, points) {
   byId("rating-points").textContent =
     points.stars !== null ? `${format(points.ratingPoints)} pt(星 ${points.stars})` : "まだ届いていません";
   renderBonuses(points);
+  renderScoops(points.scoops);
 }
 
 async function main() {

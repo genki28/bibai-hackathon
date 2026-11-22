@@ -45,6 +45,8 @@ export type HelpRequestStore = {
     now: Date,
   ) => Promise<Result<HelpRequest>>;
   readonly cancel: (id: string, userId: string, now: Date) => Promise<Result<HelpRequest>>;
+  /** スコップ計の回数を残す(雪かき中の参加者だけ。前より増えたときだけ)。 */
+  readonly recordScoops: (id: string, userId: string, count: number) => Promise<Result<HelpRequest>>;
   readonly thank: (
     id: string,
     userId: string,
@@ -157,6 +159,7 @@ export function createHelpRequestStore(
     finish: (id, input, snowDepthM, now) =>
       update(id, (r) => transitions.finish(r, input, snowDepthM, now)),
     cancel: (id, userId, now) => update(id, (r) => transitions.cancel(r, userId, now)),
+    recordScoops: (id, userId, count) => update(id, (r) => transitions.recordScoops(r, userId, count)),
     thank: (id, userId, ratings, now) =>
       update(id, (r) => transitions.thank(r, userId, ratings, now)),
     deleteInvolving: (userIds) => repo.deleteInvolving(userIds),

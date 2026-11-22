@@ -7,7 +7,8 @@
     <!--
       【若者】お疲れ様の画面(finish.html?id=依頼ID)。スコアと内訳(作業時間・消費カロリー・面積・雪の重さ・
       雪かき / 評価 / 再会ボーナス(だれと再会したか)/ はじめての雪かきボーナス)を出す。
-      ポイントの内訳は GET /api/help-requests/:id/points から読む。
+      ポイントの内訳は GET /api/help-requests/:id/points から読む。スコップ計を使った人には、
+      「あなたのスコップ 〇振り(約 〇kg)」「みんなで 〇振り」も出す(ポイントには入れない)。
       [メイン画面に戻る] でランキング(ranking.html)へ。
       「QUEST CLEAR!」の演出・スコアのカウントアップ・雪の紙吹雪・仲間ゲージを出す。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
@@ -118,11 +119,18 @@
           <div id="first-finish-row" class="row wide" hidden>
             <span>🎉 はじめての雪かきボーナス</span><span id="first-finish-points">-</span>
           </div>
+          <div id="my-scoops-row" class="row wide" hidden>
+            <span>📱 あなたのスコップ</span><span id="my-scoops">-</span>
+          </div>
+          <div id="all-scoops-row" class="row wide" hidden>
+            <span>📱 みんなで</span><span id="all-scoops">-</span>
+          </div>
         </div>
         <p class="note">
           消費カロリーは体重 60kg として計算した目安です。雪の重さは「面積 × 積雪の深さ × 100kg」の目安です。
           評価のポイントは、お願いした人が星を付けると入ります。
           再会ボーナスは、前の雪かきでも一緒だった人が今回もいると、1 人につき入ります。
+          <span id="scoop-note" hidden>スコップは、スコップ計で数えたすくった回数 × 1 杯 3.5kg の目安です(ポイントには入りません)。</span>
         </p>
       </section>
       <section id="community-gauge" class="card" aria-label="仲間ゲージ">
