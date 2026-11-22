@@ -69,7 +69,7 @@ async function askPermission() {
  *   send: (count: number, options?: { keepalive?: boolean }) => Promise<unknown>,
  *   onScoop?: (count: number) => void,
  *   isTestMode?: boolean,
- * }} options send はサーバーに回数を送る処理、onScoop は 1 回すくうたびに今の回数で呼ぶ(雪を投げる・音・ボス)
+ * }} options send はサーバーに回数を送る処理、onScoop は 1 回すくうたびに今の回数で呼ぶ(雪を投げる・音・動かした雪)
  * @returns {{ flush: () => Promise<void>, count: () => number }} flush は「いまの回数をすぐ送る」(雪かきを終えるとき用)
  */
 export function startScoopMeter({ requestId, send, onScoop = () => {}, isTestMode = false }) {
