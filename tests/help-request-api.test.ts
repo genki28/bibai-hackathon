@@ -222,6 +222,39 @@ test("参加をやめる(leave)と募集中に戻り、参加していない人�
   expect(left.body.data).toMatchObject({ status: "waiting", viewer: "guest", helperCount: 0 });
 });
 
+test("参加を取り消すと本人確認も取り消され、次に参加するときはもう一度確認が必要になる", async () => {
+  // Arrange
+  const app = await startApp();
+  const id = await createRequest(app);
+  const path = `/api/help-requests/${id}`;
+  await app.post(`${path}/join`, { userId: HELPER_A, displayName: "A" });
+  await app.post("/api/identity/verify", { userId: HELPER_A, method: "face-match-demo", liveness: true });
+  const before = await app.get(`/api/identity/${HELPER_A}`);
+
+  // Act
+  await app.post(`${path}/leave`, { userId: HELPER_A });
+  const after = await app.get(`/api/identity/${HELPER_A}`);
+
+  // Assert
+  expect(before.body.data.verified).toBe(true);
+  expect(after.body.data.verified).toBe(false);
+});
+
+test("参加の取り消しに失敗したときは、本人確認はそのまま残る", async () => {
+  // Arrange: 参加していない人が取り消そうとする
+  const app = await startApp();
+  const id = await createRequest(app);
+  await app.post("/api/identity/verify", { userId: HELPER_B, method: "face-match-demo", liveness: true });
+
+  // Act
+  const left = await app.post(`/api/help-requests/${id}/leave`, { userId: HELPER_B });
+  const after = await app.get(`/api/identity/${HELPER_B}`);
+
+  // Assert
+  expect(left.status).toBe(403);
+  expect(after.body.data.verified).toBe(true);
+});
+
 test("ランキングは period を省略すると total になる", async () => {
   // Arrange
   const app = await startApp();

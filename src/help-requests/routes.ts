@@ -32,6 +32,8 @@ export type HelpRequestRouterOptions = {
   readonly now?: () => Date;
   /** 招待の記録(勧誘ポイントの集計用)。渡さなければ招待なしとして数える。 */
   readonly listReferrals?: () => Promise<readonly Referral[]>;
+  /** 参加の取り消しに成功したあとに呼ぶ(本人確認を取り消して、次に参加するときにもう一度確認させる)。 */
+  readonly onLeave?: (userId: string) => Promise<void>;
 };
 
 /** 書き込み API の中身。入力がおかしければ null を返す(→ 400)。 */
@@ -160,7 +162,15 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
     const input = parseJoinInput(body);
     return input ? store.join(id, input, at) : null;
   });
-  post("leave", withUserId((id, userId) => store.leave(id, userId)));
+  const onLeave = options.onLeave ?? (async () => {});
+  post(
+    "leave",
+    withUserId(async (id, userId) => {
+      const result = await store.leave(id, userId);
+      if (result.ok) await onLeave(userId);
+      return result;
+    }),
+  );
   post("arrive", withUserId(store.arrive));
   // 到着した人ならだれでも開始できる。開始した瞬間にリーダーがランダムに決まる
   post("start", withUserId(store.start));

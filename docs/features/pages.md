@@ -175,3 +175,5 @@ waiting(募集中)→ accepted(だれか参加)→ working(雪かき中)→ done
 - 灰色の点線の箱(`class="placeholder"`)が「ここに〇〇が入る予定」の印
 - 「メニューを最初に戻す」ボタンは `template.js` が自動で出す
 - Miro のフォームには「名前・位置情報・雪の深さ(体の部位で表す)・道具(必須ではない)」がある。サーバーは受け取れるようになったので、`help-request.html` に入力欄を足せば送られる([Gemini 向けメモ](../guides/help-request-form-for-gemini.md))
+
+> 参加を取り消す(`POST /api/help-requests/:id/leave`)と、その人の本人確認も取り消される。次に参加するときは、もう一度顔の照合が必要。
