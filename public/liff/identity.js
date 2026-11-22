@@ -3,6 +3,7 @@
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId, callApi, postJson, resolveUserId, wait } from "./common.js";
+import "./reset-menu-button.js";
 
 const STEPS = ["loading", "intro", "scan", "checking", "done"];
 const CHECKING_DELAY_MS = 1500;

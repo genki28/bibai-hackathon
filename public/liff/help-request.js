@@ -9,6 +9,7 @@
 //   name="amount" の選択肢(value は "little" / "normal" / "lots")
 
 import { byId, closeScreen, isPreviewMode, postJson, resolveUserId, wait } from "./common.js";
+import "./reset-menu-button.js";
 
 const STEPS = ["ask", "sending", "done"];
 const PREVIEW_DELAY_MS = 1000;

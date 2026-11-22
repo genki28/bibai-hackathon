@@ -6,6 +6,11 @@ import { createWebhookHandlers } from "./bot/webhook.js";
 import { isBotConfigured, isLiffConfigured } from "./config.js";
 import { createHelpRequestRouter } from "./help-requests/routes.js";
 import { createIdentityRouter } from "./identity/routes.js";
+import { verifyIdTokenWithLine } from "./users/idToken.js";
+import { createMenuUnlinker } from "./users/menu.js";
+import { createUsersRouter } from "./users/routes.js";
+import type { UsersRouterDeps } from "./users/routes.js";
+import { createRoleStore } from "./users/store.js";
 import { createWeatherRouter } from "./weather/routes.js";
 import type { WeatherRouterOptions } from "./weather/routes.js";
 import type { AppConfig } from "./config.js";
@@ -49,13 +54,16 @@ const handleError: ErrorRequestHandler = (err, req, res, _next) => {
 };
 
 /** Express アプリ(= サーバーの本体)を組み立てて返す。 */
-export function createApp(
-  config: AppConfig,
-  weatherOptions: WeatherRouterOptions = {},
-): Express {
+/** テストで外とのやりとりを偽物に差し替えるための設定。ふだんは何も渡さなくてよい。 */
+export type AppOptions = WeatherRouterOptions &
+  Partial<Pick<UsersRouterDeps, "roleStore" | "verifyIdToken" | "unlinkMenu">>;
+
+export function createApp(config: AppConfig, options: AppOptions = {}): Express {
   const app = express();
   const botConfigured = isBotConfigured(config);
   const liffConfigured = isLiffConfigured(config);
+  // 「誰がどの役割か」は Webhook とメニューを戻す API で同じものを使う
+  const roleStore = options.roleStore ?? createRoleStore();
 
   app.get("/health", (_req, res) => {
     res.json({
@@ -66,7 +74,7 @@ export function createApp(
 
   // 注意: LINE の署名確認は「生のボディ」が必要。この行より前に express.json() を足さないこと。
   const webhookHandlers = botConfigured
-    ? createWebhookHandlers(config)
+    ? createWebhookHandlers(config, { roleStore })
     : [botNotConfigured];
   app.post("/webhook", ...webhookHandlers);
 
@@ -78,9 +86,19 @@ export function createApp(
   // 本人確認(マイナンバーカード)のデモ用 API。中で express.json() を使うので /webhook より後に置く。
   app.use(createIdentityRouter());
   // 美唄の雪の予報(Open-Meteo)
-  app.use(createWeatherRouter(weatherOptions));
+  app.use(createWeatherRouter(options));
   // お年寄りからの雪かきの依頼
   app.use(createHelpRequestRouter());
+  // リッチメニューを最初(利用者登録)に戻す
+  app.use(
+    createUsersRouter({
+      liffId: config.liffId,
+      roleStore,
+      verifyIdToken: options.verifyIdToken ?? verifyIdTokenWithLine,
+      unlinkMenu:
+        options.unlinkMenu ?? (botConfigured ? createMenuUnlinker(config.channelAccessToken) : null),
+    }),
+  );
 
   app.get("/", (_req, res) => {
     res.redirect("/liff/");
