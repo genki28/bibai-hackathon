@@ -7,6 +7,7 @@
 | [01-measure-snow.md](01-measure-snow.md) | 雪かきした量を、スマホのセンサーで測る |
 | [02-double-community.md](02-double-community.md) | 「美唄に関わる人を 2 倍に」を見た目と機能で伝える |
 | [03-elder-side.md](03-elder-side.md) | お年寄り側でやった方がよいこと |
+| [04-snow-scan.md](04-snow-scan.md) | 雪スキャン: 写真と奥行きの AI で除雪率を測る(調査と試作) |
 
 ## 優先順位(デモへの効き目 × 作りやすさ)
 

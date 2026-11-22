@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>雪スキャン(試作)</title>
+    <!--
+      【試作】雪スキャン(snow-scan.html)。雪かきの前と後の写真から「除雪率」を出す。ログインは不要(単体で開ける)。
+      雪の部分の見つけ方と計算は snow-scan-core.js、奥行きの AI は depth-model.js、画面の動きは snow-scan.js。
+      写真はスマホの中だけで使い、どこにも送らない。調べたことは docs/proposals/04-snow-scan.md。
+    -->
+    <link rel="stylesheet" href="./template.css" />
+    <style>
+      .scan-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .scan-shot h2 {
+        margin: 0 0 6px;
+        font-size: 1rem;
+      }
+      .scan-shot canvas {
+        display: block;
+        width: 100%;
+        height: auto;
+        margin-top: 6px;
+        background: rgba(11, 16, 38, 0.6);
+        image-rendering: pixelated;
+      }
+      .scan-shot .button {
+        margin: 0;
+        padding-inline: 6px;
+        font-size: 0.875rem;
+      }
+      /* <label> をボタンの見た目にして、中の <input type="file"> は隠す */
+      .file-button {
+        position: relative;
+      }
+      .file-button input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .scan-coverage {
+        margin: 4px 0 0;
+        font-size: 0.875rem;
+      }
+      .scan-result {
+        margin: 14px 0;
+        text-align: center;
+      }
+      #clear-rate {
+        margin: 0;
+        font-size: clamp(3rem, 16vw, 4.5rem);
+        font-weight: 800;
+        line-height: 1.1;
+      }
+      .scan-legend {
+        font-size: 0.75rem;
+      }
+      .scan-legend span {
+        display: inline-block;
+        width: 0.9em;
+        height: 0.9em;
+        margin: 0 3px 0 8px;
+        vertical-align: -1px;
+      }
+      #model-status {
+        font-size: 0.8125rem;
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&amp;display=swap" />
+    <script src="./design-theme.js"></script>
+    <link rel="stylesheet" href="./snow-ui.css" />
+    <link rel="stylesheet" href="./snow-pixel.css" />
+  </head>
+  <body class="for-helper">
+    <main>
+      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム">ユキカキ・レイド</a><span>美唄</span></div>
+      <header class="page-head">
+        <h1>雪スキャン</h1>
+        <p class="head-description">前と後の写真で、どれだけ雪が減ったかを測る(試作)</p>
+      </header>
+      <div class="scan-grid">
+        <section class="card scan-shot" aria-label="雪かきの前">
+          <h2>① 前</h2>
+          <label class="button secondary file-button">
+            撮る / 選ぶ
+            <input id="before-input" type="file" accept="image/*" capture="environment" />
+          </label>
+          <canvas id="before-photo" width="1" height="1" aria-label="前の写真と雪の部分"></canvas>
+          <canvas id="before-depth" width="1" height="1" aria-label="前の写真の奥行き"></canvas>
+          <p id="before-coverage" class="scan-coverage"></p>
+        </section>
+        <section class="card scan-shot" aria-label="雪かきの後">
+          <h2>② 後</h2>
+          <label class="button secondary file-button">
+            撮る / 選ぶ
+            <input id="after-input" type="file" accept="image/*" capture="environment" />
+          </label>
+          <canvas id="after-photo" width="1" height="1" aria-label="後の写真と雪の部分"></canvas>
+          <canvas id="after-depth" width="1" height="1" aria-label="後の写真の奥行き"></canvas>
+          <p id="after-coverage" class="scan-coverage"></p>
+        </section>
+      </div>
+      <p class="scan-legend note">
+        <span style="background: #4fd1ff"></span>雪 <span style="background: #ffc94d"></span>近い
+        <span style="background: #3b2a8f"></span>遠い
+      </p>
+      <section class="card scan-result" aria-live="polite">
+        <p class="note">除雪率(遠近補正あり)</p>
+        <p id="clear-rate">--%</p>
+        <p id="clear-rate-flat" class="note"></p>
+      </section>
+      <p id="model-status" class="note" role="status"></p>
+      <p class="note">同じ場所を、同じ向き・同じ高さから撮ってください。写真は送信しません。</p>
+      <p id="error" class="error" role="alert" hidden></p>
+    </main>
+    <script type="module" src="./snow-scan.js"></script>
+  </body>
+</html>
