@@ -12,104 +12,200 @@
     -->
     <style>
       :root {
-        --main: #e8590c;
-        --main-dark: #c2410c;
-        --text: #1f2933;
-        --sub: #52606d;
-        --bg: #fff8f1;
-        --card: #ffffff;
+        --purple: #642ce8;
+        --purple-dark: #4f1ec9;
+        --text: #333333;
+        --sub: #555555;
+        --bg: #eef0f6;
+        --card: #f8f9fc;
+        --border: #d9d9d9;
+      }
+      * {
+        box-sizing: border-box;
       }
       body {
         margin: 0;
-        padding: 24px 16px;
+        padding: 16px 12px;
         font-family: system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", sans-serif;
-        font-size: 1.25rem;
-        line-height: 1.7;
+        font-size: 1rem;
+        line-height: 1.5;
         color: var(--text);
         background: var(--bg);
       }
       main {
-        max-width: 480px;
+        max-width: 420px;
         margin: 0 auto;
         padding: 24px 20px;
-        border-radius: 16px;
+        border: 5px solid #e2e4ec;
+        border-radius: 32px;
         background: var(--card);
+      }
+      .name-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+      .name-row label {
+        font-size: 1.35rem;
+        color: var(--sub);
+        white-space: nowrap;
+      }
+      .name-row input {
+        flex: 1;
+        min-width: 0;
+        height: 44px;
+        padding: 6px 12px;
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        font-family: inherit;
+        font-size: 1rem;
+        color: var(--text);
+        background: #ffffff;
+      }
+      .name-row input::placeholder {
+        color: #888888;
+        font-size: 0.9rem;
+      }
+      .location-btn {
+        display: block;
+        width: 100%;
+        height: 44px;
+        border: 0;
+        border-radius: 10px;
+        font-family: inherit;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #ffffff;
+        background: var(--purple);
+        cursor: pointer;
+      }
+      .location-btn:hover,
+      .location-btn:active {
+        background: var(--purple-dark);
+      }
+      .location-box {
+        margin-top: 12px;
+        padding: 12px;
+        border: 1.5px solid #444444;
+        background: #ffffff;
+        color: var(--sub);
+        font-size: 1.05rem;
+        text-align: center;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        word-break: break-word;
+      }
+      .depth-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 20px;
+      }
+      .depth-row label {
+        font-size: 1.25rem;
+        color: var(--sub);
+        white-space: nowrap;
+      }
+      .depth-row select {
+        width: 168px;
+        height: 40px;
+        padding: 4px 10px;
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 1rem;
+        color: var(--text);
+        background: #ffffff;
+      }
+      .optional-note {
+        margin: 18px 0 14px;
+        color: #d62828;
+        font-size: 0.92rem;
         text-align: center;
       }
-      h1 {
-        margin: 0 0 16px;
-        font-size: 1.8rem;
-        line-height: 1.4;
-      }
-      .icon {
-        font-size: 4rem;
-        line-height: 1.2;
-      }
-      fieldset {
-        margin: 16px 0;
-        padding: 0;
-        border: 0;
-      }
-      legend {
-        margin-bottom: 8px;
+      .tools-title {
+        margin: 0 0 8px;
+        font-size: 1.05rem;
         color: var(--sub);
-        font-size: 1.1rem;
       }
-      .amounts {
+      .tool-list {
         display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .tool-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
         gap: 8px;
       }
-      .amounts label {
+      .tool-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 1.05rem;
+        color: var(--sub);
+        cursor: pointer;
         flex: 1;
-        padding: 14px 4px;
-        border: 3px solid #e4e7eb;
-        border-radius: 12px;
-        font-size: 1.2rem;
+      }
+      .tool-label input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--purple);
         cursor: pointer;
       }
-      .amounts input {
-        position: absolute;
-        opacity: 0;
+      .tool-count {
+        width: 58px;
+        height: 36px;
+        padding: 2px 6px;
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 0.95rem;
+        color: var(--text);
+        background: #ffffff;
+        text-align: center;
       }
-      .amounts label:has(input:checked) {
-        border-color: var(--main);
-        background: #fff1e6;
-        font-weight: 700;
-      }
-      .amounts label:has(input:focus-visible) {
-        outline: 3px solid #1c7ed6;
-        outline-offset: 2px;
-      }
-      button {
+      .submit-btn {
+        display: block;
         width: 100%;
+        height: 78px;
+        margin-top: 28px;
         border: 0;
         border-radius: 14px;
+        font-family: inherit;
+        font-size: 1.65rem;
+        font-weight: 700;
+        color: #ffffff;
+        background: var(--purple);
         cursor: pointer;
       }
-      .primary {
-        min-height: 88px;
-        margin-top: 16px;
-        font-size: 2rem;
-        font-weight: 700;
-        color: #fff;
-        background: var(--main);
+      .submit-btn:hover,
+      .submit-btn:active {
+        background: var(--purple-dark);
       }
-      .primary:active {
-        background: var(--main-dark);
+      .cancel-link-wrap {
+        margin-top: 10px;
+        text-align: center;
       }
-      .secondary {
-        min-height: 56px;
-        margin-top: 12px;
-        font-size: 1.2rem;
-        color: var(--text);
-        background: #e4e7eb;
+      .cancel-btn {
+        border: 0;
+        background: transparent;
+        color: var(--sub);
+        font-family: inherit;
+        font-size: 0.9rem;
+        text-decoration: underline;
+        cursor: pointer;
       }
       .spinner {
-        width: 56px;
-        height: 56px;
+        width: 52px;
+        height: 52px;
         margin: 16px auto;
-        border: 6px solid #ffe8d6;
-        border-top-color: var(--main);
+        border: 6px solid #e6defa;
+        border-top-color: var(--purple);
         border-radius: 50%;
         animation: spin 0.9s linear infinite;
       }
@@ -124,15 +220,18 @@
         }
       }
       #error {
+        margin-top: 14px;
         color: #b42318;
         font-weight: 700;
+        text-align: center;
       }
       .preview-note {
         margin: 0 0 12px;
         padding: 8px;
         border-radius: 8px;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         background: #fff4d6;
+        text-align: center;
       }
     </style>
   </head>
@@ -142,22 +241,94 @@
         おためし表示中です。依頼は送られません。
       </p>
 
-      <!-- 1. 最初の画面: 呼ぶかどうか聞く -->
+      <!-- 1. 最初の画面 -->
       <section id="step-ask">
-        <div class="icon" aria-hidden="true">⛄</div>
-        <h1>雪かきを<br />おねがいしますか?</h1>
+        <div class="name-row">
+          <label for="requester-name">名前：</label>
+          <input
+            id="requester-name"
+            name="requesterName"
+            type="text"
+            placeholder="ここに入力"
+            autocomplete="name"
+          />
+        </div>
 
-        <fieldset>
-          <legend>雪の多さ(えらばなくても大丈夫です)</legend>
-          <div class="amounts">
-            <label><input type="radio" name="amount" value="little" />すこし</label>
-            <label><input type="radio" name="amount" value="normal" checked />ふつう</label>
-            <label><input type="radio" name="amount" value="lots" />たくさん</label>
+        <button id="location-button" class="location-btn" type="button">
+          位置情報を取得
+        </button>
+
+        <div id="location-display" class="location-box" aria-live="polite">
+          ここに位置情報を表示
+        </div>
+
+        <div class="depth-row">
+          <label for="snow-amount">雪の深さ：</label>
+          <select id="snow-amount" name="amount">
+            <option value="little">くるぶしくらい</option>
+            <option value="normal" selected>ひざくらい</option>
+            <option value="lots">こし以上</option>
+          </select>
+        </div>
+
+        <p class="optional-note">※以下、お持ちでしたら記入してください</p>
+
+        <p class="tools-title">道具：</p>
+        <div class="tool-list">
+          <div class="tool-item">
+            <label class="tool-label" for="tool-plastic-scoop">
+              <input id="tool-plastic-scoop" name="toolPlasticScoop" type="checkbox" checked />
+              <span>スコップ（プラスチック）</span>
+            </label>
+            <input
+              id="count-plastic-scoop"
+              name="countPlasticScoop"
+              class="tool-count"
+              type="number"
+              min="0"
+              value="0"
+              aria-label="スコップ（プラスチック）の数"
+            />
           </div>
-        </fieldset>
 
-        <button id="call-button" class="primary" type="button">よぶ</button>
-        <button id="cancel-button" class="secondary" type="button">やめる</button>
+          <div class="tool-item">
+            <label class="tool-label" for="tool-steel-scoop">
+              <input id="tool-steel-scoop" name="toolSteelScoop" type="checkbox" checked />
+              <span>スコップ（スチール類）</span>
+            </label>
+            <input
+              id="count-steel-scoop"
+              name="countSteelScoop"
+              class="tool-count"
+              type="number"
+              min="0"
+              value="0"
+              aria-label="スコップ（スチール類）の数"
+            />
+          </div>
+
+          <div class="tool-item">
+            <label class="tool-label" for="tool-mama-dump">
+              <input id="tool-mama-dump" name="toolMamaDump" type="checkbox" checked />
+              <span>ママさんダンプ</span>
+            </label>
+            <input
+              id="count-mama-dump"
+              name="countMamaDump"
+              class="tool-count"
+              type="number"
+              min="0"
+              value="0"
+              aria-label="ママさんダンプの数"
+            />
+          </div>
+        </div>
+
+        <button id="call-button" class="submit-btn" type="button">送信</button>
+
+        <div class="cancel-link-wrap">
+          <button id="cancel-button" class="cancel-btn" type="button">やめる</button>
+        </div>
       </section>
 
       <!-- 2. 送っている途中 -->
@@ -168,10 +339,9 @@
 
       <!-- 3. 送れた -->
       <section id="step-done" hidden>
-        <div class="icon" aria-hidden="true">✅</div>
         <h1>おねがいしました</h1>
         <p>だれかが来るときは、LINE でお知らせします。</p>
-        <button id="close-button" class="secondary" type="button">とじる</button>
+        <button id="close-button" class="submit-btn" type="button">とじる</button>
       </section>
 
       <p id="error" role="alert" hidden></p>
