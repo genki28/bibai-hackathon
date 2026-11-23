@@ -7,8 +7,9 @@
     <meta name="description" content="美唄で、みんなが雪かきで使ったカロリーが、地図の上の雪山になって積み上がっていきます。" />
     <!--
       美唄の雪山マップ(snow-map.html)。だれでも見られる普通の Web ページ(LIFF ではない)。
-      終わった雪かき 1 件が、地図の上の雪山 1 つ。一緒にやった全員の消費カロリーが、段々の雪山の層になって積み上がる。
-      地図は MapLibre GL(3D の地図のライブラリ)+ OpenFreeMap(登録の要らない地図)。形の計算は snow-map/snow-mountain.js、
+      終わった雪かき 1 件が、地図の上の雪山 1 つ。一緒にやった全員の消費カロリーの合計で、雪山が大きく高くなる。
+      地図は MapLibre GL(3D の地図のライブラリ)+ OpenFreeMap(登録の要らない地図)。雪山の 3D モデルは Three.js(snow-map/snow-mountain-3d.js)、
+      大きさ・形の計算は snow-map/snow-mountain.js、
       画面の動きは snow-map/snow-map.js、データは GET /api/snow-map(家の正確な位置・住所・お年寄りの名前は出さない)。
       ?demo を付けると、見本の雪山を出す(まだ雪かきが少ないときの説明用)。
     -->

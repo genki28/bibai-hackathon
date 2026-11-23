@@ -63,7 +63,7 @@ function pickNames(random, count) {
  * @param {{ count?: number, seed?: number, now?: number }} [options] count = 雪山の数、now = いまの時刻(ミリ秒)
  * @returns {{ piles: Array<object>, totals: { piles: number, people: number, calories: number }, isDemo: true }}
  */
-export function createDemoMap({ count = 60, seed = 20261123, now = Date.now() } = {}) {
+export function createDemoMap({ count = 150, seed = 20261123, now = Date.now() } = {}) {
   const random = createRandom(seed);
   const piles = Array.from({ length: count }, (_, i) => {
     const area = pickArea(random);

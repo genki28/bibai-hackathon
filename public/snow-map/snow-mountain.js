@@ -1,14 +1,11 @@
-// 「美唄の雪山の地図」の、カロリー → 段々の雪山の形(純粋な関数。画面やブラウザの機能は使わない)。
-// - 雪かき 1 件 = 雪山 1 つ。下から上へ STEPS 段の輪を重ね、上の段ほど小さく高くする(ドット絵のような段々の山)
-// - 高さはみんなの消費カロリーの合計 × METERS_PER_KCAL(400 kcal を超えたら伸びをゆるめる)。段の色は、その高さの層を「つくった人」で分ける
-//   (カロリーの多い人ほど、たくさんの段を受け持つ)。地図の 3D(MapLibre の fill-extrusion)で立てる
+// 「美唄の雪山の地図」の、雪山の大きさ・形の計算(純粋な関数。画面やブラウザの機能は使わない)。
+// - 雪かき 1 件 = 雪山 1 つ。高さはみんなの消費カロリーの合計 × METERS_PER_KCAL(400 kcal を超えたら伸びをゆるめる)
+// - 形は Three.js の 3D の雪山(snow-mountain-3d.js)。ここでは大きさ・でこぼこ(ノイズ)・位置・押した雪山の選び方を計算する
 // 画面は snow-map.js。テストは tests/snow-mountain.test.ts。
 
-/** 段の数。 */
-export const STEPS = 8;
 /** 1 kcal で何 m 高くするか(300 kcal ≒ 90m。町全体の地図でも見えるくらい)。 */
 export const METERS_PER_KCAL = 0.3;
-/** いちばん下の段の半径(m)と、カロリーが多いほど広がる量(√kcal に比例)。 */
+/** すその半径(m)と、カロリーが多いほど広がる量(√kcal に比例)。 */
 const BASE_RADIUS_M = 70;
 const RADIUS_PER_SQRT_KCAL = 2.2;
 /** この kcal を超えたら、高さの伸びをゆるめる(まとめた大きな雪山が、塔ではなく山の形のままになるように)。 */
@@ -16,72 +13,100 @@ const STEEP_UNTIL_KCAL = 400;
 const GENTLE_POWER = 0.7;
 /** カロリーが 0 でも見えるようにする、最低の高さ(m)。 */
 const MIN_HEIGHT_M = 6;
-/** 輪の角の数(多いほど丸い)。 */
-const RING_SIDES = 20;
 const METERS_PER_DEGREE = 111_320;
 
 /**
- * 真ん中から radiusM の輪(GeoJSON の [経度, 緯度] の列。最初と最後が同じ)。
- * @param {{ lat: number, lng: number }} center
- * @param {number} radiusM
- * @param {number} [sides]
- * @returns {Array<[number, number]>}
+ * 1 つの雪山の大きさ(m)。
+ * @param {{ members: Array<{ calories: number }> }} pile
+ * @param {number} [scale] 見た目の大きさの倍率(引いて見たときに大きくして、見えるようにする)
+ * @returns {{ heightM: number, radiusM: number }}
  */
-export function ringAround(center, radiusM, sides = RING_SIDES) {
-  const cos = Math.cos((center.lat * Math.PI) / 180);
-  const points = Array.from({ length: sides }, (_, i) => {
-    const angle = (i / sides) * Math.PI * 2;
-    const dx = Math.cos(angle) * radiusM;
-    const dy = Math.sin(angle) * radiusM;
-    return [center.lng + dx / (METERS_PER_DEGREE * cos), center.lat + dy / METERS_PER_DEGREE];
-  });
-  return [...points, points[0]];
+export function mountainSize(pile, scale = 1) {
+  const total = pile.members.reduce((sum, m) => sum + Math.max(0, m.calories), 0);
+  const effective = total <= STEEP_UNTIL_KCAL ? total : STEEP_UNTIL_KCAL + (total - STEEP_UNTIL_KCAL) ** GENTLE_POWER;
+  const heightM = Math.max(MIN_HEIGHT_M, effective * METERS_PER_KCAL) * scale;
+  const radiusM = (BASE_RADIUS_M + Math.sqrt(total) * RADIUS_PER_SQRT_KCAL) * scale;
+  return { heightM, radiusM };
 }
 
-/** 高さの割合 t(0〜1)の層を受け持つ人(カロリーの多い人から下に積む)。 */
-function memberAt(members, t) {
-  const sorted = [...members].sort((a, b) => b.calories - a.calories);
-  const total = sorted.reduce((sum, m) => sum + m.calories, 0);
-  if (total <= 0) return sorted[0];
-  let reached = 0;
-  for (const member of sorted) {
-    reached += member.calories / total;
-    if (t < reached - 1e-9) return member;
+/** 雪山の ID から、ノイズの種(0 以上の整数)を作る。同じ ID ならいつも同じ。 */
+export function seedFromId(id) {
+  let hash = 2166136261;
+  for (const ch of String(id)) {
+    hash = Math.imul(hash ^ ch.codePointAt(0), 16777619) >>> 0;
   }
-  return sorted[sorted.length - 1];
+  return hash;
+}
+
+/** 種から 0 以上 1 未満の数を作る(同じ種・同じ番号なら同じ数)。 */
+export function seededUnit(seed, index) {
+  const x = Math.sin(seed * 12.9898 + index * 78.233) * 43758.5453;
+  return x - Math.floor(x);
 }
 
 /**
- * 1 つの雪山の形(段ごとの GeoJSON Feature)。
- * @param {{ id: string, lat: number, lng: number, members: Array<{ displayName: string, calories: number }> }} pile
- * @param {number} progress 育つ途中の割合(0〜1。開いたときに下から育てる)
- * @param {number} [scale] 見た目の大きさの倍率(引いて見たときに大きくして、見えるようにする)
- * @returns {Array<{ type: "Feature", geometry: object, properties: { id: string, step: number, base: number, height: number, member: string, memberIndex: number } }>}
+ * 雪山のでこぼこ(-1〜1)。角度 angle(ラジアン)と、真ん中からの割合 u(0〜1)で決まる、なめらかな値。
+ * 種ごとに波の向き・ずれが変わるので、雪山ごとに違う形になる。
  */
-export function mountainFeatures(pile, progress, scale = 1) {
-  const total = pile.members.reduce((sum, m) => sum + Math.max(0, m.calories), 0);
-  const effective = total <= STEEP_UNTIL_KCAL ? total : STEEP_UNTIL_KCAL + (total - STEEP_UNTIL_KCAL) ** GENTLE_POWER;
-  const fullHeight = Math.max(MIN_HEIGHT_M, effective * METERS_PER_KCAL);
-  const height = fullHeight * Math.max(0, Math.min(1, progress)) * scale;
-  const bottomRadius = (BASE_RADIUS_M + Math.sqrt(total) * RADIUS_PER_SQRT_KCAL) * scale;
-  const order = [...pile.members].sort((a, b) => b.calories - a.calories).map((m) => m.displayName);
-  return Array.from({ length: STEPS }, (_, step) => {
-    const owner = memberAt(pile.members, (step + 0.5) / STEPS);
-    // 上の段ほど小さく(いちばん上は下の 15% の半径。すそ野の広い雪山にする)
-    const radius = bottomRadius * (1 - (step / STEPS) * 0.85);
-    return {
-      type: "Feature",
-      geometry: { type: "Polygon", coordinates: [ringAround(pile, radius)] },
-      properties: {
-        id: pile.id,
-        step,
-        base: (height * step) / STEPS,
-        height: (height * (step + 1)) / STEPS,
-        member: owner?.displayName ?? "",
-        memberIndex: Math.max(0, order.indexOf(owner?.displayName ?? "")),
-      },
-    };
-  });
+export function snowNoise(seed, angle, u) {
+  const phase = (i) => seededUnit(seed, i) * Math.PI * 2;
+  const waves =
+    0.5 * Math.sin(2 * angle + phase(1)) +
+    0.3 * Math.sin(3 * angle + phase(2) + u * 2.5) +
+    0.2 * Math.sin(5 * angle + phase(3) + u * 4);
+  return Math.max(-1, Math.min(1, waves));
+}
+
+/**
+ * 雪山の横から見た形: 真ん中からの割合 u(0〜1)での高さの割合(1〜0)。
+ * てっぺんは丸く、すそは地面になめらかにつながる(すその広い雪山)。
+ */
+export function mountainProfile(u) {
+  const t = Math.max(0, Math.min(1, u));
+  return 1 - 3 * t * t + 2 * t * t * t;
+}
+
+/** 開いたときに下から育つ割合(0〜1。はじめ速く、最後はゆっくり止まる)。index 番目の雪山は staggerMs ずつ遅れて育つ。 */
+export function growProgress(elapsedMs, index, growMs, staggerMs) {
+  if (growMs <= 0) return 1;
+  const t = Math.min(1, Math.max(0, (elapsedMs - index * staggerMs) / growMs));
+  return 1 - (1 - t) ** 3;
+}
+
+/** 基準の点 origin から見た、point の位置(m。x = 東、y = 北。狭い範囲なので平らとみなす)。 */
+export function toLocalMeters(origin, point) {
+  const cos = Math.cos((origin.lat * Math.PI) / 180);
+  return {
+    x: (point.lng - origin.lng) * METERS_PER_DEGREE * cos,
+    y: (point.lat - origin.lat) * METERS_PER_DEGREE,
+  };
+}
+
+/** 点 p と、線分 a-b のいちばん近い距離。 */
+function distanceToSegment(p, a, b) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const lengthSq = dx * dx + dy * dy;
+  const t = lengthSq === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSq));
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+}
+
+/**
+ * 画面で押した点に、いちばん近い雪山を選ぶ(なければ null)。
+ * 雪山ごとに、画面の上の「ふもとの真ん中(base)」「てっぺん(peak)」と、画面の上での半径(radiusPx)を渡す。
+ * ふもと〜てっぺんの線から radiusPx(最低 minPx)以内なら当たり。
+ * @template T
+ * @param {{ x: number, y: number }} point
+ * @param {Array<{ item: T, base: { x: number, y: number }, peak: { x: number, y: number }, radiusPx: number }>} candidates
+ * @param {number} [minPx]
+ * @returns {T | null}
+ */
+export function pickMountain(point, candidates, minPx = 24) {
+  const hits = candidates
+    .map((c) => ({ item: c.item, distance: distanceToSegment(point, c.base, c.peak), limit: Math.max(minPx, c.radiusPx) }))
+    .filter((c) => c.distance <= c.limit)
+    .sort((a, b) => a.distance / a.limit - b.distance / b.limit);
+  return hits[0]?.item ?? null;
 }
 
 /** まとめる距離の目安: 拡大率 16 で 40m。1 段引くごとに 2 倍(拡大率 12 で 640m、9 で約 5km)。 */

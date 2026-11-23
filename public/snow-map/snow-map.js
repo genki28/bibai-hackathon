@@ -1,14 +1,15 @@
 // 美唄の雪山マップ(snow-map.html)の動き。
-// - GET /api/snow-map の雪山を、3D の地図(MapLibre GL)の上に段々の雪山として立てる(形は snow-mountain.js)
+// - GET /api/snow-map の雪山を、3D の地図(MapLibre GL)の上に、Three.js の 3D の雪山として立てる(snow-mountain-3d.js)
 // - 開いたときに、雪山が下から育つ。地図は少し傾けて、ぐるっと回すこともできる。画面には雪が降る
 // - 雪山を押すと、下のシートに「一緒にやった人」の消費カロリーの棒グラフ
 // - 縮尺に合わせて、近くの雪山は 1 つの大きな雪山にまとまる(引くほど広く。clusterPiles)。拡大すると分かれる
-// - ?demo を付けると、見本の雪山(美唄の町なかとまわりの地区に 60 個。demo-data.js)を出す
+// - ?demo を付けると、見本の雪山(美唄の町なかとまわりの地区に 150 個。demo-data.js)を出す
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。名前は利用者が決めた文字。
 
 import * as maplibreModule from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.19.0/dist/maplibre-gl.mjs";
 import { createDemoMap } from "./demo-data.js";
-import { clusterPiles, mountainFeatures } from "./snow-mountain.js";
+import { clusterPiles } from "./snow-mountain.js";
+import { createSnowMountainLayer } from "./snow-mountain-3d.js";
 
 const maplibregl = maplibreModule.default ?? maplibreModule;
 
@@ -26,9 +27,7 @@ const SCALE_PER_ZOOM = 2;
 const viewScale = (zoom) => Math.max(1, SCALE_PER_ZOOM ** (SCALE_FROM_ZOOM - zoom));
 /** おにぎり 1 個のカロリー(kcal。たとえに使う目安)。 */
 const ONIGIRI_KCAL = 180;
-/** 層の色(カロリーの多い人から順に)。白い雪 → 水色 → 青み → 金。 */
-const LAYER_COLORS = Object.freeze(["#ffffff", "#e3ecf4", "#c6d8ea", "#a8c4e2", "#ffe08a", "#ffc94d"]);
-/** 棒グラフの色(白い雪山の層と違い、白い背景でも見える色)。 */
+/** 棒グラフの色(白い背景でも見える色)。 */
 const BAR_COLORS = Object.freeze(["#b73e2c", "#1a73e8", "#192e49", "#e8a200", "#4aa3c7", "#8e6cc7"]);
 const SNOW_COUNT = 90;
 const SPIN_DEG_PER_SEC = 6;
@@ -120,23 +119,6 @@ function showList() {
   byId("sheet-detail").hidden = true;
 }
 
-/** 雪山を下から育てる(1 つずつ少しずらして)。 */
-function growMountains(map, piles, growMs = GROW_MS, staggerMs = GROW_STAGGER_MS) {
-  const startedAt = performance.now();
-  const isReduced = prefersReducedMotion();
-  const frame = (now) => {
-    const features = piles.flatMap((pile, i) => {
-      const t = isReduced ? 1 : Math.min(1, Math.max(0, (now - startedAt - i * staggerMs) / growMs));
-      // はじめ速く、最後はゆっくり止まる
-      return mountainFeatures(pile, 1 - (1 - t) ** 3, viewScale(map.getZoom()));
-    });
-    map.getSource("mountains")?.setData({ type: "FeatureCollection", features });
-    const isDone = now - startedAt > growMs + piles.length * staggerMs;
-    if (!isDone && !isReduced) requestAnimationFrame(frame);
-  };
-  requestAnimationFrame(frame);
-}
-
 /** 雪山の上に、合計カロリーの札を立てる。 */
 function addPeakLabels(map, piles, onSelect) {
   return piles.map((pile) => {
@@ -149,7 +131,7 @@ function addPeakLabels(map, piles, onSelect) {
 }
 
 /** 縮尺に合わせて雪山をまとめ直す。まとまり方が変わったときだけ、札を作り直して育ち直す。 */
-function createClusterView(map, piles, onSelect) {
+function createClusterView(map, mountains, piles, onSelect) {
   let shownKey = "";
   let markers = [];
   let clusters = [];
@@ -161,29 +143,14 @@ function createClusterView(map, piles, onSelect) {
     clusters = next;
     markers.forEach((m) => m.remove());
     markers = addPeakLabels(map, clusters, onSelect);
-    if (isFirst) growMountains(map, clusters);
-    else growMountains(map, clusters, REGROW_MS, 0);
+    const isReduced = prefersReducedMotion();
+    mountains.setScale(viewScale(map.getZoom()));
+    mountains.setPiles(clusters, {
+      growMs: isReduced ? 0 : isFirst ? GROW_MS : REGROW_MS,
+      staggerMs: isReduced || !isFirst ? 0 : GROW_STAGGER_MS,
+    });
   };
-  return { refresh, find: (id) => clusters.find((c) => c.id === id) };
-}
-
-function addMountainLayer(map) {
-  map.addSource("mountains", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-  const colorByMember = ["match", ["get", "memberIndex"]];
-  LAYER_COLORS.forEach((color, i) => colorByMember.push(i, color));
-  colorByMember.push(LAYER_COLORS[LAYER_COLORS.length - 1]);
-  map.addLayer({
-    id: "mountains",
-    type: "fill-extrusion",
-    source: "mountains",
-    paint: {
-      "fill-extrusion-color": colorByMember,
-      "fill-extrusion-base": ["get", "base"],
-      "fill-extrusion-height": ["get", "height"],
-      "fill-extrusion-opacity": 0.96,
-      "fill-extrusion-vertical-gradient": true,
-    },
-  });
+  return { refresh };
 }
 
 /** 画面に雪を降らせる(Canvas)。 */
@@ -282,15 +249,23 @@ async function main() {
   const onReady = () => {
     // 地図のスタイルが持っている初めの位置ではなく、美唄の雪山が見える位置にする
     fitToPiles(map, data.piles);
-    addMountainLayer(map);
-    const view = createClusterView(map, data.piles, select);
-    map.on("click", "mountains", (event) => {
-      const pile = view.find(event.features?.[0]?.properties?.id);
+    const mountains = createSnowMountainLayer({
+      id: "mountains",
+      origin: BIBAI,
+      mercatorFromLngLat: (lngLat) => maplibregl.MercatorCoordinate.fromLngLat(lngLat, 0),
+    });
+    map.addLayer(mountains.layer);
+    const view = createClusterView(map, mountains, data.piles, select);
+    // 雪山は 3D の絵なので、押した点との距離で選ぶ(てっぺんのあたりを押しても当たる)
+    map.on("click", (event) => {
+      const pile = mountains.pick(event.point);
       if (pile) select(pile);
     });
-    map.on("mouseenter", "mountains", () => (map.getCanvas().style.cursor = "pointer"));
-    map.on("mouseleave", "mountains", () => (map.getCanvas().style.cursor = ""));
+    map.on("mousemove", (event) => {
+      map.getCanvas().style.cursor = mountains.pick(event.point) ? "pointer" : "";
+    });
     view.refresh(true);
+    map.on("zoom", () => mountains.setScale(viewScale(map.getZoom())));
     map.on("zoomend", () => view.refresh(false));
   };
   if (map.isStyleLoaded()) onReady();
