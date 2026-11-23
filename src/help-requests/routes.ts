@@ -4,6 +4,7 @@ import { isValidUserId } from "../identity/store.js";
 import type { Referral } from "../invites/model.js";
 import { arrivalCodeFor, helperForCode, isArrivalCodeInput } from "./arrival-code.js";
 import { countCommunity } from "./community.js";
+import { buildSnowMap, teamsOf } from "./snow-map.js";
 import {
   isValidRequestId,
   parseFinishInput,
@@ -249,7 +250,7 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
   // スコップ計: その参加者のすくった回数を残す(雪かき中だけ。ポイントには入れない)
   post("scoops", async (id, body) => {
     const input = parseScoopsInput(body);
-    return input ? store.recordScoops(id, input.userId, input.count) : null;
+    return input ? store.recordScoops(id, input.userId, input.count, input.calories) : null;
   });
   // 向かっている若者の現在地(参加者だけ・到着前だけ)。見えるのは依頼したお年寄り本人だけ(views.ts)
   post("location", async (id, body, at) => {
@@ -273,6 +274,21 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
   });
 
   // 仲間ゲージ(美唄の仲間を 2 倍に)。計算は community.ts
+  // 美唄の雪山の地図(誰でも見られる。家の正確な位置・住所・お年寄りの名前は出さない)
+  router.get("/api/snow-map", async (_req, res) => {
+    res.json({ success: true, data: buildSnowMap(await store.listFinished()) });
+  });
+
+  // 自分が入ったチームと、消費カロリーの合計(ランキングの代わり)
+  router.get("/api/teams/mine/:userId", async (req, res) => {
+    const { userId } = req.params;
+    if (!isValidUserId(userId)) {
+      sendError(res, 400, INVALID_USER_ID);
+      return;
+    }
+    res.json({ success: true, data: teamsOf(await store.listFinished(), userId) });
+  });
+
   router.get("/api/community", async (_req, res) => {
     res.json({ success: true, data: countCommunity(await store.listFinished()) });
   });
