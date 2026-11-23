@@ -21,8 +21,8 @@ const METERS_PER_DEGREE = 111_320;
 /** 引いて見たときに大きくし始めるズームと、1 段引くごとの倍率。 */
 const SCALE_FROM_ZOOM = 14;
 const SCALE_PER_ZOOM = 2;
-/** このズームより引いたら、もう大きくしない(地図の方が小さくなり、雪山が美唄のあたりにあると分かる)。 */
-export const MAX_SCALE_ZOOM = 11;
+/** このズームより引いたら、もう大きくしない。ここで一番大きな雪山のすそが約 22km(美唄から岩見沢まで隠れるくらい)。 */
+export const MAX_SCALE_ZOOM = 8.3;
 
 /**
  * 見た目の大きさの倍率。寄って見ると 1 倍、引くと大きく、MAX_SCALE_ZOOM より引いたらそこで止める。
