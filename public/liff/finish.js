@@ -13,6 +13,7 @@ import {
   showMessageOnly,
   stopIfUnavailable,
 } from "./request-page.js";
+import { GYM_FEE_PER_HOUR_YEN, savedGymFeeYen } from "./gym-fee.js";
 import { celebratePoints } from "./points-show.js";
 import { markFinishSeen } from "./resume.js";
 import { scoopKg } from "./scoop-counter.js";
@@ -71,6 +72,9 @@ function render(request, points) {
   const { result } = request;
   byId("minutes").textContent = `${format(result.minutes)} 分`;
   byId("calories").textContent = `${format(result.calories)} kcal`;
+  byId("gym-fee").textContent = `${format(savedGymFeeYen(result.minutes))} 円`;
+  byId("gym-fee-note").textContent =
+    `雪かき ${format(result.minutes)} 分 × ジム代の目安(1 時間 ${format(GYM_FEE_PER_HOUR_YEN)} 円)`;
   byId("area").textContent = `${format(result.areaM2)} ㎡`;
   byId("snow").textContent = `${format(result.snowKg)} kg(積雪 ${Math.round(result.snowDepthM * 100)}cm)`;
   byId("work-points").textContent = `${format(points.workPoints)} pt`;

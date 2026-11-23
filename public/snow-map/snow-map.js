@@ -53,7 +53,6 @@ function renderTotals(data) {
   byId("stat-fun").textContent = onigiri > 0 ? `おにぎり ${format(onigiri)} 個ぶん` : "";
   byId("headline").textContent =
     data.totals.piles > 0 ? "いま、美唄は雪かきで盛り上がっています" : "最初の雪山を、いっしょに作ろう";
-  byId("demo-note").hidden = !data.isDemo;
 }
 
 const timeAgo = (iso) => {
