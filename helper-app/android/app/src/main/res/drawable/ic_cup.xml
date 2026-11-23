@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- public/liff/images/pixel-cup.svg(16×16 のドット絵のトロフィー)。色は紺 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="16dp"
+    android:height="16dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="#192e49"
+        android:fillType="evenOdd"
+        android:pathData="M4 0h8v2h4v6h-4v2h-2v3h3v3H3v-3h3v-3H4V8H0V2h4zM2 4v2h2V4zm10 0v2h2V4z" />
+</vector>

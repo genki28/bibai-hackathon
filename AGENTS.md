@@ -23,7 +23,7 @@
 
 ## 技術スタック
 
-**LINE Bot + LIFF**(Node.js + TypeScript + Express + @line/bot-sdk)。データの保存先は **Supabase**(@supabase/supabase-js)、公開先は **Cloudflare Workers**。詳しくは `docs/decisions.md`。
+**LINE Bot + LIFF**(Node.js + TypeScript + Express + @line/bot-sdk)。データの保存先は **Supabase**(@supabase/supabase-js)、公開先は **Cloudflare Workers**。若者向けの **ネイティブアプリ**(iPhone: Swift / SwiftUI、Android: Kotlin / Jetpack Compose)は `helper-app/` にあり、仕様は `helper-app/SPEC.md`。詳しくは `docs/decisions.md`。
 
 - コードを書く前に必ず `docs/decisions.md` と `docs/product.md` を読む。
 - 新しい技術(ライブラリ・サービス)が必要になったら、勝手に選ばず `/decide-stack` を提案する。
@@ -58,6 +58,7 @@ Node.js 22 以上が必要です。すべてリポジトリの一番上のフォ
 | 天気の通知のテスト送信(大雪でなくても送る。人間に確認してから) | `npm run notify:weather -- --send --force` |
 
 - 起動すると http://localhost:3000 で動く(`/health` で動作確認、`/liff/` で LIFF 画面)。
+- 若者向けアプリ(`helper-app/`)の動かし方は `helper-app/README.md`。iPhone 版は Mac と Xcode が必要。アプリの動きを変えるときは、まず `helper-app/SPEC.md` を直して、iPhone と Android の両方を同じに直す。
 - ビルドの手順はない(`tsx` が TypeScript をそのまま実行する)。
 - `.env` が空でも起動できる。Bot と LIFF を実際に LINE とつなぐには `.env` の値と https の公開 URL が必要。
 

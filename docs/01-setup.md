@@ -97,3 +97,10 @@ LINE Bot + LIFF を Node.js で作ることに決まったので、次の準備�
    ブラウザで http://localhost:3000/liff/ を開いて画面が出れば成功です。止めるときはターミナルで `Ctrl + C` を押します。
 
 次は [作業の流れ](02-workflow.md) へ。
+
+### 若者向けアプリ(helper-app)を動かす人だけ
+
+ネイティブアプリ(iPhone / Android)を作る・動かす人だけ、次も入れます。詳しい手順は `helper-app/README.md` にあります。
+
+- **iPhone 版(Mac だけ)**: App Store から **Xcode** を入れる。プロジェクトを作る道具の **XcodeGen** を入れる(Homebrew から)
+- **Android 版(Mac / Windows)**: **Android Studio** を入れる(Android の SDK と Java が一緒に入る)

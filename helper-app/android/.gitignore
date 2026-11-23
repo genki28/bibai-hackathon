@@ -1,0 +1,12 @@
+# Gradle と Android の生成物(Git に入れない)
+build/
+.gradle/
+.kotlin/
+local.properties
+*.apk
+*.aab
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/

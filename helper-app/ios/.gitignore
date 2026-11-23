@@ -1,0 +1,9 @@
+# XcodeGen が作るプロジェクト(project.yml から作り直せる)
+*.xcodeproj/
+*.xcworkspace/
+# ビルドの生成物
+build/
+DerivedData/
+*.xcresult
+xcuserdata/
+.DS_Store

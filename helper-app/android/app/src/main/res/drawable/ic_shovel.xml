@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- public/liff/images/pixel-shovel.svg(16×16 のドット絵のスコップ)。色は朱色 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="16dp"
+    android:height="16dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="#b73e2c"
+        android:pathData="M2 0h6v2H6v2H4V2H2zm2 4h2v6h4v4H8v2H2v-2H0v-4h4z" />
+</vector>
