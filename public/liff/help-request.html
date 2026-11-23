@@ -5,207 +5,114 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>雪かきをおねがいする</title>
     <!--
-      お年寄り向けの「助けを呼ぶ」フォームです。
-      見た目(このファイルの <style> と文章)は自由に変えて OK。
-      ただし、id="..." と name="amount" / value="..." は動きに使っているので変えないこと。
-      詳しくは docs/guides/help-request-form-for-gemini.md を見てください。
+      【お年寄り】「助けを呼ぶ」フォーム(help-request.html)。動きは help-request.js。
+      見た目は、ほかの画面と同じ共通の CSS(template.css / snow-ui.css / snow-pixel.css)に合わせている。
+      id="..." と name="..." は動きに使っているので変えないこと。詳しくは docs/guides/help-request-form-for-gemini.md。
+      [現在地を取得] を押すと、現在地を name="lat" / "lng" に入れ、地図にピンを立てる(住所は聞かない)。
+      道具は、チェックした物と数を「スコップ(プラスチック)×2、ママさんダンプ」の形にまとめて送る。
     -->
+    <link rel="stylesheet" href="./template.css" />
     <style>
-      :root {
-        --purple: #642ce8;
-        --purple-dark: #4f1ec9;
-        --text: #333333;
-        --sub: #555555;
-        --bg: #eef0f6;
-        --card: #f8f9fc;
-        --border: #d9d9d9;
+      /* 入力欄(共通の CSS には文字・数の入力欄の指定がないので、ここで合わせる) */
+      .form-field {
+        margin: 0 0 18px;
       }
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        margin: 0;
-        padding: 16px 12px;
-        font-family: system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", sans-serif;
-        font-size: 1rem;
-        line-height: 1.5;
-        color: var(--text);
-        background: var(--bg);
-      }
-      main {
-        max-width: 420px;
-        margin: 0 auto;
-        padding: 24px 20px;
-        border: 5px solid #e2e4ec;
-        border-radius: 32px;
-        background: var(--card);
-      }
-      .name-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 16px;
-      }
-      .name-row label {
-        font-size: 1.35rem;
-        color: var(--sub);
-        white-space: nowrap;
-      }
-      .name-row input {
-        flex: 1;
-        min-width: 0;
-        height: 44px;
-        padding: 6px 12px;
-        border: 1.5px solid var(--border);
-        border-radius: 10px;
-        font-family: inherit;
-        font-size: 1rem;
-        color: var(--text);
-        background: #ffffff;
-      }
-      .name-row input::placeholder {
-        color: #888888;
-        font-size: 0.9rem;
-      }
-      .location-btn {
+      .form-field > label,
+      .form-label {
         display: block;
+        margin: 0 0 6px;
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        font-weight: 800;
+      }
+      .text-input,
+      .tool-count {
         width: 100%;
-        height: 44px;
-        border: 0;
-        border-radius: 10px;
-        font-family: inherit;
-        font-size: 1.15rem;
-        font-weight: 700;
-        color: #ffffff;
-        background: var(--purple);
-        cursor: pointer;
+        min-height: 52px;
+        padding: 8px 12px;
+        border: 2px solid var(--rule, #dce1e6);
+        border-radius: 6px;
+        font: inherit;
+        font-size: 1.1rem;
+        color: var(--ink, #192e49);
+        background: var(--paper, #ffffff);
       }
-      .location-btn:hover,
-      .location-btn:active {
-        background: var(--purple-dark);
+      .form-field select {
+        margin: 0;
+        font-size: 1.1rem;
       }
-      .location-box {
-        margin-top: 12px;
-        padding: 12px;
-        border: 1.5px solid #444444;
-        background: #ffffff;
-        color: var(--sub);
-        font-size: 1.05rem;
+      /* 現在地 */
+      #use-location-button {
+        margin: 0;
+      }
+      .location-status {
+        margin: 8px 0 0;
         text-align: center;
-        min-height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        word-break: break-word;
       }
-      .depth-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-top: 20px;
+      #location-map {
+        height: 200px;
+        margin: 8px 0 0;
       }
-      .depth-row label {
-        font-size: 1.25rem;
-        color: var(--sub);
-        white-space: nowrap;
-      }
-      .depth-row select {
-        width: 168px;
-        height: 40px;
-        padding: 4px 10px;
-        border: 1.5px solid var(--border);
-        border-radius: 8px;
-        font-family: inherit;
-        font-size: 1rem;
-        color: var(--text);
-        background: #ffffff;
-      }
+      /* 道具(チェック + 数) */
       .optional-note {
-        margin: 18px 0 14px;
-        color: #d62828;
-        font-size: 0.92rem;
-        text-align: center;
-      }
-      .tools-title {
-        margin: 0 0 8px;
-        font-size: 1.05rem;
-        color: var(--sub);
+        margin: 24px 0 8px;
+        color: var(--muted, #606c7b);
+        font-size: 0.95rem;
       }
       .tool-list {
-        display: flex;
-        flex-direction: column;
+        display: grid;
         gap: 10px;
+        margin: 0;
+        padding: 0;
+        border: 0;
       }
       .tool-item {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 8px;
+        gap: 10px;
       }
       .tool-label {
         display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 1.05rem;
-        color: var(--sub);
-        cursor: pointer;
         flex: 1;
+        align-items: center;
+        gap: 10px;
+        min-height: 48px;
+        font-size: 1.05rem;
+        cursor: pointer;
       }
       .tool-label input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-        accent-color: var(--purple);
-        cursor: pointer;
+        width: 24px;
+        height: 24px;
+        accent-color: var(--vermillion, #b73e2c);
       }
-      .tool-count {
-        width: 58px;
-        height: 36px;
-        padding: 2px 6px;
-        border: 1.5px solid var(--border);
-        border-radius: 8px;
-        font-family: inherit;
-        font-size: 0.95rem;
-        color: var(--text);
-        background: #ffffff;
+      .tool-item .tool-count {
+        flex: none;
+        width: 76px;
+        min-height: 48px;
         text-align: center;
       }
-      .submit-btn {
-        display: block;
-        width: 100%;
-        height: 78px;
+      #call-button {
         margin-top: 28px;
+        min-height: 72px;
+        font-size: 1.5rem;
+      }
+      /* [やめる] は文字だけのボタン */
+      #cancel-button {
+        display: block;
+        margin: 14px auto 0;
+        padding: 8px 16px;
         border: 0;
-        border-radius: 14px;
-        font-family: inherit;
-        font-size: 1.65rem;
-        font-weight: 700;
-        color: #ffffff;
-        background: var(--purple);
-        cursor: pointer;
-      }
-      .submit-btn:hover,
-      .submit-btn:active {
-        background: var(--purple-dark);
-      }
-      .cancel-link-wrap {
-        margin-top: 10px;
-        text-align: center;
-      }
-      .cancel-btn {
-        border: 0;
-        background: transparent;
-        color: var(--sub);
-        font-family: inherit;
-        font-size: 0.9rem;
+        background: none;
+        font: inherit;
         text-decoration: underline;
         cursor: pointer;
       }
       .spinner {
         width: 52px;
         height: 52px;
-        margin: 16px auto;
-        border: 6px solid #e6defa;
-        border-top-color: var(--purple);
+        margin: 24px auto 12px;
+        border: 6px solid var(--rule, #dce1e6);
+        border-top-color: var(--vermillion, #b73e2c);
         border-radius: 50%;
         animation: spin 0.9s linear infinite;
       }
@@ -219,51 +126,54 @@
           animation: none;
         }
       }
-      #error {
-        margin-top: 14px;
-        color: #b42318;
-        font-weight: 700;
-        text-align: center;
-      }
       .preview-note {
         margin: 0 0 12px;
         padding: 8px;
-        border-radius: 8px;
-        font-size: 0.85rem;
-        background: #fff4d6;
+        font-size: 0.875rem;
         text-align: center;
+        background: #fff4d6;
       }
     </style>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&amp;display=swap" />
+    <script src="./design-theme.js"></script>
+    <link rel="stylesheet" href="./snow-ui.css" />
+    <link rel="stylesheet" href="./snow-pixel.css" />
   </head>
-  <body>
+  <body class="for-elder">
     <main>
-      <p id="preview-note" class="preview-note" hidden>
-        おためし表示中です。依頼は送られません。
-      </p>
+      <div class="brand-line"><a href="./" aria-label="ユキカキ・レイド ホーム">ユキカキ・レイド</a><span>美唄</span></div>
+      <p id="preview-note" class="preview-note" hidden>おためし表示中です。依頼は送られません。</p>
 
       <!-- 1. 最初の画面 -->
       <section id="step-ask">
-        <div class="name-row">
-          <label for="requester-name">名前：</label>
-          <input
-            id="requester-name"
-            name="requesterName"
-            type="text"
-            placeholder="ここに入力"
-            autocomplete="name"
-          />
+        <header class="page-head">
+          <h1>雪かきをおねがいする</h1>
+        </header>
+
+        <div class="form-field">
+          <label for="requester-name">お名前</label>
+          <input id="requester-name" class="text-input" name="name" type="text" placeholder="例: 美唄 花子" autocomplete="name" />
         </div>
 
-        <button id="location-button" class="location-btn" type="button">
-          位置情報を取得
-        </button>
-
-        <div id="location-display" class="location-box" aria-live="polite">
-          ここに位置情報を表示
+        <div class="form-field">
+          <p class="form-label">場所</p>
+          <button id="use-location-button" class="button secondary" type="button">📍 現在地を取得</button>
+          <p id="location-display" class="location-status note" aria-live="polite">家の前で押してください</p>
+          <div id="location-map" class="map-box" hidden></div>
+          <input name="lat" type="hidden" />
+          <input name="lng" type="hidden" />
         </div>
 
-        <div class="depth-row">
-          <label for="snow-amount">雪の深さ：</label>
+        <div class="form-field">
+          <label for="snow-amount">雪の深さ</label>
           <select id="snow-amount" name="amount">
             <option value="little">くるぶしくらい</option>
             <option value="normal" selected>ひざくらい</option>
@@ -271,81 +181,56 @@
           </select>
         </div>
 
-        <p class="optional-note">※以下、お持ちでしたら記入してください</p>
-
-        <p class="tools-title">道具：</p>
-        <div class="tool-list">
+        <p class="optional-note">ここから下は、お持ちでしたら</p>
+        <fieldset class="tool-list">
+          <legend class="form-label">道具</legend>
           <div class="tool-item">
             <label class="tool-label" for="tool-plastic-scoop">
-              <input id="tool-plastic-scoop" name="toolPlasticScoop" type="checkbox" checked />
-              <span>スコップ（プラスチック）</span>
+              <input id="tool-plastic-scoop" name="toolPlasticScoop" type="checkbox" data-tool="スコップ(プラスチック)" />
+              <span>スコップ(プラスチック)</span>
             </label>
-            <input
-              id="count-plastic-scoop"
-              name="countPlasticScoop"
-              class="tool-count"
-              type="number"
-              min="0"
-              value="0"
-              aria-label="スコップ（プラスチック）の数"
-            />
+            <input id="count-plastic-scoop" class="tool-count" type="number" min="0" max="9" value="1" inputmode="numeric" aria-label="スコップ(プラスチック)の数" />
           </div>
-
           <div class="tool-item">
             <label class="tool-label" for="tool-steel-scoop">
-              <input id="tool-steel-scoop" name="toolSteelScoop" type="checkbox" checked />
-              <span>スコップ（スチール類）</span>
+              <input id="tool-steel-scoop" name="toolSteelScoop" type="checkbox" data-tool="スコップ(スチール)" />
+              <span>スコップ(スチール)</span>
             </label>
-            <input
-              id="count-steel-scoop"
-              name="countSteelScoop"
-              class="tool-count"
-              type="number"
-              min="0"
-              value="0"
-              aria-label="スコップ（スチール類）の数"
-            />
+            <input id="count-steel-scoop" class="tool-count" type="number" min="0" max="9" value="1" inputmode="numeric" aria-label="スコップ(スチール)の数" />
           </div>
-
           <div class="tool-item">
             <label class="tool-label" for="tool-mama-dump">
-              <input id="tool-mama-dump" name="toolMamaDump" type="checkbox" checked />
+              <input id="tool-mama-dump" name="toolMamaDump" type="checkbox" data-tool="ママさんダンプ" />
               <span>ママさんダンプ</span>
             </label>
-            <input
-              id="count-mama-dump"
-              name="countMamaDump"
-              class="tool-count"
-              type="number"
-              min="0"
-              value="0"
-              aria-label="ママさんダンプの数"
-            />
+            <input id="count-mama-dump" class="tool-count" type="number" min="0" max="9" value="1" inputmode="numeric" aria-label="ママさんダンプの数" />
           </div>
-        </div>
+        </fieldset>
 
-        <button id="call-button" class="submit-btn" type="button">送信</button>
-
-        <div class="cancel-link-wrap">
-          <button id="cancel-button" class="cancel-btn" type="button">やめる</button>
-        </div>
+        <button id="call-button" class="button" type="button">おねがいする</button>
+        <button id="cancel-button" class="text-link" type="button">やめる</button>
       </section>
 
       <!-- 2. 送っている途中 -->
-      <section id="step-sending" hidden>
+      <section id="step-sending" class="center" hidden>
         <div class="spinner" aria-hidden="true"></div>
         <p role="status">おねがいしています…</p>
       </section>
 
-      <!-- 3. 送れた -->
-      <section id="step-done" hidden>
+      <!-- 3. 送れた(おためし表示のときだけ。ふだんは待機画面へ移る) -->
+      <section id="step-done" class="center" hidden>
         <h1>おねがいしました</h1>
         <p>だれかが来るときは、LINE でお知らせします。</p>
-        <button id="close-button" class="submit-btn" type="button">とじる</button>
+        <button id="close-button" class="button" type="button">とじる</button>
       </section>
 
-      <p id="error" role="alert" hidden></p>
+      <p id="error" class="error" role="alert" hidden></p>
     </main>
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script type="module" src="./help-request.js"></script>
   </body>

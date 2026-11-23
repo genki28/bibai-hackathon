@@ -10,11 +10,16 @@
 //
 // HTML にあれば送るもの(なくても動きます。詳しくは docs/guides/help-request-form-for-gemini.md):
 //   name="name"(名前)/ "address"(住所)/ "depth"(雪の深さ)/ "tools"(道具)
-//   name="lat" / "lng"(緯度・経度。ふつうは hidden。id="use-location-button" を押すと現在地が入る)
+//   name="lat" / "lng"(緯度・経度。ふつうは hidden。id="use-location-button" を押すと現在地が入る。
+//     id="location-display" に結果の文字、id="location-map" に地図とピンを出す)
+//   name="tools" がなければ、data-tool="道具の名前" のチェックと、同じ .tool-item の中の .tool-count(数)をまとめて送る
+//   name="amount" はラジオボタンでも選択欄(select)でもよい
 
 // 読み込み中の覆いを一番先に出す(help-request.html は template.css を読まないので、ここで中身を隠す)
 import { navigateTo, pageReady } from "./loading.js";
 import { byId, callApi, closeScreen, isPreviewMode, postJson, resolveUserId, wait } from "./common.js";
+import { amountOf, toolsTextOf } from "./help-request-fields.js";
+import { createMap, DETAIL_ZOOM, showPin } from "./map.js";
 import "./reset-menu-button.js";
 import "./test-mode.js";
 
@@ -34,12 +39,12 @@ function showError(message) {
   error.hidden = message === "";
 }
 
-function selectedAmount() {
-  return document.querySelector('input[name="amount"]:checked')?.value ?? "normal";
-}
 
 const TEXT_FIELDS = ["name", "address", "depth", "tools"];
 const NUMBER_FIELDS = ["lat", "lng"];
+
+/** 位置を取るのを待つ長さ(ミリ秒)。 */
+const LOCATION_TIMEOUT_MS = 15_000;
 
 const fieldSelector = (name) => ["input", "select", "textarea"].map((tag) => `${tag}[name="${name}"]`).join(",");
 
@@ -50,9 +55,26 @@ function fieldValue(name) {
   return (field?.value ?? "").trim();
 }
 
+/** 雪の深さ(ラジオボタンでも選択欄でもよい)。 */
+const selectedAmount = () => amountOf(fieldValue("amount"));
+
+/** name="tools" があればその値、なければ data-tool のチェックと数をまとめた文字。 */
+function toolsValue() {
+  const typed = fieldValue("tools");
+  if (typed !== "") return typed;
+  const items = [...document.querySelectorAll("input[data-tool]")].map((checkbox) => ({
+    label: checkbox.dataset.tool,
+    isChecked: checkbox.checked,
+    count: Number.parseInt(checkbox.closest(".tool-item")?.querySelector(".tool-count")?.value ?? "", 10),
+  }));
+  return toolsTextOf(items);
+}
+
 /** HTML にある任意の項目だけを集める(空のものは送らない)。 */
 function optionalFields() {
-  const texts = TEXT_FIELDS.map((name) => [name, fieldValue(name)]).filter(([, v]) => v !== "");
+  const texts = TEXT_FIELDS.map((name) => [name, name === "tools" ? toolsValue() : fieldValue(name)]).filter(
+    ([, v]) => v !== "",
+  );
   const numbers = NUMBER_FIELDS.map((name) => [name, fieldValue(name)])
     .filter(([, v]) => v !== "" && Number.isFinite(Number(v)))
     .map(([name, v]) => [name, Number(v)]);
@@ -61,15 +83,44 @@ function optionalFields() {
   return Object.fromEntries([...texts, ...location]);
 }
 
-/** id="use-location-button" があれば、押したときに現在地を name="lat" / "lng" に入れる。 */
+/** 位置の結果の文字を出す(id="location-display" があれば)。 */
+function showLocationText(text) {
+  const display = byId("location-display");
+  if (display) display.textContent = text;
+}
+
+/** 取った位置を地図にピンで出す(id="location-map" があれば。地図が出せなくても位置は送れる)。 */
+let locationMap = null;
+function showLocationMap(point) {
+  const box = byId("location-map");
+  if (!box) return;
+  box.hidden = false;
+  try {
+    if (!locationMap) {
+      locationMap = { map: createMap(box, point, DETAIL_ZOOM), marker: null };
+    }
+    const { map } = locationMap;
+    if (!map) return;
+    map.setView([point.lat, point.lng], DETAIL_ZOOM);
+    map.invalidateSize();
+    locationMap.marker?.remove();
+    locationMap.marker = showPin(map, point, "ここ");
+  } catch (error) {
+    console.error("地図を出せませんでした", error);
+  }
+}
+
+/** id="use-location-button" があれば、押したときに現在地を name="lat" / "lng" に入れ、地図に出す。 */
 function setUpLocationButton() {
   const button = byId("use-location-button");
   if (!button) return;
   button.addEventListener("click", () => {
     if (!navigator.geolocation) {
-      showError("この端末では現在地を取れません。");
+      showLocationText("この端末では現在地を取れません。");
       return;
     }
+    button.disabled = true;
+    showLocationText("現在地を調べています…");
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
         const lat = document.querySelector(fieldSelector("lat"));
@@ -77,9 +128,21 @@ function setUpLocationButton() {
         if (lat) lat.value = String(coords.latitude);
         if (lng) lng.value = String(coords.longitude);
         showError("");
-        button.textContent = "現在地を入れました";
+        button.disabled = false;
+        button.textContent = "📍 もう一度取得";
+        showLocationText(`📍 現在地を入れました(誤差 約 ${Math.round(coords.accuracy)}m)`);
+        showLocationMap({ lat: coords.latitude, lng: coords.longitude });
       },
-      () => showError("現在地を取れませんでした。住所だけでも大丈夫です。"),
+      (error) => {
+        console.error("現在地を取れませんでした", error);
+        button.disabled = false;
+        showLocationText(
+          error.code === error.PERMISSION_DENIED
+            ? "位置の利用が許可されていません。設定で許可してから、もう一度押してください。"
+            : "現在地を取れませんでした。もう一度押してください。",
+        );
+      },
+      { enableHighAccuracy: true, timeout: LOCATION_TIMEOUT_MS, maximumAge: 0 },
     );
   });
 }
@@ -108,7 +171,7 @@ async function onCall(userIdPromise) {
   } catch (error) {
     console.error(error);
     showStep("ask");
-    showError(`うまく送れませんでした。もう一度「よぶ」を押してください。(${error.message})`);
+    showError(`うまく送れませんでした。もう一度「おねがいする」を押してください。(${error.message})`);
   }
 }
 
