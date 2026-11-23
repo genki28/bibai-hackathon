@@ -80,8 +80,8 @@ test("参加・終了・いいねの入力を確かめる", () => {
     displayName: "ゆきお",
   });
   expect(parseJoinInput({ userId: HELPER_A, displayName: "" })).toBeNull();
-  expect(parseFinishInput({ userId: HELPER_A, areaM2: 301 })).toBeNull();
-  expect(parseFinishInput({ userId: HELPER_A, areaM2: 300 })).toEqual({ userId: HELPER_A, areaM2: 300 });
+  expect(parseFinishInput({ userId: HELPER_A, areaM2: 5001 })).toBeNull();
+  expect(parseFinishInput({ userId: HELPER_A, areaM2: 5000 })).toEqual({ userId: HELPER_A, areaM2: 5000 });
   expect(parseFinishInput({ userId: HELPER_A, areaM2: -1 })).toBeNull();
   expect(parseThanksInput({ userId: ELDER_ID, ratings: { [HELPER_A]: 6 } })).toBeNull();
   expect(parseThanksInput({ userId: ELDER_ID, ratings: {} })).toBeNull();

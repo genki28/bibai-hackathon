@@ -14,7 +14,7 @@ export const MAX_HELPERS = 5;
  * 雪かきした範囲の面積の上限(㎡)。1 依頼あたり、家のまわり・道・屋根くらいまで(仮)。
  * これより大きいのは入力ミスとみなす(public/liff/snow-area.js の MAX_AREA_M2 と同じ値)。
  */
-export const MAX_AREA_M2 = 300;
+export const MAX_AREA_M2 = 5000;
 /** 評価の星の数の範囲。 */
 export const MIN_STARS = 1;
 export const MAX_STARS = 5;

@@ -3,7 +3,7 @@
 
 import { byId, callApi } from "./common.js";
 import { renderCommunityGauge } from "./community-gauge.js";
-import { countUp, snowConfetti } from "./effects.js";
+import { snowConfetti } from "./effects.js";
 import { navigateTo, pageReady } from "./loading.js";
 import {
   fetchRequest,
@@ -13,6 +13,7 @@ import {
   showMessageOnly,
   stopIfUnavailable,
 } from "./request-page.js";
+import { celebratePoints } from "./points-show.js";
 import { markFinishSeen } from "./resume.js";
 import { scoopKg } from "./scoop-counter.js";
 import { userIdPromise } from "./template.js";
@@ -63,11 +64,11 @@ function renderScoops(scoops) {
   byId("all-scoops").textContent = `${format(total)} 振り(約 ${format(scoopKg(total))} kg)`;
 }
 
+/** 読み込み中の覆いが消えるのを待つ時間(ミリ秒)。 */
+const CELEBRATE_DELAY_MS = 500;
+
 function render(request, points) {
   const { result } = request;
-  // スコアは数えあげて、雪の紙吹雪を降らせる
-  countUp(byId("score"), points.total, (n) => `${format(n)} pt`);
-  snowConfetti();
   byId("minutes").textContent = `${format(result.minutes)} 分`;
   byId("calories").textContent = `${format(result.calories)} kcal`;
   byId("area").textContent = `${format(result.areaM2)} ㎡`;
@@ -77,6 +78,27 @@ function render(request, points) {
     points.stars !== null ? `${format(points.ratingPoints)} pt(星 ${points.stars})` : "まだ届いていません";
   renderBonuses(points);
   renderScoops(points.scoops);
+  // スコアは派手に見せる(花火・光の筋・スロット・判子・ファンファーレ)。雪の紙吹雪も降らせる
+  const celebrate = () =>
+    celebratePoints({
+      scoreElement: byId("score"),
+      card: document.querySelector(".score-card"),
+      rows: [...document.querySelectorAll(".stats .row:not([hidden])")],
+      total: points.total,
+      format: (n) => `${format(n)} pt`,
+    });
+  // 読み込み中の覆いが消えてから始める(はじめの盛り上がりを見逃さないように)
+  setTimeout(() => {
+    celebrate().finally(() => {
+      byId("replay-button").hidden = false;
+    });
+    snowConfetti();
+  }, CELEBRATE_DELAY_MS);
+  // 押した処理の中なら、音を出せない端末でもファンファーレが鳴る
+  byId("replay-button").onclick = () => {
+    snowConfetti();
+    celebrate();
+  };
 }
 
 async function main() {

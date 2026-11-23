@@ -25,6 +25,32 @@
   margin: 0;
   vertical-align: middle;
 }
+/* 地図の人の印(map.js の showPersonMarker)。丸の中にアイコン、上に名前の札 */
+.person-marker {
+  background: transparent;
+  border: 0;
+}
+.person-marker-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #f4f8ff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+.person-marker-icon .ui-icon {
+  width: 26px;
+  height: 26px;
+  margin: 0;
+}
+.leaflet-tooltip.person-label {
+  padding: 2px 8px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #192e49;
+}
 /* hidden を付けた部品は必ず隠す(.button の display: block などに上書きされないように) */
 [hidden] {
   display: none !important;
