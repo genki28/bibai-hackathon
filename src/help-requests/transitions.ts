@@ -138,12 +138,20 @@ export function finish(
  * スコップ計で数えた回数を残す(雪かき中の参加者だけ)。
  * 前より増えたときだけ書き換える(同じか少ないときは、そのまま返す)。ポイントには入れない。
  */
-export function recordScoops(r: HelpRequest, userId: string, count: number): Result<HelpRequest> {
+export function recordScoops(r: HelpRequest, userId: string, count: number, calories?: number): Result<HelpRequest> {
   const helper = findHelper(r, userId);
   if (!helper) return NOT_HELPER;
   if (r.status !== "working") return fail(409, "雪かき中だけ記録できます。");
-  if (count <= (helper.scoops ?? 0)) return succeed(r);
-  const helpers = r.helpers.map((h) => (h.userId === userId ? { ...h, scoops: count } : h));
+  // 回数もカロリーも、前より増えたときだけ書き換える(送る順が前後しても減らないように)
+  const isMoreScoops = count > (helper.scoops ?? 0);
+  const isMoreCalories = calories !== undefined && calories > (helper.calories ?? 0);
+  if (!isMoreScoops && !isMoreCalories) return succeed(r);
+  const next = {
+    ...helper,
+    ...(isMoreScoops ? { scoops: count } : {}),
+    ...(isMoreCalories ? { calories } : {}),
+  };
+  const helpers = r.helpers.map((h) => (h.userId === userId ? next : h));
   return succeed({ ...r, helpers });
 }
 

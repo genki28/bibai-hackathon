@@ -3,7 +3,7 @@
  * ここを通った値だけを、ストア(依頼を覚えておく場所)に渡す。
  */
 import { isValidUserId } from "../identity/store.js";
-import { MAX_AREA_M2, MAX_SCOOPS, MAX_STARS, MIN_STARS } from "./model.js";
+import { MAX_AREA_M2, MAX_CALORIES, MAX_SCOOPS, MAX_STARS, MIN_STARS } from "./model.js";
 import type { HelpRequestExtras, HelpRequestInput, Ratings, SnowAmount } from "./model.js";
 
 const SNOW_AMOUNTS: readonly SnowAmount[] = ["little", "normal", "lots"];
@@ -99,15 +99,18 @@ export function parseFinishInput(raw: unknown): FinishInput | null {
   return { userId: body.userId, areaM2 };
 }
 
-export type ScoopsInput = { readonly userId: string; readonly count: number };
+export type ScoopsInput = { readonly userId: string; readonly count: number; readonly calories?: number };
 
-/** スコップ計の回数の入力。回数は 0〜上限の整数。 */
+/** 0〜max の整数か。 */
+const isIntegerUpTo = (value: unknown, max: number): value is number =>
+  Number.isInteger(value) && (value as number) >= 0 && (value as number) <= max;
+
+/** スコップ計の回数の入力。回数は 0〜上限の整数。アプリからは、測った消費カロリー(0〜上限の整数)も一緒に来る。 */
 export function parseScoopsInput(raw: unknown): ScoopsInput | null {
   const body = asBody(raw);
-  if (!isValidUserId(body.userId)) return null;
-  const count = body.count;
-  const isCount = Number.isInteger(count) && (count as number) >= 0 && (count as number) <= MAX_SCOOPS;
-  return isCount ? { userId: body.userId, count: count as number } : null;
+  if (!isValidUserId(body.userId) || !isIntegerUpTo(body.count, MAX_SCOOPS)) return null;
+  if (body.calories === undefined) return { userId: body.userId, count: body.count };
+  return isIntegerUpTo(body.calories, MAX_CALORIES) ? { userId: body.userId, count: body.count, calories: body.calories } : null;
 }
 
 /**
