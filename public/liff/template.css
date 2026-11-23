@@ -10,6 +10,21 @@
 /* 読み込み中の覆い(ローディング)。準備ができるまで main を隠す。@import は一番上に書く決まり */
 @import url("./loading.css");
 
+/* ドット絵のアイコン(icons/*.svg。ChatGPT で作ったもの。common.js の icon() でも作る) */
+.ui-icon {
+  display: inline-block;
+  width: 1.15em;
+  height: 1.15em;
+  margin-right: 0.35em;
+  vertical-align: -0.2em;
+  image-rendering: pixelated;
+}
+.ui-icon.is-big {
+  width: 2.5em;
+  height: 2.5em;
+  margin: 0;
+  vertical-align: middle;
+}
 /* hidden を付けた部品は必ず隠す(.button の display: block などに上書きされないように) */
 [hidden] {
   display: none !important;

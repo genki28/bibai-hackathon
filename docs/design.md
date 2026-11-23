@@ -64,3 +64,16 @@
 - 両方の見た目、320px・390px・幅の広い画面、テーマの引き継ぎと切り替え、空の一覧、折りたたみを確認する。
 - `npm test` と `npm run typecheck` を実行する。
 - LINE内の認証・実際のカメラ・本物の通知は実機で別途確認する。
+
+## アイコン(2026-11-23 から)
+
+画面の絵文字は、ChatGPT で作ったドット絵の SVG アイコン(`public/liff/icons/*.svg`、16×16 のマス目・紺 / 朱色 / 白 / 水色の 4 色)に置き換えた。HTML では `<img class="ui-icon" src="./icons/〇〇.svg" alt="" aria-hidden="true" />`、JavaScript では `common.js` の `icon(name)` / `setIconText(element, name, text)` を使う。大きく出すときは `ui-icon is-big`。LINE のトークに送る文(招待・お知らせ)は画像を入れられないので、絵文字のまま。
+
+| 名前 | 使う場所 |
+| --- | --- |
+| test | 🧪 のデモ用ボタン・テストの小窓 |
+| pin / phone / crown / speaker / mute / antenna | 位置・スコップ計・リーダー・音の実況・音の合言葉 |
+| check / hourglass / house / snowman / cheer / party | 状態の表示(着いた・待っている・雪かき中・向かっている・終わった) |
+| snowflake / warning / idcard / selfie / oops / letter | 依頼の雪の多さ・本人確認・お礼 |
+| hand / pencil / trash / goose / runner | 範囲の記録・テストの消去・仲間ゲージ・地図の人 |
+

@@ -17,7 +17,7 @@
 
 // 読み込み中の覆いを一番先に出す(help-request.html は template.css を読まないので、ここで中身を隠す)
 import { navigateTo, pageReady } from "./loading.js";
-import { byId, callApi, closeScreen, isPreviewMode, postJson, resolveUserId, wait } from "./common.js";
+import { byId, callApi, closeScreen, isPreviewMode, postJson, resolveUserId, setIconText, wait } from "./common.js";
 import { amountOf, toolsTextOf } from "./help-request-fields.js";
 import { createMap, DETAIL_ZOOM, showPin } from "./map.js";
 import "./reset-menu-button.js";
@@ -129,8 +129,8 @@ function setUpLocationButton() {
         if (lng) lng.value = String(coords.longitude);
         showError("");
         button.disabled = false;
-        button.textContent = "📍 もう一度取得";
-        showLocationText("📍 現在地を入れました");
+        setIconText(button, "pin", "もう一度取得");
+        setIconText(byId("location-display"), "pin", "現在地を入れました");
         showLocationMap({ lat: coords.latitude, lng: coords.longitude });
       },
       (error) => {

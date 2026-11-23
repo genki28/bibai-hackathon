@@ -180,7 +180,7 @@
 
         <!-- 1. 同意 -->
         <section id="step-intro" class="step" hidden>
-          <div class="icon" aria-hidden="true">🪪</div>
+          <div class="icon" aria-hidden="true"><img class="ui-icon is-big" src="./icons/idcard.svg" alt="" aria-hidden="true" /></div>
           <p><strong>身分証と自撮りで、本人確認</strong></p>
           <ul class="promise-list">
             <li>画像は保存しません(この端末の中だけで照合)</li>
@@ -188,7 +188,7 @@
           </ul>
           <button id="agree-button" class="button" type="button">同意して始める</button>
           <!-- デモ展示で本人確認を飛ばすため(いつも出す) -->
-          <button id="test-skip-button" class="button secondary" type="button" hidden>🧪 テスト: スキップ</button>
+          <button id="test-skip-button" class="button secondary" type="button" hidden><img class="ui-icon" src="./icons/test.svg" alt="" aria-hidden="true" />テスト: スキップ</button>
         </section>
 
         <!-- 顔の照合の準備(ライブラリとモデルの読み込み) -->
@@ -200,7 +200,7 @@
 
         <!-- 準備に失敗したとき(予備のデモボタン) -->
         <section id="step-unavailable" class="step" hidden>
-          <div class="icon" aria-hidden="true">⚠️</div>
+          <div class="icon" aria-hidden="true"><img class="ui-icon is-big" src="./icons/warning.svg" alt="" aria-hidden="true" /></div>
           <p><strong>顔の照合が使えません</strong></p>
           <p class="note">通信の状態を確かめて、もう一度読み込んでください。</p>
           <button id="retry-load-button" class="button secondary" type="button">もう一度読み込む</button>
@@ -209,9 +209,9 @@
 
         <!-- 2. 身分証の表面を撮る -->
         <section id="step-id" class="step" hidden>
-          <div class="icon card-anim" aria-hidden="true">🪪</div>
+          <div class="icon card-anim" aria-hidden="true"><img class="ui-icon is-big" src="./icons/idcard.svg" alt="" aria-hidden="true" /></div>
           <p><strong>身分証の顔写真の面を撮る</strong></p>
-          <p class="warning">⚠ マイナンバーカードの<strong>裏面(番号の面)は撮らない</strong></p>
+          <p class="warning"><img class="ui-icon" src="./icons/warning.svg" alt="" aria-hidden="true" />マイナンバーカードの<strong>裏面(番号の面)は撮らない</strong></p>
           <ul class="tips">
             <li>画面いっぱいに写す</li>
             <li>光の反射に注意</li>
@@ -236,7 +236,7 @@
 
         <!-- 3'. カメラ映像が使えないとき: 自撮り写真 1 枚(ライブネス確認なし) -->
         <section id="step-selfie" class="step" hidden>
-          <div class="icon" aria-hidden="true">🤳</div>
+          <div class="icon" aria-hidden="true"><img class="ui-icon is-big" src="./icons/selfie.svg" alt="" aria-hidden="true" /></div>
           <p><strong>自撮りを 1 枚撮る</strong></p>
           <label class="button file-button">
             自撮りを撮る
@@ -252,7 +252,7 @@
 
         <!-- 4'. 一致しなかった / 顔が見つからない -->
         <section id="step-failed" class="step" hidden>
-          <div class="icon" aria-hidden="true">🙈</div>
+          <div class="icon" aria-hidden="true"><img class="ui-icon is-big" src="./icons/oops.svg" alt="" aria-hidden="true" /></div>
           <p><strong id="failed-title">確認できませんでした</strong></p>
           <p id="failed-message"></p>
           <button id="retry-button" class="button" type="button">もう一度ためす</button>
@@ -260,7 +260,7 @@
 
         <!-- 6. 完了 -->
         <section id="step-done" class="step" hidden>
-          <div class="icon" aria-hidden="true">✅</div>
+          <div class="icon" aria-hidden="true"><img class="ui-icon is-big" src="./icons/check.svg" alt="" aria-hidden="true" /></div>
           <p><strong>本人確認完了!</strong></p>
           <p id="auto-next-note" hidden>次の画面へ進みます…</p>
           <p id="verified-at"></p>

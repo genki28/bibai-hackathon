@@ -8,7 +8,7 @@
 // - [🧪 揺れをまねる] で 1 回ぶん数える(デモ・屋内で試すため)
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
-import { byId } from "./common.js";
+import { byId, setIconText } from "./common.js";
 import { onPageVisible } from "./request-page.js";
 import { scoopKg, scoopStateFrom, stepScoop } from "./scoop-counter.js";
 
@@ -95,7 +95,7 @@ export function startScoopMeter({ requestId, send, onScoop = () => {} }) {
   /** 表示を切り替える: "off"(ボタン)・"on"(数えている)・"unavailable"(使えない)。 */
   function showMode(mode) {
     byId("scoop-on").hidden = mode === "on";
-    byId("scoop-on").textContent = mode === "unavailable" ? "📱 もう一度オンにしてみる" : "📱 スコップ計をオンにする";
+    setIconText(byId("scoop-on"), "phone", mode === "unavailable" ? "もう一度オンにしてみる" : "スコップ計をオンにする");
     byId("scoop-unavailable").textContent = UNAVAILABLE_TEXT;
     byId("scoop-unavailable").hidden = mode !== "unavailable";
     byId("scoop-guide").hidden = mode !== "on";

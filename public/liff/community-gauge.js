@@ -2,12 +2,11 @@
 // 使い方: <section id="community-gauge" class="card"></section> を置いて renderCommunityGauge(要素) を呼ぶ。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
-import { callApi, isPreviewMode } from "./common.js";
+import { callApi, icon, isPreviewMode } from "./common.js";
 import { countUp } from "./effects.js";
 
 /** 群れの鳥の数(目標に届いたら全部そろう)。 */
 const FLOCK_SIZE = 10;
-const GOOSE = "🪿";
 /** おためし表示のときの仮の数。 */
 const PREVIEW_COMMUNITY = { members: 13, goal: 20, baseline: 10 };
 
@@ -23,7 +22,8 @@ function renderFlock(members, goal) {
   const flock = el("p", undefined, "gauge-flock");
   flock.setAttribute("aria-hidden", "true");
   const birds = Array.from({ length: FLOCK_SIZE }, (_, i) => {
-    const bird = el("span", GOOSE, i < flown ? "goose" : "goose empty");
+    const bird = el("span", undefined, i < flown ? "goose" : "goose empty");
+    bird.append(icon("goose"));
     bird.style.setProperty("--i", String(i));
     return bird;
   });

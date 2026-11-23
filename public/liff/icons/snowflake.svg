@@ -1,0 +1,2 @@
+<!-- snowflake: ChatGPT で作ったドット絵のアイコン(16×16)。docs/design.md の 4 色だけを使う -->
+<svg viewBox="0 0 16 16" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="#192e49" d="M7 1h2v3h1V3h2v2h-1v1h2V5h2v2h-3v2h3v2h-2v-1h-2v1h1v2h-2v-1H9v3H7v-3H6v1H4v-2h1v-1H3v1H1V9h3V7H1V5h2v1h2V5H4V3h2v1h1z"/><rect x="6" y="6" width="4" height="4" fill="#d4e0e8"/><rect x="7" y="7" width="2" height="2" fill="#ffffff"/><rect x="7" y="7" width="1" height="1" fill="#b73e2c"/></svg>

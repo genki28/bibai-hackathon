@@ -2,7 +2,7 @@
 // 一覧(エリアで絞り込み・5 件ずつ)→ 場所(大まかな地図)→ 確認の小窓 → 参加 → 本人確認へ。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
-import { byId, callApi, isPreviewMode } from "./common.js";
+import { byId, callApi, icon, isPreviewMode } from "./common.js";
 import { navigateTo, pageReady } from "./loading.js";
 import { createMap, ROUGH_ZOOM, showRoughArea } from "./map.js";
 import { el, postAction, showError } from "./request-page.js";
@@ -65,7 +65,8 @@ function renderListItem(request) {
   const button = el("button", undefined, "quest-card");
   button.type = "button";
   const amount = AMOUNT_LABELS[request.amount] ?? "-";
-  const difficulty = el("span", "❄".repeat(DIFFICULTY[request.amount] ?? 1), "quest-difficulty");
+  const difficulty = el("span", undefined, "quest-difficulty");
+  difficulty.append(...Array.from({ length: DIFFICULTY[request.amount] ?? 1 }, () => icon("snowflake")));
   difficulty.setAttribute("aria-label", `雪の多さ ${amount}`);
   const party = el("span");
   party.append(renderPartyPips(request.helperCount, request.capacity), `参加 ${request.helperCount}/${request.capacity}人`);
