@@ -123,7 +123,7 @@ waiting(募集中)→ accepted(だれか参加)→ working(雪かき中)→ done
 | `POST /api/help-requests/:id/arrive` | `{ userId }` | 到着した |
 | `POST /api/help-requests/:id/start` | `{ userId }` | 雪かき開始(到着した参加者ならだれでも。到着前は 403)。このときリーダーがランダムに決まり、`leaderUserId` に入る |
 | `POST /api/help-requests/:id/finish` | `{ userId, areaM2 }` | 雪かき終了(リーダーだけ。ほかの人は 403「リーダー(〇〇さん)だけです」。面積は 0〜5,000㎡)。スコアを計算して保存 |
-| `POST /api/help-requests/:id/scoops` | `{ userId, count }` | スコップ計のすくった回数を残す(参加者の `helpers[].scoops`)。雪かき中(working)だけ(ほかは 409)・参加者だけ(403)・回数は 0〜3,000 の整数(ほかは 400)。前より増えたときだけ書き換える。ポイントには入れない |
+| `POST /api/help-requests/:id/scoops` | `{ userId, count, calories? }` | スコップ計のすくった回数を残す(参加者の `helpers[].scoops`)。雪かき中(working)だけ(ほかは 409)・参加者だけ(403)・回数は 0〜3,000 の整数(ほかは 400)。前より増えたときだけ書き換える。ポイントには入れない |
 | `GET /api/help-requests/:id/points?userId=` | なし | お疲れ様の画面用。その依頼で自分がもらったポイント `{ workPoints, stars, ratingPoints, reunion: { points, partners: [名前] }, firstFinishBonus, total, scoops: { mine, total } }`(参加者だけ・終わった依頼だけ)。`scoops` はスコップ計の自分の回数とみんなの合計で、`total`(ポイント)には入れない |
 | `POST /api/help-requests/:id/cancel` | `{ userId }` | 依頼の取り消し(依頼した本人だけ) |
 | `POST /api/help-requests/:id/location` | `{ userId, lat, lng, accuracy? }` | 向かっている若者の現在地を残す(参加者の `helpers[].location = { lat, lng, accuracy, at }`)。参加者だけ(403)・状態が accepted / working で本人が未到着のときだけ(ほかは 409)・緯度 20〜46 / 経度 122〜154(日本のまわり)・誤差 0〜10,000m(ほかは 400)。返事は送った人から見た形(位置は入らない) |
@@ -131,6 +131,8 @@ waiting(募集中)→ accepted(だれか参加)→ working(雪かき中)→ done
 | `GET /api/ranking?period=daily\|total&userId=` | なし | ポイントの多い順 `[{ rank, displayName, points, breakdown: { work, rating, recruit, reunion }, isMe }]`。`userId` を付けると自分に `isMe: true` が付く |
 | `GET /api/invites/mine?userId=` | なし | 自分の招待コード `{ code }`(なければ作る)。招待リンクは `https://liff.line.me/{LIFF ID}/index.html?invite=コード` |
 | `POST /api/invites/accept` | `{ userId, code }` | 招待リンクで開いた人を「誘われた人」として 1 回だけ記録 `{ accepted, reason? }`。自分自身(`self`)・記録済み(`already-recorded`)・持ち主のいないコード(`unknown-code`)は記録しない。誘った人の ID は返さない |
+| `GET /api/snow-map` | なし | 美唄の雪山マップ用 `{ piles: [{ id, lat, lng, area, finishedAt, members: [{ displayName, calories }], totalCalories }], totals: { piles, people, calories } }`。終わった雪かき 1 件 = 雪山 1 つ。位置は約 100m に丸め、住所・お年寄りの名前・ユーザー ID は出さない。カロリーはアプリで測った値(なければ時間から出した値) |
+| `GET /api/teams/mine/:userId` | なし | 自分が入ったチームと消費カロリーの合計 `{ totalCalories, teamCount, partners, teams: [{ id, finishedAt, area, members: [名前], teamCalories, myCalories }] }`(新しい順)。ランキングの代わり |
 | `GET /api/community` | なし | 仲間ゲージ `{ members, goal, baseline }`。members = 終わった依頼に関わった人の重複なしの人数、goal = baseline(10)× 2 |
 | `GET /api/config` | なし | 画面用の設定 `{ liffId, testMode, testUsers }`。testUsers はテストモードのときだけ中身がある |
 | `POST /api/test/reset` | なし | テスト用の利用者が関わったデータを消す `{ deletedRequests, deletedInvites, userIds }`(招待コードと招待の記録も消す)。テストモードのときだけ(オフなら 404) |
@@ -176,6 +178,16 @@ waiting(募集中)→ accepted(だれか参加)→ working(雪かき中)→ done
 - **位置の共有はいつもオン**: 目的地の画面を開いたら、すぐ位置を読み始める(はじめは端末の許可の確認が出る)
 - **到着の流れ**: [到着しました] → 音の合言葉を鳴らす画面(お年寄りのスマホが聞き取ると到着)。[スキップして到着] で合言葉なしでも到着にできる
 - **デモ用のボタンはいつも出す**(テストモードでなくても): [🧪 揺れをまねる] [🧪 位置をまねる] [🧪 合言葉をまねる] と、本人確認の [🧪 テスト: スキップ]。⚠ だれでも回数・位置・到着・本人確認をまねられるので、本番の運用では外すこと
+
+## 美唄の雪山マップ(`/snow-map.html`。LIFF ではない普通の Web ページ)
+
+- だれでも見られるページ。終わった雪かき 1 件が、地図の上の **段々の雪山** 1 つになる。一緒にやった全員の消費カロリーが層になって積み上がる(カロリーの多い人ほど、たくさんの段を受け持つ)
+- 3D の地図は MapLibre GL(登録不要)+ OpenFreeMap の地図。Google マップのような白い浮いた部品・丸いボタン(3D / 2D・ぐるっと回す・美唄全体)・下のシート
+- 開くと雪山が下から育つ。**縮尺に合わせて、近くの雪山は 1 つの大きな雪山にまとまる**(引くほど広く。同じ人のカロリーは足す)。引いても見えるように、雪山の見た目は大きくする
+- 雪山を押すと、一緒にやった人の消費カロリーの棒グラフ。画面には雪が降る
+- 形の計算は `public/snow-map/snow-mountain.js`(テストは `tests/snow-mountain.test.ts`)、データは `GET /api/snow-map`(`src/help-requests/snow-map.ts`)
+- `?demo` を付けると見本の雪山を出す(まだ雪かきが少ないときの説明用)
+- **カロリーはアプリで測る**: 若者向けアプリが加速度から測った消費カロリーを、スコップの回数と一緒に送る(`POST .../scoops` の `calories`)。参加者の `helpers[].calories` に残す(表の変更はいらない)。測っていない人は時間から出した値
 
 ## 範囲の筆・自分の位置・結果の演出(2026-11-23 から)
 
