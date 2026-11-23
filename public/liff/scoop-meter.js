@@ -3,7 +3,9 @@
 // - 回数は端末(localStorage)に依頼 ID ごとに覚え、開き直しても続きから数える。スリープ中は数えられない
 // - サーバーには 10 秒ごと・雪かきを終えるとき・画面が隠れるときに送る(POST /api/help-requests/:id/scoops)。
 //   送れなくても端末の回数は残す。ポイントには入れない(表示と記録だけ)
-// - テスト用の設定(testMode)がオンのときだけ [🧪 揺れをまねる] を出す(PC で試すため)
+// - いつもオン: 画面を開いたら自動で揺れを読み始める。iPhone だけは許可が要るので、最初に画面のどこかを 1 回押してもらう
+//   (押した処理の中でしか許可を求められない)。画面を消す・閉じると読めない(ブラウザの決まり)が、戻ったらすぐ読み直す
+// - [🧪 揺れをまねる] で 1 回ぶん数える(デモ・屋内で試すため)
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId } from "./common.js";
@@ -50,6 +52,10 @@ function sampleOf(event) {
   return null;
 }
 
+/** 揺れを読む前に、押した処理の中で許可をもらう必要がある端末か(iPhone)。 */
+const needsPermission = () =>
+  typeof window.DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function";
+
 /** 揺れを読む許可をもらう。iPhone は許可のボタン(押した処理の中でしか呼べない)、ほかはそのまま。 */
 async function askPermission() {
   if (typeof window.DeviceMotionEvent === "undefined") return false;
@@ -68,11 +74,10 @@ async function askPermission() {
  *   requestId: string,
  *   send: (count: number, options?: { keepalive?: boolean }) => Promise<unknown>,
  *   onScoop?: (count: number) => void,
- *   isTestMode?: boolean,
  * }} options send はサーバーに回数を送る処理、onScoop は 1 回すくうたびに今の回数で呼ぶ(雪を投げる・音・動かした雪)
  * @returns {{ flush: () => Promise<void>, count: () => number }} flush は「いまの回数をすぐ送る」(雪かきを終えるとき用)
  */
-export function startScoopMeter({ requestId, send, onScoop = () => {}, isTestMode = false }) {
+export function startScoopMeter({ requestId, send, onScoop = () => {} }) {
   const saved = loadSaved(requestId);
   let state = scoopStateFrom(saved.count);
   let isOn = saved.isOn;
@@ -163,7 +168,7 @@ export function startScoopMeter({ requestId, send, onScoop = () => {}, isTestMod
   byId("scoop-on").addEventListener("click", () => {
     turnOn();
   });
-  if (isTestMode) {
+  {
     const fake = byId("scoop-fake");
     fake.hidden = false;
     fake.addEventListener("click", () => {
@@ -174,8 +179,13 @@ export function startScoopMeter({ requestId, send, onScoop = () => {}, isTestMod
 
   showCount();
   showMode("off");
-  // 前にオンにしていたら、そのまま読み始める(iPhone で許可が切れていれば、値が届かずボタンが出る)
-  if (isOn) listen();
+  // いつもオン: 許可が要らない端末はすぐ読み始める。iPhone は最初に画面を 1 回押したときに許可を求める
+  if (needsPermission()) {
+    if (isOn) listen();
+    document.addEventListener("pointerdown", () => turnOn(), { once: true });
+  } else {
+    turnOn();
+  }
   setInterval(() => sendNow(), SEND_INTERVAL_MS);
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) sendNow({ keepalive: true });

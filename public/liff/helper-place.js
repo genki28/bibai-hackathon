@@ -1,10 +1,11 @@
 // 【若者】参加した依頼の場所・詳細の動き。正確な住所と地図は、参加した人にだけ見せる。
 // スリープなどから戻った瞬間に読み直し、雪かきが始まっていれば雪かき中の画面へ進む。
 // 開いている間は、共有を選んだ人の現在地をお年寄りに送る(location-share.js)。到着・取り消しで止める。
-// 音の合言葉(helper-sound-code.js)をお年寄りのスマホが聞き取ったら、[到着しました] を押さなくても到着になる。
+// [到着しました] を押すと、音の合言葉(helper-sound-code.js)を鳴らす画面になる。お年寄りのスマホが聞き取ったら到着。
+// [スキップして到着] で、合言葉なしでも到着にできる。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
-import { byId, fetchAppConfig } from "./common.js";
+import { byId } from "./common.js";
 import { startSoundCode } from "./helper-sound-code.js";
 import { startLocationShare } from "./location-share.js";
 import { navigateTo, pageReady } from "./loading.js";
@@ -34,15 +35,6 @@ function render(request) {
   if (map) showPin(map, point, "ここ");
 }
 
-/** テスト用の設定(testMode)がオンか。読めなければオフ。 */
-async function isTestMode() {
-  try {
-    return (await fetchAppConfig()).testMode;
-  } catch {
-    return false;
-  }
-}
-
 /** 現在地の共有を始める(うまく始められなくても、参加はそのまま続ける)。 */
 async function startSharing(id, userId, request) {
   // もう到着している人は送らない(サーバーも受け付けない)
@@ -55,7 +47,6 @@ async function startSharing(id, userId, request) {
     return startLocationShare({
       home: pointOf(request),
       send: (point) => postAction(id, "location", { userId, ...point }),
-      isTestMode: await isTestMode(),
     });
   } catch (error) {
     console.error("位置の共有を始められませんでした", error);
@@ -93,13 +84,19 @@ async function main() {
   }
   render(request);
   const sharing = await startSharing(id, userId, request);
-  byId("sound-card").hidden = Boolean(request.helpers.find((h) => h.userId === userId)?.arrivedAt);
+  const goToGather = () => {
+    sharing.stop();
+    soundCode.stop();
+    navigateTo(pageUrl("helper-gather.html", id));
+  };
   const soundCode = startSoundCode({
     requestId: id,
     userId,
-    onArrived: () => {
-      sharing.stop();
-      navigateTo(pageUrl("helper-gather.html", id));
+    onArrived: goToGather,
+    // 合言葉なしで到着にする(お年寄りのスマホが聞き取れないとき)
+    onSkip: async () => {
+      await postAction(id, "arrive", { userId });
+      goToGather();
     },
   });
   // スリープなどから戻ったとき、ほかの人が雪かきを始めていたら雪かき中の画面へ(取り消されていればその表示)
@@ -130,14 +127,8 @@ async function main() {
       navigateTo("./go-help.html?list=1");
     }),
   );
-  byId("arrive-button").addEventListener("click", () =>
-    runWithButton("arrive-button", async () => {
-      await postAction(id, "arrive", { userId });
-      sharing.stop();
-      soundCode.stop();
-      navigateTo(pageUrl("helper-gather.html", id));
-    }),
-  );
+  // 着いたら、合言葉を鳴らす画面へ(押した処理の中で鳴らし始める。スマホは押したときにしか音を出し始められない)
+  byId("arrive-button").addEventListener("click", () => soundCode.start());
 }
 
 main()

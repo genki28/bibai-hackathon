@@ -7,9 +7,16 @@
  * 画面を消さないようにする。
  * @returns {{ isSupported: boolean }}
  */
+/** 一度始めたら、同じ見張りを使い回す(何度呼んでも、画面に戻ったときの見張りが増えないように)。 */
+let started = null;
+
 export function keepScreenOn() {
   const wakeLock = navigator.wakeLock;
   if (!wakeLock?.request) return { isSupported: false };
+  if (started) {
+    started.request();
+    return { isSupported: true };
+  }
   let sentinel = null;
 
   async function request() {
@@ -21,6 +28,7 @@ export function keepScreenOn() {
     }
   }
 
+  started = { request };
   request();
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) request();

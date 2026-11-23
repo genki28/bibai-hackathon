@@ -8,7 +8,7 @@
       【若者】参加した依頼の場所・詳細(helper-place.html?id=依頼ID)。本人確認の後に来る。
       [取消] で参加をやめて「助けに行く」へ、[到着しました] で待機中(helper-gather.html)へ。
       この画面を開いている間、共有を選んだ人は現在地をお年寄りに知らせる(location-share.js)。
-      [合言葉を鳴らす] で自分の音の合言葉を鳴らし、お年寄りのスマホが聞き取ると到着になる(helper-sound-code.js)。
+      [到着しました] で音の合言葉を鳴らす画面になり、お年寄りのスマホが聞き取ると到着(helper-sound-code.js)。[スキップして到着] もある。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
     <link rel="stylesheet" href="./template.css" />
@@ -59,31 +59,21 @@
       </div>
       <section id="share-card" class="card share-card" aria-label="位置の共有">
         <h2>📍 位置の共有</h2>
-        <div id="share-ask" hidden>
-          <p>到着まで、お年寄りにあなたの位置が見えます。</p>
-          <div class="button-row">
-            <button id="share-no" class="button secondary" type="button">共有しない</button>
-            <button id="share-yes" class="button" type="button">位置を共有する</button>
-          </div>
-        </div>
+        <p class="note">到着まで、お年寄りにあなたの位置が見えます。</p>
         <p id="share-status" class="note" role="status"></p>
-        <button id="share-toggle" class="button secondary" type="button" hidden></button>
         <button id="share-fake" class="button secondary" type="button" hidden>🧪 位置をまねる</button>
       </section>
-      <section id="sound-card" class="card center sound-card" aria-label="スマホを近づけて到着">
-        <h2>📡 スマホを近づけて到着</h2>
-        <button id="sound-play" class="button" type="button">📡 合言葉を鳴らす</button>
-        <div id="sound-playing" hidden>
-          <p class="sound-wave" aria-hidden="true">🔊</p>
-          <p><strong>鳴らしています</strong><br />お年寄りのスマホに近づけてね</p>
-          <div class="button-row">
-            <button id="sound-band" class="button secondary" type="button">聞こえる音にする</button>
-            <button id="sound-stop" class="button secondary" type="button">とめる</button>
-          </div>
+      <section id="sound-card" class="card center sound-card" aria-label="スマホを近づけて到着" hidden>
+        <h2>📡 お年寄りのスマホに近づけてね</h2>
+        <p class="sound-wave" aria-hidden="true">🔊</p>
+        <p id="sound-status" role="status">合言葉を鳴らしています</p>
+        <div class="button-row">
+          <button id="sound-band" class="button secondary" type="button">聞こえる音にする</button>
+          <button id="sound-skip" class="button" type="button">スキップして到着</button>
         </div>
         <p id="sound-error" class="error" role="alert" hidden></p>
       </section>
-      <div class="button-row">
+      <div id="arrive-row" class="button-row">
         <button id="leave-button" class="button secondary" type="button">参加をやめる</button>
         <button id="arrive-button" class="button" type="button">到着しました</button>
       </div>

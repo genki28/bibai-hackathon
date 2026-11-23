@@ -4,7 +4,7 @@
 // ⚠ 身分証が本物かどうかは確かめていない。判定もスマホの中なので、ごまかそうと思えばごまかせる(デモ)。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
-import { byId, callApi, fetchAppConfig, postJson, resolveUserId, wait } from "./common.js";
+import { byId, callApi, postJson, resolveUserId, wait } from "./common.js";
 import {
   advanceChallenge,
   areChallengesDone,
@@ -303,15 +303,6 @@ async function demoVerify(userId) {
   }
 }
 
-/** テスト用の設定(testMode)がオンか。読めなければオフ。 */
-async function isTestMode() {
-  try {
-    return (await fetchAppConfig()).testMode;
-  } catch {
-    return false;
-  }
-}
-
 function startOver() {
   clearSecrets();
   showError("");
@@ -332,12 +323,9 @@ async function main() {
   byId("agree-button").addEventListener("click", prepare);
   byId("retry-load-button").addEventListener("click", prepare);
   byId("demo-verify-button").addEventListener("click", () => demoVerify(userId));
-  // デモ展示用: テストモードのときだけ、本人確認を飛ばすボタンを出す(何も確かめずに確認済みにする)
-  if (await isTestMode()) {
-    const skip = byId("test-skip-button");
-    skip.hidden = false;
-    skip.addEventListener("click", () => demoVerify(userId));
-  }
+  // デモ展示用: 本人確認を飛ばすボタン(何も確かめずに確認済みにする)
+  byId("test-skip-button").hidden = false;
+  byId("test-skip-button").addEventListener("click", () => demoVerify(userId));
   bindFileInput("id-photo-input", (file) => handleIdPhoto(userId, file));
   bindFileInput("selfie-photo-input", (file) => handleSelfiePhoto(userId, file));
   byId("liveness-cancel-button").addEventListener("click", startOver);

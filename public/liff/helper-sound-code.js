@@ -1,8 +1,8 @@
 // 【若者】目的地の画面の「スマホを近づけて到着」(音の合言葉。鳴らす・聞くの仕組みは sound-checkin.js)。
-// - [合言葉を鳴らす] を押すと、サーバーから自分の合言葉を受け取り、高い音でくり返し鳴らす
+// - [到着しました] を押すと start() が呼ばれ、到着の画面に切り替わって、自分の合言葉を高い音でくり返し鳴らす
 // - お年寄りのスマホが聞き取ると、サーバーで到着になる。鳴らしている間は数秒ごとに読み直し、着いたら次の画面へ
-// - 3 分たったら止める。[聞こえる音にする] は、高い音が出ない・拾えない端末のため
-// - [到着しました] のボタンはこれまでどおり使える(予備)
+// - [スキップして到着] で、合言葉なしでも到着にできる(お年寄りのスマホが聞き取れないとき)
+// - [聞こえる音にする] は、高い音が出ない・拾えない端末のため。3 分たったら鳴らすのを止める
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId, callApi } from "./common.js";
@@ -14,20 +14,24 @@ const PLAY_LIMIT_MS = 3 * 60_000;
 const CHECK_INTERVAL_MS = 3000;
 
 /**
- * @param {{ requestId: string, userId: string, onArrived: () => void }} options
- * @returns {{ stop: () => void }}
+ * @param {{ requestId: string, userId: string, onArrived: () => void, onSkip: () => Promise<void> }} options
+ *   onArrived は合言葉で到着になったとき、onSkip は [スキップして到着] を押したとき
+ * @returns {{ start: () => void, stop: () => void }} start は [到着しました] を押した処理の中で呼ぶ
  */
-export function startSoundCode({ requestId, userId, onArrived }) {
+export function startSoundCode({ requestId, userId, onArrived, onSkip }) {
   let context = null;
   let player = null;
   let bandName = "high";
   let limitTimer = 0;
   let checkTimer = 0;
 
-  function showPlaying(isPlaying) {
-    byId("sound-play").hidden = isPlaying;
-    byId("sound-playing").hidden = !isPlaying;
-    byId("sound-band").textContent = bandName === "high" ? "聞こえる音にする" : "高い音にもどす";
+  const setStatus = (text) => {
+    byId("sound-status").textContent = text;
+  };
+
+  function showError(message) {
+    byId("sound-error").textContent = message;
+    byId("sound-error").hidden = message === "";
   }
 
   function stop() {
@@ -35,7 +39,6 @@ export function startSoundCode({ requestId, userId, onArrived }) {
     player = null;
     clearTimeout(limitTimer);
     clearInterval(checkTimer);
-    showPlaying(false);
   }
 
   /** お年寄りのスマホが聞き取って、到着になったか。 */
@@ -52,7 +55,7 @@ export function startSoundCode({ requestId, userId, onArrived }) {
   }
 
   async function play() {
-    byId("sound-error").hidden = true;
+    showError("");
     try {
       context ??= createAudioContext();
       context.resume();
@@ -62,23 +65,45 @@ export function startSoundCode({ requestId, userId, onArrived }) {
       player?.stop();
       player = playCode(context, code, { bandName });
       clearTimeout(limitTimer);
-      limitTimer = setTimeout(stop, PLAY_LIMIT_MS);
+      limitTimer = setTimeout(() => {
+        stop();
+        setStatus("鳴らすのを止めました。もう一度鳴らすか、[スキップして到着] を押してください。");
+      }, PLAY_LIMIT_MS);
       clearInterval(checkTimer);
       checkTimer = setInterval(checkArrived, CHECK_INTERVAL_MS);
-      showPlaying(true);
+      setStatus(bandName === "high" ? "合言葉を鳴らしています" : "合言葉を鳴らしています(聞こえる音)");
+      byId("sound-band").textContent = bandName === "high" ? "聞こえる音にする" : "高い音にもどす";
     } catch (error) {
       console.error("合言葉を鳴らせませんでした", error);
-      byId("sound-error").textContent = `鳴らせませんでした: ${error.message}`;
-      byId("sound-error").hidden = false;
+      showError(`鳴らせませんでした: ${error.message}。[スキップして到着] を押してください。`);
       stop();
     }
   }
 
-  byId("sound-play").addEventListener("click", play);
-  byId("sound-stop").addEventListener("click", stop);
+  /** 到着の画面に切り替えて、鳴らし始める。 */
+  function start() {
+    byId("sound-card").hidden = false;
+    byId("arrive-row").hidden = true;
+    byId("sound-card").scrollIntoView({ behavior: "smooth", block: "center" });
+    play();
+  }
+
   byId("sound-band").addEventListener("click", () => {
     bandName = bandName === "high" ? "low" : "high";
     play();
   });
-  return { stop };
+  byId("sound-skip").addEventListener("click", async () => {
+    const button = byId("sound-skip");
+    button.disabled = true;
+    try {
+      stop();
+      await onSkip();
+    } catch (error) {
+      console.error(error);
+      showError(`到着にできませんでした: ${error.message}`);
+    } finally {
+      button.disabled = false;
+    }
+  });
+  return { start, stop };
 }
