@@ -3,10 +3,11 @@
 // - 開いたときに、雪山が下から育つ。地図は少し傾けて、ぐるっと回すこともできる。画面には雪が降る
 // - 雪山を押すと、下のシートに「一緒にやった人」の消費カロリーの棒グラフ
 // - 縮尺に合わせて、近くの雪山は 1 つの大きな雪山にまとまる(引くほど広く。clusterPiles)。拡大すると分かれる
-// - ?demo を付けると、見本の雪山(美唄の町なか)を出す
+// - ?demo を付けると、見本の雪山(美唄の町なかとまわりの地区に 60 個。demo-data.js)を出す
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。名前は利用者が決めた文字。
 
 import * as maplibreModule from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.19.0/dist/maplibre-gl.mjs";
+import { createDemoMap } from "./demo-data.js";
 import { clusterPiles, mountainFeatures } from "./snow-mountain.js";
 
 const maplibregl = maplibreModule.default ?? maplibreModule;
@@ -36,36 +37,8 @@ const byId = (id) => document.getElementById(id);
 const format = (n) => Math.round(n).toLocaleString("ja-JP");
 const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
-/** 見本の雪山(?demo のとき)。美唄の町なかに散らばる。 */
-function demoMap() {
-  const names = ["雪野", "北斗", "美唄の星", "ゆきお", "あかり", "はると", "そら", "みなと", "こはる", "りく"];
-  const spots = [
-    [43.3335, 141.8541], [43.3302, 141.8488], [43.3361, 141.8612], [43.3278, 141.8579], [43.3389, 141.8503],
-    [43.3249, 141.8436], [43.3317, 141.8665], [43.3422, 141.8571], [43.3214, 141.8524], [43.3353, 141.8418],
-  ];
-  const piles = spots.map(([lat, lng], i) => {
-    const size = 2 + (i % 4);
-    const members = Array.from({ length: size }, (_, k) => ({
-      displayName: names[(i + k * 3) % names.length],
-      calories: 80 + ((i * 37 + k * 53) % 260),
-    }));
-    return {
-      id: `demo-${i}`,
-      lat,
-      lng,
-      area: ["東", "西", "南", "北", "中央"][i % 5],
-      finishedAt: new Date(Date.now() - i * 3_600_000).toISOString(),
-      members,
-      totalCalories: members.reduce((sum, m) => sum + m.calories, 0),
-    };
-  });
-  const people = new Set(piles.flatMap((p) => p.members.map((m) => m.displayName))).size;
-  const calories = piles.reduce((sum, p) => sum + p.totalCalories, 0);
-  return { piles, totals: { piles: piles.length, people, calories }, isDemo: true };
-}
-
 async function loadSnowMap() {
-  if (new URLSearchParams(location.search).has("demo")) return demoMap();
+  if (new URLSearchParams(location.search).has("demo")) return createDemoMap();
   const response = await fetch("/api/snow-map");
   const body = await response.json().catch(() => null);
   if (!response.ok || !body?.success) throw new Error(body?.error ?? `読み込めませんでした(${response.status})`);
