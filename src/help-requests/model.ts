@@ -23,6 +23,8 @@ export const MAX_STARS = 5;
  * これより多いのは入力ミスかいたずらとみなす(仮)。
  */
 export const MAX_SCOOPS = 3000;
+/** アプリから受け取る消費カロリーの上限(kcal。1 回の雪かきでこれより多いのは入力ミスとみなす)。 */
+export const MAX_CALORIES = 5000;
 
 /** フォームから任意で届く項目(なければ省略)。 */
 export type HelpRequestExtras = {
@@ -66,6 +68,8 @@ export type Helper = {
   readonly arrivedAt: string | null;
   /** スコップ計で数えた、すくった回数。使っていなければ省略(ポイントには入れない)。 */
   readonly scoops?: number;
+  /** 若者向けアプリが加速度から測った消費カロリー(kcal)。測っていなければ省略(結果の calories を使う)。 */
+  readonly calories?: number;
   /** 向かっている間の現在地。共有していない・到着したあとは省略。 */
   readonly location?: HelperLocation;
 };

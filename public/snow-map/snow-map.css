@@ -1,0 +1,307 @@
+/* 美唄の雪山マップ(snow-map.html)の見た目。Google マップのような、白い浮いた部品と丸いボタン。 */
+:root {
+  --ink: #192e49;
+  --sub: #5f6b7a;
+  --red: #b73e2c;
+  --gold: #ffc94d;
+  --ice: #d4e0e8;
+  --card: #ffffff;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", system-ui, sans-serif;
+  color: var(--ink);
+  background: #e8eef3;
+}
+#map {
+  position: fixed;
+  inset: 0;
+}
+/* 雪がしんしんと降る(地図の上に重ねる。押せるものの邪魔をしない) */
+#snowfall {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* ---- 上の見出しとチップ ---- */
+.top {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  left: 12px;
+  right: 12px;
+  z-index: 5;
+  max-width: 560px;
+}
+.searchbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 28px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.searchbar h1 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.3;
+}
+.searchbar p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--sub);
+}
+/* 「いま」動いている印(赤い点が脈打つ) */
+.live {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 0 0 rgba(183, 62, 44, 0.6);
+  animation: live-pulse 1.6s infinite;
+}
+@keyframes live-pulse {
+  70% {
+    box-shadow: 0 0 0 10px rgba(183, 62, 44, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(183, 62, 44, 0);
+  }
+}
+.chips {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.chip {
+  flex: none;
+  padding: 6px 14px;
+  border-radius: 18px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.chip b {
+  font-size: 1rem;
+  color: var(--red);
+}
+.chip-fun {
+  color: #7a5200;
+  background: #fff6dc;
+}
+.chip-fun:empty {
+  display: none;
+}
+.demo-note {
+  display: inline-block;
+  margin: 8px 0 0;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  color: #fff;
+  background: rgba(25, 46, 73, 0.75);
+}
+
+/* ---- 右の丸いボタン ---- */
+.fabs {
+  position: fixed;
+  right: 12px;
+  top: 45%;
+  z-index: 5;
+  display: grid;
+  gap: 10px;
+}
+.fab {
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+.fab[aria-pressed="true"] {
+  color: #fff;
+  background: var(--ink);
+}
+
+/* ---- 下のボトムシート ---- */
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  max-height: 42vh;
+  overflow-y: auto;
+  padding: 8px 16px max(16px, env(safe-area-inset-bottom));
+  border-radius: 20px 20px 0 0;
+  background: var(--card);
+  box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.18);
+}
+@media (min-width: 760px) {
+  .sheet {
+    left: 12px;
+    right: auto;
+    width: 380px;
+    bottom: 12px;
+    max-height: 55vh;
+    border-radius: 16px;
+  }
+}
+.sheet-handle {
+  width: 40px;
+  height: 4px;
+  margin: 0 auto 8px;
+  border-radius: 2px;
+  background: #c7cdd4;
+}
+.sheet h2 {
+  margin: 4px 0 8px;
+  font-size: 1.05rem;
+}
+.pile-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pile-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #eef1f4;
+  cursor: pointer;
+}
+.pile-item:last-child {
+  border-bottom: 0;
+}
+.pile-icon {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ffffff 0%, var(--ice) 100%);
+  box-shadow: inset 0 0 0 1px #c9d6e2;
+  position: relative;
+}
+.pile-icon::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  height: 18px;
+  background: #fff;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  filter: drop-shadow(0 1px 0 #9fb4c8);
+}
+.pile-main {
+  flex: 1;
+  min-width: 0;
+}
+.pile-name {
+  margin: 0;
+  font-weight: 700;
+}
+.pile-sub {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  color: var(--sub);
+}
+.pile-kcal {
+  flex: none;
+  font-weight: 700;
+  color: var(--red);
+}
+.detail-back {
+  padding: 4px 0;
+  border: 0;
+  font: inherit;
+  color: #1a73e8;
+  background: none;
+  cursor: pointer;
+}
+.detail-sub {
+  margin: 0 0 10px;
+  color: var(--sub);
+  font-size: 0.9rem;
+}
+/* 一緒にやった人の棒グラフ(下から伸びる) */
+.bars {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bar-row {
+  display: grid;
+  grid-template-columns: 6.5em 1fr 4.5em;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+.bar-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.bar-track {
+  height: 14px;
+  border-radius: 7px;
+  background: #eef1f4;
+  overflow: hidden;
+}
+.bar-fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 7px;
+  background: var(--bar-color, var(--ice));
+  box-shadow: inset 0 0 0 1px rgba(25, 46, 73, 0.15);
+  transition: width 0.9s cubic-bezier(0.2, 1.2, 0.4, 1);
+}
+.bar-kcal {
+  text-align: right;
+  font-weight: 700;
+}
+
+/* 雪山の上の札(合計カロリー) */
+.peak-label {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+@media (prefers-reduced-motion: reduce) {
+  .live {
+    animation: none;
+  }
+  .bar-fill {
+    transition: none;
+  }
+}
