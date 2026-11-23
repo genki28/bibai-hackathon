@@ -51,6 +51,26 @@
   font-weight: 800;
   color: #192e49;
 }
+/* テスト用のボタン(デモで必要なものだけ)。画面のいちばん下に、小さく灰色で「テスト: 〇〇」 */
+.test-tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 14px;
+  margin: 28px 0 8px;
+  padding-top: 10px;
+  border-top: 1px dashed #c9d0d8;
+}
+.test-tool {
+  padding: 4px 6px;
+  border: 0;
+  font: inherit;
+  font-size: 0.8rem;
+  color: #8a94a0;
+  background: none;
+  text-decoration: underline;
+  cursor: pointer;
+}
 /* hidden を付けた部品は必ず隠す(.button の display: block などに上書きされないように) */
 [hidden] {
   display: none !important;

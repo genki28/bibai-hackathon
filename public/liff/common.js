@@ -59,7 +59,25 @@ export function fetchAppConfig() {
 /** LINE の外で使う表示名(「ゲスト」+ ID の末尾 4 文字)。 */
 const guestProfile = (userId) => ({ userId, displayName: `ゲスト${userId.slice(-4)}` });
 
+/** 利用者 ID の形(U + 16 進数 32 文字)。 */
+const USER_ID_PATTERN = /^U[0-9a-f]{32}$/;
+
+/**
+ * 若者向けアプリ(helper-app)が、この画面(本人確認など)をアプリの中で開いたときの利用者。
+ * アプリは URL に ?appUserId=〇〇&appName=〇〇 を付けて開く(アプリでは LINE のログインを使わないため)。
+ * 形がおかしければ使わない。
+ */
+function appProfileFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const userId = params.get("appUserId") ?? "";
+  if (!USER_ID_PATTERN.test(userId)) return null;
+  const name = (params.get("appName") ?? "").trim().slice(0, 40);
+  return { userId, displayName: name || guestProfile(userId).displayName };
+}
+
 async function loadOwnProfile() {
+  const fromApp = appProfileFromUrl();
+  if (fromApp) return fromApp;
   const liff = window.liff;
   const liffId = liff && !isPreviewMode() ? (await fetchAppConfig()).liffId : "";
   if (!liffId) return guestProfile(getGuestUserId());

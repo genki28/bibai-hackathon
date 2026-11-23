@@ -252,7 +252,6 @@
           <button id="sound-listen" class="button" type="button"><img class="ui-icon" src="./icons/antenna.svg" alt="" aria-hidden="true" />来た人のスマホを聞く</button>
           <p id="sound-level" class="sound-level" aria-hidden="true" hidden><span></span><span></span><span></span></p>
           <p id="sound-status" role="status"></p>
-          <button id="sound-fake" class="button secondary" type="button" hidden><img class="ui-icon" src="./icons/test.svg" alt="" aria-hidden="true" />合言葉をまねる</button>
         </section>
         <p id="request-detail" class="note center"></p>
         <a id="thanks-link" class="button" href="./thanks.html" hidden>ありがとうを伝える</a>
@@ -267,6 +266,9 @@
         <h1>取り消しました。</h1>
         <p class="note">また雪かきが必要になったら、メニューの「たすけて」を押してください。</p>
       </section>
+      <div class="test-tools" aria-label="テスト用">
+        <button id="sound-fake" class="test-tool" type="button" hidden>テスト: 合言葉をまねる</button>
+      </div>
     </main>
     <script
       src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
