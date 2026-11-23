@@ -1,5 +1,8 @@
 import { describe, expect, test } from "vitest";
 import {
+  MAX_HEIGHT_M,
+  MAX_RADIUS_M,
+  MAX_SCALE_ZOOM,
   METERS_PER_KCAL,
   clusterPiles,
   growProgress,
@@ -9,6 +12,7 @@ import {
   seedFromId,
   snowNoise,
   toLocalMeters,
+  viewScale,
 } from "../public/snow-map/snow-mountain.js";
 
 const CENTER = { lat: 43.33, lng: 141.853 };
@@ -98,6 +102,39 @@ describe("pickMountain(押した点に近い雪山を選ぶ)", () => {
 
   test("どの雪山からも遠いときは null", () => {
     expect(pickMountain({ x: 200, y: 50 }, candidates)).toBeNull();
+  });
+});
+
+describe("viewScale(引いて見たときの、見た目の倍率)", () => {
+  test("寄って見ているときは 1 倍", () => {
+    expect(viewScale(15)).toBe(1);
+  });
+
+  test("少し引くと大きくする(1 段引くごとに 2 倍)", () => {
+    expect(viewScale(13)).toBe(2);
+  });
+
+  test("ある程度引いたら、それ以上は大きくしない(美唄のあたりにあると分かるように)", () => {
+    expect(viewScale(MAX_SCALE_ZOOM)).toBe(viewScale(MAX_SCALE_ZOOM - 3));
+    expect(viewScale(6)).toBe(viewScale(MAX_SCALE_ZOOM));
+  });
+});
+
+describe("mountainSize の上限(まとめた雪山が町より大きくならない)", () => {
+  test("とても大きなカロリーでも、すそと高さに上限がある", () => {
+    const huge = mountainSize({ members: [{ calories: 1_000_000 }] });
+    expect(huge.radiusM).toBe(MAX_RADIUS_M);
+    expect(huge.heightM).toBe(MAX_HEIGHT_M);
+  });
+
+  test("上限は倍率の前にかかる(倍率 2 なら上限も 2 倍)", () => {
+    expect(mountainSize({ members: [{ calories: 1_000_000 }] }, 2).radiusM).toBe(MAX_RADIUS_M * 2);
+  });
+
+  test("ふつうの雪山(数百 kcal)は上限に届かない", () => {
+    const small = mountainSize({ members: [{ calories: 300 }] });
+    expect(small.radiusM).toBeLessThan(MAX_RADIUS_M);
+    expect(small.heightM).toBeLessThan(MAX_HEIGHT_M);
   });
 });
 
