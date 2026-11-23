@@ -14,15 +14,15 @@ const GENTLE_POWER = 0.7;
 /** カロリーが 0 でも見えるようにする、最低の高さ(m)。 */
 const MIN_HEIGHT_M = 6;
 /** 1 つの雪山の上限(m・倍率をかける前)。まとめた大きな雪山が、美唄の町より大きくならないように。 */
-export const MAX_RADIUS_M = 350;
-export const MAX_HEIGHT_M = 380;
+export const MAX_RADIUS_M = 420;
+export const MAX_HEIGHT_M = 460;
 const METERS_PER_DEGREE = 111_320;
 
 /** 引いて見たときに大きくし始めるズームと、1 段引くごとの倍率。 */
 const SCALE_FROM_ZOOM = 14;
 const SCALE_PER_ZOOM = 2;
 /** このズームより引いたら、もう大きくしない(地図の方が小さくなり、雪山が美唄のあたりにあると分かる)。 */
-export const MAX_SCALE_ZOOM = 12;
+export const MAX_SCALE_ZOOM = 11;
 
 /**
  * 見た目の大きさの倍率。寄って見ると 1 倍、引くと大きく、MAX_SCALE_ZOOM より引いたらそこで止める。
