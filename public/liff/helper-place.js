@@ -9,7 +9,7 @@ import { byId } from "./common.js";
 import { startSoundCode } from "./helper-sound-code.js";
 import { startLocationShare } from "./location-share.js";
 import { navigateTo, pageReady } from "./loading.js";
-import { createMap, DETAIL_ZOOM, pointOf, showPin } from "./map.js";
+import { createMap, DETAIL_ZOOM, fitToPoints, pointOf, showPersonMarker, showPin } from "./map.js";
 import {
   fetchRequest,
   onPageVisible,
@@ -33,10 +33,22 @@ function render(request) {
   const point = pointOf(request);
   const map = createMap(byId("detail-map"), point, DETAIL_ZOOM);
   if (map) showPin(map, point, "ここ");
+  return map;
+}
+
+/** 目的地の地図に「あなた」(自分の位置)を出す。位置が届くたびに動かし、家と自分が両方見えるようにする。 */
+function createSelfMarker(map, home) {
+  let marker = null;
+  return (point) => {
+    if (!map) return;
+    if (marker) marker.setLatLng([point.lat, point.lng]);
+    else marker = showPersonMarker(map, point, "あなた");
+    fitToPoints(map, [home, point], DETAIL_ZOOM);
+  };
 }
 
 /** 現在地の共有を始める(うまく始められなくても、参加はそのまま続ける)。 */
-async function startSharing(id, userId, request) {
+async function startSharing(id, userId, request, onPoint) {
   // もう到着している人は送らない(サーバーも受け付けない)
   const me = request.helpers.find((h) => h.userId === userId);
   if (me?.arrivedAt) {
@@ -47,6 +59,7 @@ async function startSharing(id, userId, request) {
     return startLocationShare({
       home: pointOf(request),
       send: (point) => postAction(id, "location", { userId, ...point }),
+      onPoint,
     });
   } catch (error) {
     console.error("位置の共有を始められませんでした", error);
@@ -82,8 +95,8 @@ async function main() {
     navigateTo(pageUrl("helper-working.html", id), { replace: true });
     return;
   }
-  render(request);
-  const sharing = await startSharing(id, userId, request);
+  const map = render(request);
+  const sharing = await startSharing(id, userId, request, createSelfMarker(map, pointOf(request)));
   const goToGather = () => {
     sharing.stop();
     soundCode.stop();

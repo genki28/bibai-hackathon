@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>雪かきをした範囲</title>
     <!--
-      【若者】雪かきをした範囲を地図に描く(snow-area.html?id=依頼ID)。点を結んだ形の面積を出す。
-      [地図を動かす]/[範囲を描く] を切り替え、描くモードのときだけ地図をタップすると点が増える。
-      点はつかんで動かせる・タップで消える。辺の真ん中のつまみを引っぱると点が増える。[四角で始める] もある。
-      [雪かき終了!] で終了(API)→ お疲れ様(finish.html)。範囲を付けて終了できるのはリーダーだけ
-      (リーダー以外が開いたら、雪かき中の画面の「リーダーを待つ」表示へ移る)。面積は 300 ㎡ まで。
+      【若者】雪かきをした範囲を地図に筆で塗る(snow-area.html?id=依頼ID)。塗ったところの面積を出す(brush-area.js)。
+      [地図を動かす]/[筆で塗る] を切り替え、塗るモードのときは指でなぞったところが塗られる。筆は細い(1.5m)/太い(4m)。
+      [1 つ戻す] で最後のひと筆を消す。[雪かきを完了する] で終了(API)→ お疲れ様(finish.html)。範囲を付けて終了できるのはリーダーだけ
+      (リーダー以外が開いたら、雪かき中の画面の「リーダーを待つ」表示へ移る)。面積は 5,000 ㎡ まで。
       ページ一覧と URL は docs/features/pages.md、デザインは docs/design.md を見てください。
     -->
     <link rel="stylesheet" href="./template.css" />
@@ -55,37 +54,37 @@
       #area-map.is-drawing .leaflet-grab {
         cursor: crosshair;
       }
-      /* 角の点(つかんで動かす・タップで消す) */
-      .area-handle {
-        box-sizing: border-box;
-        border-radius: 50%;
+      /* 筆で塗る Canvas(brush-area.js)。地図の上に重ねる。塗るモードのときだけ指の操作を受け取る */
+      .brush-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 450;
+        pointer-events: none;
+        touch-action: none;
       }
-      .area-vertex {
-        background: var(--snow);
-        border: 5px solid var(--ice);
-        box-shadow:
-          0 0 0 2px var(--night-top),
-          0 0 12px rgba(79, 209, 255, 0.9);
-        cursor: grab;
+      .brush-canvas.is-brush {
+        pointer-events: auto;
+        cursor: crosshair;
       }
-      /* 辺の真ん中のつまみ。押せる範囲は大きく、見た目は小さな丸 */
-      .area-midpoint {
-        display: grid;
-        place-items: center;
-        cursor: grab;
+      .brush-size {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin: 8px 0 0;
       }
-      .area-midpoint::after {
-        content: "";
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        background: rgba(244, 248, 255, 0.75);
-        box-shadow:
-          0 0 0 2px var(--ice),
-          0 0 0 3px var(--night-top);
+      .brush-size button {
+        min-height: 40px;
+        padding: 4px 14px;
+        border: 2px solid var(--rule, #dce1e6);
+        background: var(--paper, #fff);
+        font: inherit;
+        cursor: pointer;
       }
-      .is-dragging-point .area-midpoint {
-        visibility: hidden;
+      .brush-size button[aria-pressed="true"] {
+        border-color: var(--vermillion, #b73e2c);
+        color: #fff;
+        background: var(--vermillion, #b73e2c);
       }
       .area-hint {
         min-height: 2.6em;
@@ -108,16 +107,19 @@
       <div class="card">
         <div class="toggle" role="group" aria-label="地図の操作の切り替え">
           <button id="mode-move" type="button" aria-pressed="true">地図を動かす</button>
-          <button id="mode-draw" type="button" aria-pressed="false">範囲を描く</button>
+          <button id="mode-draw" type="button" aria-pressed="false">筆で塗る</button>
         </div>
         <p id="area-hint" class="note center area-hint" aria-live="polite"></p>
         <div id="map-wrap" class="map-wrap">
           <div id="area-map" class="map-box tall"></div>
           <p id="mode-badge" class="mode-badge" aria-hidden="true"></p>
         </div>
+        <div class="brush-size" role="group" aria-label="筆の太さ">
+          <button id="brush-thin" type="button" aria-pressed="true">細い筆</button>
+          <button id="brush-thick" type="button" aria-pressed="false">太い筆</button>
+        </div>
         <p id="area-size" class="big-number">0 ㎡</p>
-        <p id="area-limit" class="note center">300 ㎡ まで</p>
-        <button id="square-button" class="button" type="button">四角で始める</button>
+        <p id="area-limit" class="note center">5,000 ㎡ まで</p>
         <div class="button-row">
           <button id="undo-button" class="button secondary" type="button">1 つ戻す</button>
           <button id="reset-button" class="button secondary" type="button">やり直す</button>

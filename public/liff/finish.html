@@ -62,8 +62,131 @@
         box-shadow: 0 0 30px rgba(255, 201, 77, 0.3);
       }
       .score {
+        position: relative;
+        z-index: 1;
         margin: 0;
         font-size: clamp(3rem, 16vw, 4.2rem);
+      }
+      /* 派手なポイントの演出(points-show.js) */
+      .score-card {
+        position: relative;
+        overflow: hidden;
+      }
+      .score-card > * {
+        position: relative;
+        z-index: 1;
+      }
+      /* 札の後ろで回る光の筋 */
+      .score-card.is-celebrating::before {
+        content: "";
+        position: absolute;
+        z-index: 0;
+        inset: -60%;
+        background: repeating-conic-gradient(rgba(255, 201, 77, 0.32) 0deg 10deg, transparent 10deg 24deg);
+        animation: rays-spin 6s linear infinite;
+      }
+      @keyframes rays-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .score.is-pop {
+        animation: score-pop 0.6s cubic-bezier(0.2, 1.6, 0.4, 1);
+      }
+      @keyframes score-pop {
+        0% {
+          transform: scale(1);
+        }
+        40% {
+          transform: scale(1.45);
+          color: var(--gold, #ffc94d);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+      /* 「+〇〇pt!」の判子 */
+      .score-stamp {
+        display: inline-block;
+        margin: 10px 0 0;
+        padding: 4px 14px;
+        border: 4px solid var(--vermillion, #b73e2c);
+        font-family: var(--font-display);
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: var(--vermillion, #b73e2c);
+        background: #fff;
+        transform: rotate(-8deg);
+        animation: stamp-in 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+      }
+      @keyframes stamp-in {
+        from {
+          opacity: 0;
+          transform: rotate(-8deg) scale(3);
+        }
+        to {
+          opacity: 1;
+          transform: rotate(-8deg) scale(1);
+        }
+      }
+      /* 画面がゆれる */
+      body.is-shaking main {
+        animation: screen-shake 0.6s steps(6) 2;
+      }
+      @keyframes screen-shake {
+        0%,
+        100% {
+          transform: translate(0, 0);
+        }
+        20% {
+          transform: translate(-6px, 3px);
+        }
+        40% {
+          transform: translate(5px, -4px);
+        }
+        60% {
+          transform: translate(-4px, -2px);
+        }
+        80% {
+          transform: translate(4px, 4px);
+        }
+      }
+      /* 記録の行が 1 行ずつ飛び出す */
+      .stats .row.is-pop {
+        animation: row-pop 0.45s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+        animation-delay: var(--delay, 0ms);
+      }
+      @keyframes row-pop {
+        from {
+          opacity: 0;
+          transform: translateY(16px) scale(0.8);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      /* 画面いっぱいの花火(押せるものの邪魔をしない) */
+      .firework-canvas {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        image-rendering: pixelated;
+      }
+      #replay-button {
+        margin: 12px auto 0;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .score-card.is-celebrating::before,
+        .score.is-pop,
+        .score-stamp,
+        body.is-shaking main,
+        .stats .row.is-pop {
+          animation: none;
+        }
       }
       /* 内訳を 2 列のマスで */
       .stats {
@@ -109,6 +232,7 @@
       <section class="card score-card">
         <p class="center">獲得ポイント</p>
         <p id="score" class="big-number score">…</p>
+        <button id="replay-button" class="button secondary" type="button" hidden>もう一度見る(音つき)</button>
       </section>
       <section class="card">
         <h2>今回の記録</h2>

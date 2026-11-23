@@ -4,7 +4,8 @@
 //   (POST /api/help-requests/:id/location)。ほとんど動いていないときは送らない(MIN_MOVE_M と RESEND_MS)
 // - 画面が隠れたら止め、見えたら再開する。到着・参加の取り消しのときは stop() で止める
 // - 位置が取れない・拒否されたら「位置を取得できませんでした」。参加はそのまま続けられる
-// - [🧪 位置をまねる] で、押すたびに家へ少しずつ近づく位置を送る(デモ・屋内で試すため)
+// - [デモ: 家に近づく] で、押すたびに「家から約 1km 南西」から家へ 150m ずつ近づいた位置を、自分の位置として送る(屋内のデモ用)
+// - 送った位置(本物でもデモでも)は onPoint で知らせる(目的地の地図に「あなた」を出す)
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId, setIconText } from "./common.js";
@@ -40,10 +41,11 @@ const showStatus = (text, iconName = "") => {
  * @param {{
  *   home: { lat: number, lng: number },
  *   send: (point: { lat: number, lng: number, accuracy: number | null }) => Promise<unknown>,
+ *   onPoint?: (point: { lat: number, lng: number }) => void,
  * }} options home はお年寄りの家(なければ美唄の中心)、send はサーバーに位置を送る処理
  * @returns {{ stop: () => void }} stop は到着・参加の取り消しのときに呼ぶ(もう送らない)
  */
-export function startLocationShare({ home, send }) {
+export function startLocationShare({ home, send, onPoint = () => {} }) {
   let isStopped = false;
   let watchId = null;
   let timer = 0;
@@ -84,6 +86,7 @@ export function startLocationShare({ home, send }) {
     const { latitude, longitude, accuracy } = position.coords;
     latest = { lat: latitude, lng: longitude, accuracy: Number.isFinite(accuracy) ? accuracy : null };
     showStatus(STATUS.sharing);
+    onPoint(latest);
     if (!lastSent) sendPoint(latest);
   };
 
@@ -110,8 +113,12 @@ export function startLocationShare({ home, send }) {
     fake.hidden = false;
     fake.addEventListener("click", async () => {
       fakePoint = stepToward(fakePoint, home, FAKE_STEP_M);
+      // デモの位置を使い始めたら、本物の位置は読まない(地図の「あなた」が行ったり来たりしないように)
+      pause();
+      isStopped = true;
+      onPoint(fakePoint);
       await sendPoint({ ...fakePoint, accuracy: 10 });
-      showStatus(`まねた位置を送りました(家まで約 ${Math.round(distanceM(fakePoint, home))} m)`, "test");
+      showStatus(`デモの位置を送りました(家まで約 ${Math.round(distanceM(fakePoint, home))} m)`, "test");
     });
   }
 
