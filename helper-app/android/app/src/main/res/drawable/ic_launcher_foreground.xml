@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- アプリのアイコンの前面(雪だるまのドット絵を、まわりに余白をとって置く) -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_snowman"
+    android:inset="28%" />

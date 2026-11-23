@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- public/liff/icons/pencil.svg を VectorDrawable に直したもの(16×16 のドット絵) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="#192e49"
+        android:pathData="M11 1h2v1h1v1h1v2h-1v1h-1v1h-1v1h-1v1h-1v1H9v1H8v1H7v1H5v1H1v-4h1V9h1V8h1V7h1V6h1V5h1V4h1V3h1V2h2z" />
+    <path
+        android:fillColor="#b73e2c"
+        android:pathData="M11 3h2v1h1v1h-1v1h-1V5h-1V4h-1z" />
+    <path
+        android:fillColor="#d4e0e8"
+        android:pathData="M9 4h1v1h1v1h1v1h-1v1h-1V7H9V6H8V5h1z" />
+    <path
+        android:fillColor="#ffffff"
+        android:pathData="M7 6h1v1h1v1h1v1H9v1H8v1H7v1H5v-1H4V9h1V8h1V7h1z" />
+    <path
+        android:fillColor="#b73e2c"
+        android:pathData="M3 11h2v1h1v1H3z" />
+    <path
+        android:fillColor="#192e49"
+        android:pathData="M2,13h2v1h-2z" />
+</vector>

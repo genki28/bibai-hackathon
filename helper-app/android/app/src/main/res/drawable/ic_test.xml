@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- public/liff/icons/test.svg を VectorDrawable に直したもの(16×16 のドット絵) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="#192e49"
+        android:pathData="M3 1h7v2H9v5l4 5v2H1v-2l4-5V3H3z" />
+    <path
+        android:fillColor="#ffffff"
+        android:pathData="M6 3h2v6l3 4H3l3-4z" />
+    <path
+        android:fillColor="#d4e0e8"
+        android:pathData="M5 10h4v1h1v2H4v-2h1z" />
+    <path
+        android:fillColor="#b73e2c"
+        android:pathData="M6,11h2v2h-2z" />
+    <path
+        android:fillColor="#b73e2c"
+        android:pathData="M8,9h1v1h-1z" />
+</vector>

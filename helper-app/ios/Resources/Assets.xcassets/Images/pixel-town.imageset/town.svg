@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 64" shape-rendering="crispEdges">
+  <path fill="#edf2f6" d="M0 0h192v64H0z"/>
+  <path fill="#d4e0e8" d="M0 38h12v-6h12v-8h12v-8h12v8h12v8h16v8h20v-8h12v-8h12v-8h12v8h12v8h12v8h36v24H0z"/>
+  <path fill="#fff" d="M36 24v-8h12v8h8v4H28v-4zm80 0v-8h16v8h8v4h-32v-4zM0 49h32v-4h40v4h28v-4h52v4h40v15H0z"/>
+  <!-- 木と玄関。すべて整数のマス目で描く。 -->
+  <path fill="#192e49" d="M16 26h4v4h4v4h4v4h-8v12h-4V38H8v-4h4v-4h4zm132-6h24v4h8v4h8v4h-4v20h-44V32h-4v-4h8v-4h4z"/>
+  <path fill="#fff" d="M148 20h24v4h8v4h-36v-4h4z"/>
+  <path fill="#b73e2c" d="M164 36h12v16h-12z"/>
+  <path fill="#d4e0e8" d="M148 36h8v8h-8z"/>
+  <path fill="#fff" d="M172 42h2v2h-2z"/>
+  <!-- 雪かきをする二人。帽子と長靴の形を共通にする。 -->
+  <path fill="#192e49" d="M54 25h8v4h4v8h-4v4h4v11h-4v5h-8v-4h4v-9h-4v8h-4V40h4v-3h-4v-8h4z"/>
+  <path fill="#b73e2c" d="M54 25h8v4h4v4H50v-4h4zm0 15h8v8h-8z"/>
+  <path fill="#fff" d="M54 33h8v4h-8z"/>
+  <path fill="#192e49" d="M60 33h2v2h-2zm8 10h4v4h4v4h4v4h-4v-4h-4v-4h-4z"/>
+  <path fill="#b73e2c" d="M76 51h12v4h-4v4h-8z"/>
+  <path fill="#192e49" d="M116 25h8v4h4v8h-4v3h4v12h-4v-8h-4v9h4v4h-8v-5h-4V41h4v-4h-4v-8h4z"/>
+  <path fill="#fff" d="M116 33h8v4h-8z"/>
+  <path fill="#192e49" d="M116 33h2v2h-2zm-4 10h-4v4h-4v4h-4v4h4v-4h4v-4h4z"/>
+  <path fill="#b73e2c" d="M116 29h12v4h-16v-4zm-12 22H92v4h4v4h8z"/>
+  <path fill="#d4e0e8" d="M80 60v-4h4v-4h4v-4h12v4h4v4h4v4zM36 57h8v2h-8zm96 2h8v2h-8z"/>
+  <path fill="#fff" d="M12 10h2v2h-2zm52 2h2v2h-2zm32-6h2v2h-2zm40 4h2v2h-2zm44 4h2v2h-2z"/>
+</svg>
