@@ -39,7 +39,7 @@ class LocalServerTest {
         api.location(id, me, 43.324, 141.845, 10.0)
         api.arrive(id, me)
         api.start(id, me)
-        api.scoops(id, me, 3)
+        api.scoops(id, me, 3, 12)
         val detail = api.detail(id, me)
 
         assertEquals("working", detail.status)

@@ -12,7 +12,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import jp.bibai.yukikaki.helper.R
@@ -28,6 +27,8 @@ import jp.bibai.yukikaki.helper.ui.PixelCard
 import jp.bibai.yukikaki.helper.ui.PollEffect
 import jp.bibai.yukikaki.helper.ui.Screen
 import jp.bibai.yukikaki.helper.ui.ScreenFrame
+import jp.bibai.yukikaki.helper.ui.TestButton
+import jp.bibai.yukikaki.helper.ui.TestTools
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -35,7 +36,7 @@ import kotlinx.coroutines.launch
 private const val PLAY_DURATION_MS = 3 * 60 * 1000L
 private const val ARRIVAL_POLL_MS = 3000L
 
-/** 3'. 到着(音の合言葉)。お年寄りのスマホに近づけると、音で到着が伝わる。 */
+/** 3'. 到着(音の合言葉)。お年寄りのスマホに近づけると、音で到着が伝わる。4 桁の数字は画面にもログにも出さない。 */
 @Composable
 fun ArrivalScreen(deps: AppDeps, id: String, go: (Screen) -> Unit) {
     val context = LocalContext.current
@@ -89,12 +90,11 @@ fun ArrivalScreen(deps: AppDeps, id: String, go: (Screen) -> Unit) {
             Text(
                 when {
                     code == null -> "合言葉を受け取っています…"
-                    isPlaying -> "合言葉の音を鳴らしています"
+                    isPlaying -> "合言葉を鳴らしています"
                     else -> "音を止めました(もう一度鳴らすには、下のボタン)"
                 },
                 color = Palette.Navy,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
+                fontSize = 20.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -110,7 +110,11 @@ fun ArrivalScreen(deps: AppDeps, id: String, go: (Screen) -> Unit) {
             icon = R.drawable.ic_speaker,
             onClick = { band = if (band == SoundBand.HIGH) SoundBand.LOW else SoundBand.HIGH },
         )
-        PixelButton("スキップして到着", isPrimary = true, isEnabled = !isBusy, onClick = {
+        PixelButton("目的地の画面にもどる", onClick = {
+            player.stop()
+            go(Screen.Place(id))
+        })
+        TestTools { TestButton("テスト: スキップして到着", isEnabled = !isBusy, onClick = {
             isBusy = true
             scope.launch {
                 try {
@@ -122,10 +126,6 @@ fun ArrivalScreen(deps: AppDeps, id: String, go: (Screen) -> Unit) {
                     isBusy = false
                 }
             }
-        })
-        PixelButton("目的地の画面にもどる", onClick = {
-            player.stop()
-            go(Screen.Place(id))
-        })
+        }) }
     }
 }

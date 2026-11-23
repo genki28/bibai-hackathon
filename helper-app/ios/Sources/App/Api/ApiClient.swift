@@ -75,8 +75,8 @@ final class ApiClient: Sendable {
         try await post(id, "finish", ["userId": userId, "areaM2": areaM2])
     }
 
-    func sendScoops(id: String, userId: String, count: Int) async throws -> HelpRequest {
-        try await post(id, "scoops", ["userId": userId, "count": count])
+    func sendScoops(id: String, userId: String, count: Int, calories: Int) async throws -> HelpRequest {
+        try await post(id, "scoops", ["userId": userId, "count": count, "calories": calories])
     }
 
     func sendLocation(id: String, userId: String, lat: Double, lng: Double, accuracy: Double?) async throws -> HelpRequest {
@@ -93,8 +93,21 @@ final class ApiClient: Sendable {
         try await get("/api/help-requests/\(id)/points", query: ["userId": userId], as: RequestPoints.self)
     }
 
-    func ranking(period: RankingPeriod, userId: String) async throws -> [RankingEntry] {
-        try await get("/api/ranking", query: ["period": period.rawValue, "userId": userId], as: [RankingEntry].self)
+    /// 自分が入ったチームと、消費カロリーの合計(チームの記録)。
+    func myTeams(userId: String) async throws -> MyTeams {
+        try await get("/api/teams/mine/\(userId)", as: MyTeams.self)
+    }
+
+    /// 本人確認が済んでいるか。
+    func identityStatus(userId: String) async throws -> IdentityStatus {
+        try await get("/api/identity/\(userId)", as: IdentityStatus.self)
+    }
+
+    /// サーバーの上の Web の画面の URL(本人確認・雪山マップ)。
+    func webURL(_ path: String, query: [String: String] = [:]) -> URL? {
+        var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)
+        if !query.isEmpty { components?.queryItems = query.sorted { $0.key < $1.key }.map { URLQueryItem(name: $0.key, value: $0.value) } }
+        return components?.url
     }
 
     // MARK: - 共通

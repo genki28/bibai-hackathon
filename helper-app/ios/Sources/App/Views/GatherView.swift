@@ -14,13 +14,13 @@ struct GatherView: View {
 
     var body: some View {
         ScreenScaffold {
-            ScreenTitle(icon: "cheer", text: "集合")
+            ScreenTitle(text: "集合")
             ErrorText(message: error)
             if let request {
                 let arrived = request.allHelpers.filter { $0.arrivedAt != nil }.count
                 PixelCard {
                     Text("\(arrived)/\(request.allHelpers.count)人集合")
-                        .font(.system(size: 40, weight: .heavy, design: .rounded))
+                        .font(.dot(size: 40))
                         .frame(maxWidth: .infinity)
                 }
                 PixelCard {
@@ -28,13 +28,13 @@ struct GatherView: View {
                         HStack {
                             PixelIcon(name: helper.arrivedAt != nil ? "check" : "hourglass", size: 20)
                             Text(helper.userId == app.userId ? "\(helper.displayName)(あなた)" : helper.displayName)
-                                .font(.headline)
+                                .font(.dot(.headline))
                             Spacer()
-                            Text(helper.arrivedAt != nil ? "到着" : "向かっています").font(.footnote)
+                            Text(helper.arrivedAt != nil ? "到着" : "向かっています").font(.dot(.footnote))
                         }
                     }
                 }
-                Text("みんながそろったら始めよう").font(.subheadline)
+                Text("みんながそろったら始めよう").font(.dot(.subheadline))
                 Button { Task { await start() } } label: { IconLabel(icon: "snowman", text: "雪かきを始める") }
                     .buttonStyle(.pixel)
                     .disabled(isStarting)

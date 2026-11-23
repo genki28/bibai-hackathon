@@ -14,7 +14,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import jp.bibai.yukikaki.helper.R
@@ -34,6 +33,8 @@ import jp.bibai.yukikaki.helper.ui.PixelShape
 import jp.bibai.yukikaki.helper.ui.PollEffect
 import jp.bibai.yukikaki.helper.ui.Screen
 import jp.bibai.yukikaki.helper.ui.ScreenFrame
+import jp.bibai.yukikaki.helper.ui.TestButton
+import jp.bibai.yukikaki.helper.ui.TestTools
 import kotlinx.coroutines.launch
 
 private const val PLACE_POLL_MS = 5000L
@@ -98,14 +99,13 @@ fun PlaceScreen(deps: AppDeps, id: String, go: (Screen) -> Unit) {
         IconLine(R.drawable.ic_pin, tracker.locationStatus.ifEmpty { "位置の共有を準備しています…" })
         ErrorText(tracker.backgroundWarning)
         PixelCard {
-            Text(current.address ?: current.area, color = Palette.Navy, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text(current.address ?: current.area, color = Palette.Navy, fontSize = 18.sp)
             LabelValue("募集した人", current.name?.let { "$it さん" } ?: "—")
             LabelValue("雪の多さ", amountLabel(current.amount).first)
             LabelValue("道具", current.tools ?: "—")
             LabelValue("参加", "${current.helpers.size}/${current.capacity} 人")
         }
         ErrorText(error)
-        PixelButton("デモ: 家に近づく", icon = R.drawable.ic_test, onClick = { HelperTracker.demoStep(context) })
         PixelButton("到着しました", icon = R.drawable.ic_check, isPrimary = true, onClick = { go(Screen.Arrival(id)) })
         PixelButton("参加をやめる", isEnabled = !isBusy, onClick = {
             isBusy = true
@@ -121,5 +121,6 @@ fun PlaceScreen(deps: AppDeps, id: String, go: (Screen) -> Unit) {
                 }
             }
         })
+        TestTools { TestButton("テスト: 家に近づく", onClick = { HelperTracker.demoStep(context) }) }
     }
 }

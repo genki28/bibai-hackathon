@@ -17,22 +17,23 @@ struct PlaceView: View {
 
     var body: some View {
         ScreenScaffold {
-            ScreenTitle(icon: "pin", text: "目的地")
+            ScreenTitle(text: "目的地")
             ErrorText(message: error)
             if let request {
                 map(for: request)
                 details(for: request)
                 if !session.locationStatus.isEmpty {
-                    IconLabel(icon: "antenna", text: session.locationStatus).font(.footnote)
+                    IconLabel(icon: "antenna", text: session.locationStatus).font(.dot(.footnote))
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 Button { app.go(.arrival(requestId)) } label: { IconLabel(icon: "house", text: "到着しました") }
                     .buttonStyle(.pixel)
-                Button { Task { await session.demoStep() } } label: { IconLabel(icon: "test", text: "デモ: 家に近づく") }
-                    .buttonStyle(.pixelSecondary)
                 Button { isConfirmingLeave = true } label: { Text("参加をやめる") }
                     .buttonStyle(.pixelSecondary)
                     .disabled(isBusy)
+                TestTools {
+                    Button("テスト: 家に近づく") { Task { await session.demoStep() } }
+                }
             } else {
                 ProgressView("読み込んでいます…")
             }
@@ -61,12 +62,12 @@ struct PlaceView: View {
 
     private func details(for request: HelpRequest) -> some View {
         PixelCard {
-            if let address = request.address { IconLabel(icon: "house", text: address).font(.headline) }
+            if let address = request.address { IconLabel(icon: "house", text: address).font(.dot(.headline)) }
             if let name = request.name { Text("募集した人: \(name) さん") }
             SnowAmountView(amount: request.amount)
             if let depth = request.depth, !depth.isEmpty { Text("雪の深さ: \(depth)") }
             Text("道具: \(request.tools.flatMap { $0.isEmpty ? nil : $0 } ?? "とくになし")")
-            Text("参加 \(request.joinedCount)/\(request.capacity ?? 5)人").font(.footnote)
+            Text("参加 \(request.joinedCount)/\(request.capacity ?? 5)人").font(.dot(.footnote))
         }
     }
 

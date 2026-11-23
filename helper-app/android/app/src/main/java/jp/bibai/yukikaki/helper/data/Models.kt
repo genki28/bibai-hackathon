@@ -5,7 +5,7 @@ import jp.bibai.yukikaki.helper.core.LatLng
 import org.json.JSONArray
 import org.json.JSONObject
 
-// サーバーの返事(JSON)の形。src/help-requests/views.ts・request-points.ts・ranking.ts に合わせる。
+// サーバーの返事(JSON)の形。src/help-requests/views.ts・request-points.ts・snow-map.ts に合わせる。
 // 読むのは画面で使う項目だけ。
 
 /** 美唄市の中心あたり(依頼に位置がないとき)。 */
@@ -67,11 +67,22 @@ data class RequestPoints(
     val totalScoops: Int,
 )
 
-data class RankingEntry(
-    val rank: Int,
-    val displayName: String,
-    val points: Int,
-    val isMe: Boolean,
+/** チームの記録の 1 件(終わった雪かき 1 回)。 */
+data class TeamRecord(
+    val id: String,
+    val finishedAt: String?,
+    val area: String,
+    val members: List<String>,
+    val teamCalories: Int,
+    val myCalories: Int,
+)
+
+/** GET /api/teams/mine/{userId} の返事。 */
+data class MyTeams(
+    val totalCalories: Int,
+    val teamCount: Int,
+    val partners: Int,
+    val teams: List<TeamRecord>,
 )
 
 private fun JSONObject.optStringOrNull(key: String): String? =
@@ -137,11 +148,23 @@ object Parse {
         )
     }
 
-    fun rankingEntry(o: JSONObject) = RankingEntry(
-        rank = o.optInt("rank"),
-        displayName = o.optString("displayName", "名無し"),
-        points = o.optInt("points"),
-        isMe = o.optBoolean("isMe"),
+    private fun teamRecord(o: JSONObject): TeamRecord {
+        val members = o.optJSONArray("members")
+        return TeamRecord(
+            id = o.getString("id"),
+            finishedAt = o.optStringOrNull("finishedAt"),
+            area = o.optString("area", "美唄市内"),
+            members = if (members == null) emptyList() else (0 until members.length()).map { members.optString(it) },
+            teamCalories = o.optInt("teamCalories"),
+            myCalories = o.optInt("myCalories"),
+        )
+    }
+
+    fun myTeams(o: JSONObject) = MyTeams(
+        totalCalories = o.optInt("totalCalories"),
+        teamCount = o.optInt("teamCount"),
+        partners = o.optInt("partners"),
+        teams = o.optJSONArray("teams").mapObjects(::teamRecord),
     )
 
     fun <T> list(array: JSONArray?, transform: (JSONObject) -> T): List<T> = array.mapObjects(transform)

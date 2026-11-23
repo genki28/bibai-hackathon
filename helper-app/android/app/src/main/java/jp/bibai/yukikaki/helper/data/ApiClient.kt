@@ -17,7 +17,7 @@ class ApiException(message: String) : Exception(message)
  * サーバーの API の呼び出しを 1 か所にまとめたもの。サーバーの URL は BuildConfig.API_BASE。
  * 返事はすべて { "success": true, "data": ... } か { "success": false, "error": "日本語" }。
  */
-class ApiClient(private val baseUrl: String = BuildConfig.API_BASE.trimEnd('/')) {
+class ApiClient(val baseUrl: String = BuildConfig.API_BASE.trimEnd('/')) {
 
     private fun enc(value: String): String = URLEncoder.encode(value, "UTF-8")
 
@@ -40,11 +40,13 @@ class ApiClient(private val baseUrl: String = BuildConfig.API_BASE.trimEnd('/'))
     suspend fun points(id: String, userId: String): RequestPoints =
         Parse.points(call("GET", "/api/help-requests/${enc(id)}/points?userId=${enc(userId)}").getJSONObject("data"))
 
-    suspend fun ranking(period: String, userId: String): List<RankingEntry> =
-        Parse.list(
-            call("GET", "/api/ranking?period=${enc(period)}&userId=${enc(userId)}").getJSONArray("data"),
-            Parse::rankingEntry,
-        )
+    /** 自分が入ったチームと、消費カロリーの合計(チームの記録)。 */
+    suspend fun myTeams(userId: String): MyTeams =
+        Parse.myTeams(call("GET", "/api/teams/mine/${enc(userId)}").getJSONObject("data"))
+
+    /** 本人確認が済んでいるか(GET /api/identity/{userId} の verified)。 */
+    suspend fun isIdentityVerified(userId: String): Boolean =
+        call("GET", "/api/identity/${enc(userId)}").getJSONObject("data").optBoolean("verified")
 
     // --- 操作(返事は自分から見た依頼) ---
 
@@ -60,8 +62,9 @@ class ApiClient(private val baseUrl: String = BuildConfig.API_BASE.trimEnd('/'))
     suspend fun finish(id: String, userId: String, areaM2: Int): MemberRequest =
         action(id, "finish", userBody(userId).put("areaM2", areaM2))
 
-    suspend fun scoops(id: String, userId: String, count: Int): MemberRequest =
-        action(id, "scoops", userBody(userId).put("count", count))
+    /** すくった回数と消費カロリー(整数・0〜5,000)を送る。 */
+    suspend fun scoops(id: String, userId: String, count: Int, calories: Int): MemberRequest =
+        action(id, "scoops", userBody(userId).put("count", count).put("calories", calories))
 
     suspend fun location(id: String, userId: String, lat: Double, lng: Double, accuracy: Double?): MemberRequest {
         val body = userBody(userId).put("lat", lat).put("lng", lng)

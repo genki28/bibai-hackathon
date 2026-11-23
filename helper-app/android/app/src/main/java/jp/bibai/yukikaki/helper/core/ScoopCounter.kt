@@ -68,22 +68,30 @@ private fun nextGravity(gravity: Vec3?, sample: ScoopSample, dt: Double): Vec3 {
     )
 }
 
-private fun ScoopSample.isFinite(): Boolean = t.isFinite() && x.isFinite() && y.isFinite() && z.isFinite()
+internal fun ScoopSample.isFiniteSample(): Boolean = t.isFinite() && x.isFinite() && y.isFinite() && z.isFinite()
+
+/** 重力を除いた揺れと、次の重力の推定(重力込みの値でなければ gravity は null)。 */
+internal data class Motion(val vector: Vec3, val gravity: Vec3?) {
+    val magnitude: Double get() = vector.magnitude
+}
+
+/** 1 サンプルの揺れ。重力込みの値なら、ゆっくり追いかける平均(= 重力)を引く。スコップ計とカロリーで同じものを使う。 */
+internal fun motionOf(previousGravity: Vec3?, sample: ScoopSample, dt: Double): Motion {
+    if (!sample.includesGravity) return Motion(Vec3(sample.x, sample.y, sample.z), null)
+    val gravity = nextGravity(previousGravity, sample, dt)
+    return Motion(Vec3(sample.x - gravity.x, sample.y - gravity.y, sample.z - gravity.z), gravity)
+}
 
 /** 1 サンプルぶん状態を進める。サンプルがおかしければ、もとの状態をそのまま返す。 */
 fun stepScoop(state: ScoopState, sample: ScoopSample): ScoopState {
-    if (!sample.isFinite()) return state
+    if (!sample.isFiniteSample()) return state
     val lastT = state.lastT
     val isGap = lastT == null || sample.t - lastT > ScoopRules.GAP_RESET_MS || sample.t < lastT
     // 途切れたあとは、回数と最後に数えた時刻だけ残してやり直す
     val base = if (isGap) ScoopState.from(state.count).copy(lastCountAt = state.lastCountAt) else state
     val dt = if (isGap) 0.0 else sample.t - (lastT ?: sample.t)
-    val gravity = if (sample.includesGravity) nextGravity(base.gravity, sample, dt) else null
-    val motion = if (gravity != null) {
-        Vec3(sample.x - gravity.x, sample.y - gravity.y, sample.z - gravity.z)
-    } else {
-        Vec3(sample.x, sample.y, sample.z)
-    }
+    val motion = motionOf(base.gravity, sample, dt)
+    val gravity = motion.gravity
     val recent = (base.recent + motion.magnitude).takeLast(ScoopRules.SMOOTHING_SAMPLES)
     val smoothed = recent.average()
     val next = base.copy(lastT = sample.t, gravity = gravity, recent = recent)

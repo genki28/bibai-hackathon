@@ -17,6 +17,10 @@
     <!-- 画面を消しても CPU を眠らせない(加速度を読み続ける) -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
+    <!-- 本人確認(アプリの中のブラウザで、自撮りと身分証を撮る) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
     <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="false" />
 

@@ -25,12 +25,15 @@ struct RootView: View {
             switch app.screen {
             case .loading:
                 ProgressView("読み込んでいます…")
+                    .font(.dot(.body))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Palette.ice.ignoresSafeArea())
+                    .background(Palette.white.ignoresSafeArea())
             case .onboarding:
                 OnboardingView()
-            case .requests, .ranking:
+            case .requests, .teams:
                 MainTabsView()
+            case .identity(let id):
+                IdentityView(requestId: id)
             case .place(let id):
                 PlaceView(requestId: id)
             case .arrival(let id):
@@ -45,28 +48,29 @@ struct RootView: View {
                 FinishView(requestId: id)
             }
         }
+        .font(.dot(.body))
         .task { await app.launch() }
     }
 }
 
-/// 下のタブ「助けに行く / ランキング」。
+/// 下のタブ「助けに行く / チームの記録」(Web の .tab-bar)。
 struct MainTabsView: View {
     @EnvironmentObject private var app: AppModel
 
     var body: some View {
         VStack(spacing: 0) {
             Group {
-                if app.screen == .ranking { RankingView() } else { RequestListView() }
+                if app.screen == .teams { TeamsView() } else { RequestListView() }
             }
             .frame(maxHeight: .infinity)
             HStack(spacing: 0) {
-                tab(.requests, icon: "runner", text: "助けに行く")
-                tab(.ranking, icon: "crown", text: "ランキング")
+                tab(.requests, icon: "shovel", text: "助けに行く")
+                tab(.teams, icon: "cheer", text: "チームの記録")
             }
-            .background(Palette.white)
-            .overlay(Rectangle().frame(height: 3).foregroundStyle(Palette.navy), alignment: .top)
+            .background(Palette.white.ignoresSafeArea(edges: .bottom))
+            .overlay(Rectangle().frame(height: 2).foregroundStyle(Palette.navy), alignment: .top)
         }
-        .background(Palette.ice.ignoresSafeArea())
+        .background(Palette.white.ignoresSafeArea())
     }
 
     private func tab(_ screen: Screen, icon: String, text: String) -> some View {
@@ -74,13 +78,18 @@ struct MainTabsView: View {
         return Button {
             app.go(screen)
         } label: {
-            VStack(spacing: 2) {
-                PixelIcon(name: icon, size: 24)
-                Text(text).font(.caption.weight(.bold))
+            HStack(spacing: 6) {
+                Image("icon-\(icon)")
+                    .resizable()
+                    .renderingMode(.template)
+                    .interpolation(.none)
+                    .frame(width: 20, height: 20)
+                    .accessibilityHidden(true)
+                Text(text).font(.dot(.subheadline))
             }
             .frame(maxWidth: .infinity, minHeight: 56)
-            .foregroundStyle(Palette.navy)
-            .background(isSelected ? Palette.gold : Palette.white)
+            .foregroundStyle(isSelected ? Palette.vermilion : Palette.muted)
+            .background(Palette.white)
         }
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }

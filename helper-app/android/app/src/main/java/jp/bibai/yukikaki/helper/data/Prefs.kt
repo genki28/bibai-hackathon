@@ -12,7 +12,7 @@ fun newUserId(random: java.util.Random = SecureRandom()): String {
 
 private const val USER_ID_BYTES = 16
 
-/** 端末に覚えておくもの(SharedPreferences)。利用者 ID・名前・スコップ計の回数(依頼ごと)・音の実況のオン / オフ。 */
+/** 端末に覚えておくもの(SharedPreferences)。利用者 ID・名前・スコップ計の回数と消費カロリー(依頼ごと)・音の実況のオン / オフ。 */
 class Prefs(context: Context) {
     private val prefs: SharedPreferences =
         context.applicationContext.getSharedPreferences("helper-app", Context.MODE_PRIVATE)
@@ -31,6 +31,11 @@ class Prefs(context: Context) {
 
     fun saveScoopCount(requestId: String, count: Int) = prefs.edit().putInt(KEY_SCOOPS + requestId, count).apply()
 
+    /** 消費カロリー(依頼ごと。小数のまま覚えて、開き直しても続きから数える)。 */
+    fun calories(requestId: String): Double = prefs.getFloat(KEY_CALORIES + requestId, 0f).toDouble().coerceAtLeast(0.0)
+
+    fun saveCalories(requestId: String, kcal: Double) = prefs.edit().putFloat(KEY_CALORIES + requestId, kcal.toFloat()).apply()
+
     var isSoundOn: Boolean
         get() = prefs.getBoolean(KEY_SOUND, true)
         set(value) = prefs.edit().putBoolean(KEY_SOUND, value).apply()
@@ -43,6 +48,7 @@ class Prefs(context: Context) {
         const val KEY_USER_ID = "userId"
         const val KEY_NAME = "displayName"
         const val KEY_SCOOPS = "scoops:"
+        const val KEY_CALORIES = "calories:"
         const val KEY_SOUND = "soundOn"
         const val KEY_SEEN_FINISH = "seenFinish:"
     }

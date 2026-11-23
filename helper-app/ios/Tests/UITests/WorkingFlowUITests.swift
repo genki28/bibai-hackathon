@@ -1,4 +1,4 @@
-// 手元のサーバー(http://localhost:3000)で、雪かき中の画面の [🧪 揺れをまねる] を押して、回数がサーバーに届くかを確かめる UI テスト。
+// 手元のサーバー(http://localhost:3000)で、雪かき中の画面の [テスト: 揺れをまねる] を押して、回数がサーバーに届くかを確かめる UI テスト。
 // ふだんの `xcodebuild test`(単体テスト)には入れていない(サーバーが要るため)。
 // 事前に、手元のサーバーで「この利用者が参加して、到着して、雪かきを始めた依頼」を API で作っておき、
 // 利用者 ID を環境変数で渡して動かす(TEST_RUNNER_ を付けると、テストに渡る):
@@ -18,7 +18,7 @@ final class WorkingFlowUITests: XCTestCase {
         ]
         app.launch()
 
-        let fake = app.buttons["揺れをまねる"]
+        let fake = app.buttons["テスト: 揺れをまねる"]
         XCTAssertTrue(fake.waitForExistence(timeout: 20), "雪かき中の画面が出ませんでした")
         // 端末に覚えた回数の続きから増える(はじめが何杯でも確かめられるように、押す前の回数を読む)
         let mine = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'あなた: '")).firstMatch

@@ -34,25 +34,28 @@ struct AreaView: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            ScreenTitle(icon: "pencil", text: "範囲を記録")
+            BrandLine()
+            ScreenTitle(text: "範囲を記録")
             Text(isBrush ? "雪かきしたところを指でなぞって塗ってね" : "雪かきした場所まで地図を動かしてね")
-                .font(.subheadline).frame(maxWidth: .infinity, alignment: .leading)
+                .font(.dot(.subheadline)).frame(maxWidth: .infinity, alignment: .leading)
             if let request { mapArea(home: request.home) } else { ProgressView("読み込んでいます…").frame(maxHeight: .infinity) }
             controls
             ErrorText(message: isTooLarge ? "広すぎます(5,000 ㎡まで)。[1 つ戻す] で減らしてください。" : error)
             HStack {
-                Text("塗った広さ").font(.headline)
+                Text("塗った広さ").font(.dot(.headline))
                 Spacer()
-                Text("\(areaM2.formatted()) ㎡").font(.system(.title2, design: .rounded).weight(.heavy))
-                Text("/ 5,000 ㎡ まで").font(.caption)
+                Text("\(areaM2.formatted()) ㎡").font(.dot(.title2))
+                Text("/ 5,000 ㎡ まで").font(.dot(.caption))
             }
             Button { Task { await finish() } } label: { IconLabel(icon: "check", text: "雪かきを完了する") }
                 .buttonStyle(.pixel)
                 .disabled(strokes.isEmpty || isTooLarge || isSending)
         }
-        .padding(16)
-        .background(Palette.ice.ignoresSafeArea())
+        .padding(.horizontal, 24)
+        .padding(.bottom, 16)
+        .background(Palette.white.ignoresSafeArea())
         .foregroundStyle(Palette.navy)
+        .font(.dot(.body))
         .task { await load() }
     }
 
@@ -76,7 +79,7 @@ struct AreaView: View {
             }
             .overlay(alignment: .topLeading) {
                 IconLabel(icon: isBrush ? "pencil" : "hand", text: isBrush ? "筆で塗っています" : "地図を動かす")
-                    .font(.caption.weight(.bold)).padding(6).background(Palette.white).padding(8)
+                    .font(.dot(.caption)).padding(6).background(Palette.white).padding(8)
             }
         }
         .frame(maxHeight: .infinity)

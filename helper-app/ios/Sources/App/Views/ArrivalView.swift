@@ -1,5 +1,6 @@
 // 画面 3'「到着(音の合言葉)」: 自分の合言葉(4 桁)を、高い音で 3 分くり返し鳴らす。
 // お年寄りのスマホが聞き取ると到着になる。3 秒ごとに詳細を読み、自分の arrivedAt が入ったら集合の画面へ。
+// 合言葉の数字は、画面にもログにも出さない(SPEC「第 2 版の変更」3)。
 
 import HelperCore
 import SwiftUI
@@ -19,9 +20,9 @@ struct ArrivalView: View {
 
     var body: some View {
         ScreenScaffold {
-            ScreenTitle(icon: "antenna", text: "到着")
+            ScreenTitle(text: "到着")
             PixelCard {
-                Text("お年寄りのスマホに近づけてね").font(.title3.weight(.heavy))
+                Text("お年寄りのスマホに近づけてね").font(.dot(.title3))
                 Text("雪かきするエリアを確認してください")
             }
             ErrorText(message: error)
@@ -29,12 +30,9 @@ struct ArrivalView: View {
                 HStack {
                     PixelIcon(name: isPlaying ? "speaker" : "mute", size: 40)
                     VStack(alignment: .leading) {
-                        Text(isPlaying ? "合言葉を鳴らしています" : "鳴らし終わりました").font(.headline)
-                        Text(isAudible ? "聞こえる音" : "高い音(人には聞こえにくい音)").font(.footnote)
+                        Text(isPlaying ? "合言葉を鳴らしています" : "鳴らし終わりました").font(.dot(.headline))
+                        Text(isAudible ? "聞こえる音" : "高い音(人には聞こえにくい音)").font(.dot(.footnote))
                     }
-                }
-                if let code {
-                    Text("合言葉 \(code)").font(.system(.title, design: .monospaced).weight(.heavy))
                 }
             }
             if !isPlaying, code != nil {
@@ -46,11 +44,12 @@ struct ArrivalView: View {
                 if isPlaying { startPlaying() }
             } label: { Text(isAudible ? "高い音にする" : "聞こえる音にする") }
                 .buttonStyle(.pixelSecondary)
-            Button { Task { await skip() } } label: { Text("スキップして到着") }
-                .buttonStyle(.pixelSecondary)
-                .disabled(isBusy)
             Button { app.go(.place(requestId)) } label: { Text("目的地に戻る") }
                 .buttonStyle(.pixelSecondary)
+            TestTools {
+                Button("テスト: スキップして到着") { Task { await skip() } }
+                    .disabled(isBusy)
+            }
         }
         .task { await prepare() }
         .task {

@@ -1,6 +1,6 @@
 // 裏で動かす部分のまとめ役(いちばん大事)。画面を閉じても、ここが動き続ける。
 // - 目的地(画面 3)に入ったら位置を読み始め、到着するまで 15 秒ごとに送る(前から 10m 以上動いたか、60 秒たったとき)
-// - 雪かき中(画面 5)に入ったらスコップ計を始め、10 秒ごとと終えるときに回数を送る。すくうたびに「ザクッ」、節目は読み上げ
+// - 雪かき中(画面 5)に入ったらスコップ計と消費カロリーを始め、10 秒ごとと終えるときに回数と kcal を送る。すくうたびに「ザクッ」、節目は読み上げ
 // - お疲れ様(画面 7)に進んだら・参加をやめたら、すべて止める
 // 位置の裏での利用(UIBackgroundModes の location)でアプリが止まらないので、タイマーも送信も読み上げも続く。
 // 到着したあとも位置は読み続ける(送らない)。読むのをやめると、画面を閉じたときにアプリが止まってしまうため。
@@ -20,6 +20,8 @@ final class HelperSession: ObservableObject {
     @Published private(set) var locationStatus = ""
     /// 自分のすくった回数(端末で数えた値)。
     @Published private(set) var myScoops = 0
+    /// 自分の消費カロリー(kcal。端末で数えた値)。
+    @Published private(set) var myKcal = 0.0
     /// みんなのすくった回数。
     @Published private(set) var teamCount = 0
     /// スコップ計(加速度)が使えるか。
@@ -45,6 +47,7 @@ final class HelperSession: ObservableObject {
     private var isScooping = false
     private var scoopTimer: Timer?
     private var lastSentScoops: Int?
+    private var lastSentCalories: Int?
     private var helpers: [HelperScoops] = []
     private var lastCounts = ScoopCounts(mine: 0, team: 0)
 
@@ -77,7 +80,7 @@ final class HelperSession: ObservableObject {
         locationStatus = ""
     }
 
-    /// [デモ: 家に近づく] 家から南西へ約 1km の所から、押すたびに 150m ずつ近づいた位置を送る。
+    /// [テスト: 家に近づく] 家から南西へ約 1km の所から、押すたびに 150m ずつ近づいた位置を送る。
     func demoStep() async {
         let from = fakePoint ?? fakeStartPoint(home: home)
         let next = stepToward(from, home, stepM: LocationSharePolicy.fakeStepM)
@@ -86,7 +89,7 @@ final class HelperSession: ObservableObject {
         isDemo = true
         myPoint = next
         await sendLocation(next, accuracy: 10)
-        locationStatus = "デモの位置を送りました(家まで約 \(Int(distanceM(next, home).rounded())) m)"
+        locationStatus = "テストの位置を送りました(家まで約 \(Int(distanceM(next, home).rounded())) m)"
     }
 
     private func onFix(_ fix: LocationTracker.Fix) {
@@ -132,17 +135,24 @@ final class HelperSession: ObservableObject {
         teamCount = teamScoops(helpers, myUserId: userId, myCount: myScoops)
         lastCounts = ScoopCounts(mine: myScoops, team: teamCount)
         isMotionAvailable = motion.isAvailable
-        motion.start(from: myScoops) { [weak self] count in self?.handleCount(count) }
+        myKcal = UserStore.calories(requestId: request.id)
+        motion.start(
+            from: myScoops,
+            kcal: myKcal,
+            onCount: { [weak self] count in self?.handleCount(count) },
+            onCalories: { [weak self] kcal in self?.handleCalories(kcal) }
+        )
         scoopTimer = Timer.scheduledTimer(withTimeInterval: Self.scoopSendIntervalSeconds, repeats: true) { _ in
             _ = MainActor.assumeIsolated { Task { await self.flushScoops() } }
         }
         coach.say("スコップ計、スタート!")
     }
 
-    /// [🧪 揺れをまねる] 1 回すくったことにする。
+    /// [テスト: 揺れをまねる] 1 回すくったことにする(消費カロリーにも 1 秒ぶんの揺れを入れる)。
     func simulateScoop() {
         let next = myScoops + 1
         motion.sync(count: next)
+        motion.simulateShake()
         handleCount(next)
     }
 
@@ -154,13 +164,15 @@ final class HelperSession: ObservableObject {
         announce(mine: myScoops, isScoop: false)
     }
 
-    /// いまの回数をサーバーに送る(前に送った回数から増えていれば)。
+    /// いまの回数と消費カロリーをサーバーに送る(前に送った値から変わっていれば)。
     func flushScoops() async {
-        guard let requestId, isScooping, lastSentScoops != myScoops else { return }
+        let calories = caloriesToSend(myKcal)
+        guard let requestId, isScooping, lastSentScoops != myScoops || lastSentCalories != calories else { return }
         let count = myScoops
         do {
-            let latest = try await api.sendScoops(id: requestId, userId: userId, count: count)
+            let latest = try await api.sendScoops(id: requestId, userId: userId, count: count, calories: calories)
             lastSentScoops = count
+            lastSentCalories = calories
             updateHelpers(latest)
         } catch {
             // 送れなくても端末の回数は残る。次の間隔でまた送る
@@ -179,6 +191,12 @@ final class HelperSession: ObservableObject {
         UserStore.saveScoopCount(count, requestId: requestId)
         coach.scoop()
         announce(mine: count, isScoop: true)
+    }
+
+    private func handleCalories(_ kcal: Double) {
+        guard isScooping, kcal > myKcal, let requestId else { return }
+        myKcal = kcal
+        UserStore.saveCalories(kcal, requestId: requestId)
     }
 
     private func announce(mine: Int, isScoop: Bool) {
@@ -216,7 +234,9 @@ final class HelperSession: ObservableObject {
         lastSent = nil
         myPoint = nil
         lastSentScoops = nil
+        lastSentCalories = nil
         helpers = []
+        myKcal = UserStore.calories(requestId: request.id)
         myScoops = UserStore.scoopCount(requestId: request.id)
         teamCount = myScoops
     }

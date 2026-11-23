@@ -22,6 +22,8 @@ data class TrackerState(
     /** みんなのすくった回数(自分を含む)。 */
     val teamCount: Int = 0,
     val scoopStatus: String = "",
+    /** 消費カロリー(kcal。整数に丸めた値)。 */
+    val calories: Int = 0,
     /** 画面を閉じると止まってしまうとき(許可がないなど)の注意。なければ空。 */
     val backgroundWarning: String = "",
 )

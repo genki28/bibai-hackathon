@@ -9,6 +9,7 @@ enum UserStore {
     private static let nameKey = "helper:displayName"
     private static let soundKey = "helper:soundCoachOn"
     private static let scoopPrefix = "helper:scoops:"
+    private static let caloriePrefix = "helper:calories:"
     /// 名前の長さの上限(サーバーの MAX_DISPLAY_NAME_LENGTH と同じ)。
     static let maxNameLength = 40
 
@@ -46,5 +47,14 @@ enum UserStore {
 
     static func saveScoopCount(_ count: Int, requestId: String) {
         defaults.set(count, forKey: scoopPrefix + requestId)
+    }
+
+    /// 依頼ごとの消費カロリー(kcal。開き直しても続きから数える)。
+    static func calories(requestId: String) -> Double {
+        defaults.double(forKey: caloriePrefix + requestId)
+    }
+
+    static func saveCalories(_ kcal: Double, requestId: String) {
+        defaults.set(kcal, forKey: caloriePrefix + requestId)
     }
 }

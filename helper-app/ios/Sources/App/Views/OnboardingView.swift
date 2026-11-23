@@ -15,21 +15,21 @@ struct OnboardingView: View {
             Spacer(minLength: 40)
             PixelIcon(name: "snowman", size: 96)
             Text("美唄の雪かきを\nいっしょに助けよう")
-                .font(.system(.title, design: .rounded).weight(.heavy))
+                .font(.dot(.title))
                 .multilineTextAlignment(.center)
             PixelCard {
-                Text("あなたの名前(ニックネームでも OK)").font(.headline)
+                Text("あなたの名前(ニックネームでも OK)").font(.dot(.headline))
                 TextField("例: ゆき", text: $name)
                     .textFieldStyle(.plain)
                     .padding(12)
-                    .background(Palette.ice)
+                    .background(Palette.wash)
                     .overlay(Rectangle().stroke(Palette.navy, lineWidth: 2))
                     .focused($isFocused)
                     .submitLabel(.done)
                     .onChange(of: name) { _, next in
                         if next.count > UserStore.maxNameLength { name = String(next.prefix(UserStore.maxNameLength)) }
                     }
-                Text("お年寄りや仲間に表示されます").font(.footnote)
+                Text("お年寄りや仲間に表示されます").font(.dot(.footnote))
             }
             Button {
                 isSaving = true

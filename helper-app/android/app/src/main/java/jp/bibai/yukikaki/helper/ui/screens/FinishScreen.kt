@@ -20,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,6 +52,7 @@ fun FinishScreen(deps: AppDeps, id: String, go: (Screen) -> Unit) {
     val context = LocalContext.current
     var points by remember { mutableStateOf<RequestPoints?>(null) }
     var error by remember { mutableStateOf("") }
+    var teamCalories by remember { mutableStateOf<Int?>(null) }
 
     LaunchedEffect(id) {
         HelperTracker.stopAll(context)
@@ -62,6 +62,8 @@ fun FinishScreen(deps: AppDeps, id: String, go: (Screen) -> Unit) {
             try {
                 points = deps.api.points(id, deps.userId)
                 error = ""
+                // チームの消費カロリー(チームの記録の中の、この依頼のぶん)
+                teamCalories = runCatching { deps.api.myTeams(deps.userId).teams.firstOrNull { it.id == id }?.teamCalories }.getOrNull()
                 return@LaunchedEffect
             } catch (e: Exception) {
                 error = "ポイントを読めませんでした: ${e.message}"
@@ -73,11 +75,17 @@ fun FinishScreen(deps: AppDeps, id: String, go: (Screen) -> Unit) {
     ScreenFrame("お疲れ様") {
         Box(Modifier.fillMaxWidth().height(180.dp), contentAlignment = Alignment.Center) {
             if (points != null) Fireworks(Modifier.fillMaxWidth().height(180.dp))
-            Text("CLEAR", color = Palette.Vermilion, fontWeight = FontWeight.Black, fontSize = 56.sp)
+            Text("CLEAR", color = Palette.Vermilion, fontSize = 56.sp)
         }
         ErrorText(error)
+        teamCalories?.let { kcal ->
+            PixelCard {
+                Text("チームで", color = Palette.Muted, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                Text("${format(kcal)} kcal", color = Palette.Vermilion, fontSize = 36.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            }
+        }
         points?.let { PointsView(it, deps.prefs.isSoundOn) }
-        PixelButton("ランキングへ", icon = R.drawable.ic_crown, isPrimary = true, onClick = { go(Screen.Ranking) })
+        PixelButton("チームの記録へ", icon = R.drawable.ic_cup, isPrimary = true, onClick = { go(Screen.Teams) })
         PixelButton("助けに行く", onClick = { go(Screen.HelpList) })
     }
 }
@@ -94,14 +102,13 @@ private fun PointsView(points: RequestPoints, isSoundOn: Boolean) {
         Text(
             "${format(roll.value.toInt())} pt",
             color = Palette.Vermilion,
-            fontWeight = FontWeight.Black,
             fontSize = 44.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
     }
     PixelCard {
-        Text("内訳", color = Palette.Navy, fontWeight = FontWeight.Bold)
+        Text("内訳", color = Palette.Navy, fontSize = 18.sp)
         LabelValue("雪かき", "${format(points.workPoints)} pt")
         LabelValue("評価", points.stars?.let { "${format(points.ratingPoints)} pt(星 $it)" } ?: "まだ届いていません")
         LabelValue(
@@ -111,7 +118,7 @@ private fun PointsView(points: RequestPoints, isSoundOn: Boolean) {
         LabelValue("初回ボーナス", "${format(points.firstFinishBonus)} pt")
     }
     PixelCard {
-        Text("スコップの回数", color = Palette.Navy, fontWeight = FontWeight.Bold)
+        Text("スコップの回数", color = Palette.Navy, fontSize = 18.sp)
         LabelValue("あなた", "${format(points.myScoops)} 振り(約 ${format(scoopKg(points.myScoops))} kg)")
         LabelValue("みんな", "${format(points.totalScoops)} 振り(約 ${format(scoopKg(points.totalScoops))} kg)")
     }

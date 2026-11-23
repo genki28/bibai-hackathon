@@ -9,7 +9,9 @@ enum Screen: Equatable {
     case loading
     case onboarding
     case requests
-    case ranking
+    case teams
+    /// 本人確認(アプリの中のブラウザで Web の画面を開く)。終わったら目的地へ。
+    case identity(String)
     case place(String)
     case arrival(String)
     case gather(String)
@@ -82,10 +84,17 @@ final class AppModel: ObservableObject {
         }
     }
 
-    /// 画面を移る。お疲れ様・一覧・ランキングに移ったら、裏で動かしているものを止める。
+    /// 参加したあと。本人確認が済んでいれば目的地、まだなら本人確認の画面へ(SPEC「第 2 版の変更」5)。
+    /// 確認の状態を読めなかったときも、本人確認の画面へ(そこで 2 秒ごとに読み直す)。
+    func afterJoin(_ requestId: String) async {
+        let isVerified = (try? await api.identityStatus(userId: userId).verified) ?? false
+        go(isVerified ? .place(requestId) : .identity(requestId))
+    }
+
+    /// 画面を移る。お疲れ様・一覧・チームの記録に移ったら、裏で動かしているものを止める。
     func go(_ next: Screen) {
         switch next {
-        case .finish, .requests, .ranking, .onboarding:
+        case .finish, .requests, .teams, .onboarding:
             session.endAll()
         default:
             break

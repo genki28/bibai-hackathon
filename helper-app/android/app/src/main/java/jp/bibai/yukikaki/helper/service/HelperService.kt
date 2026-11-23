@@ -28,6 +28,9 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import jp.bibai.yukikaki.helper.R
 import jp.bibai.yukikaki.helper.core.AnnouncementKind
+import jp.bibai.yukikaki.helper.core.CalorieState
+import jp.bibai.yukikaki.helper.core.caloriesToSend
+import jp.bibai.yukikaki.helper.core.stepCalories
 import jp.bibai.yukikaki.helper.core.Geo
 import jp.bibai.yukikaki.helper.core.HelperScoops
 import jp.bibai.yukikaki.helper.core.LatLng
@@ -58,6 +61,7 @@ import java.util.Locale
  * 画面を閉じても動き続ける仕組み(フォアグラウンドサービス)。SPEC の「裏で動かす」。
  * - 位置: LocationManager で読み、15 秒ごと(10m 以上動いたか 60 秒たったとき)にサーバーへ送る
  * - スコップ計: 加速度(TYPE_LINEAR_ACCELERATION。なければ TYPE_ACCELEROMETER と重力の推定)で数え、10 秒ごとに送る
+ * - 消費カロリー: 同じ加速度から数え(core/Calories.kt)、回数と一緒に送る
  * - 通知「雪かき中: 〇杯 / 約〇kg」を出し続け、すくうたびに「ザクッ」、節目は TextToSpeech で読み上げる
  */
 class HelperService : Service(), SensorEventListener {
@@ -80,6 +84,8 @@ class HelperService : Service(), SensorEventListener {
     // スコップ計
     private var scoopState = ScoopState.EMPTY
     private var sentCount = 0
+    private var calorieState = CalorieState.EMPTY
+    private var sentCalories = 0
     private var helpers: List<HelperScoops> = emptyList()
     private var lastPoint = ScoopPoint(0, 0)
     private var isScoopOn = false
@@ -305,6 +311,8 @@ class HelperService : Service(), SensorEventListener {
         stopLocation()
         scoopState = ScoopState.from(prefs.scoopCount(id))
         sentCount = 0
+        calorieState = CalorieState.from(prefs.calories(id))
+        sentCalories = 0
         lastPoint = ScoopPoint(scoopState.count, scoopState.count)
         isScoopOn = true
         val sensors = getSystemService(SensorManager::class.java)
@@ -318,7 +326,14 @@ class HelperService : Service(), SensorEventListener {
         }
         acquireWakeLock()
         HelperTracker.update {
-            it.copy(requestId = id, isScoopOn = true, scoopCount = scoopState.count, teamCount = scoopState.count, scoopStatus = status)
+            it.copy(
+                requestId = id,
+                isScoopOn = true,
+                scoopCount = scoopState.count,
+                teamCount = scoopState.count,
+                scoopStatus = status,
+                calories = caloriesToSend(calorieState.kcal),
+            )
         }
         refreshNotification(isForced = true)
         scoopJob?.cancel()
@@ -340,7 +355,16 @@ class HelperService : Service(), SensorEventListener {
             z = event.values[2].toDouble(),
             includesGravity = isUsingGravityFallback,
         )
+        addCalories(stepCalories(calorieState, sample))
         addScoops(stepScoop(scoopState, sample))
+    }
+
+    /** 消費カロリーを進める。整数の値が変わったときだけ画面に知らせる。 */
+    private fun addCalories(next: CalorieState) {
+        val shown = caloriesToSend(calorieState.kcal)
+        calorieState = next
+        val now = caloriesToSend(next.kcal)
+        if (now != shown) HelperTracker.update { it.copy(calories = now) }
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
@@ -379,14 +403,21 @@ class HelperService : Service(), SensorEventListener {
         if (isOn) say("音の実況、オン") else tts?.stop()
     }
 
-    /** いまの回数をサーバーに送る。返事の参加者の回数で、みんなの回数も新しくする。 */
+    /** いまの回数と消費カロリーをサーバーに送る。返事の参加者の回数で、みんなの回数も新しくする。 */
     private suspend fun sendScoops() {
         val id = requestId ?: return
         val user = userId ?: return
         val count = scoopState.count
+        val calories = caloriesToSend(calorieState.kcal)
+        // 開き直しても続きから数えられるよう、端末にも覚える
+        prefs.saveCalories(id, calorieState.kcal)
+        val hasNews = count > sentCount || calories > sentCalories
         try {
-            val request = if (count > sentCount) api.scoops(id, user, count) else api.detail(id, user)
-            if (count > sentCount) sentCount = count
+            val request = if (hasNews) api.scoops(id, user, count, calories) else api.detail(id, user)
+            if (hasNews) {
+                sentCount = count
+                sentCalories = calories
+            }
             helpers = request.scoops()
             announce()
         } catch (error: ApiException) {
@@ -430,13 +461,15 @@ class HelperService : Service(), SensorEventListener {
         val id = requestId
         val user = userId
         val count = scoopState.count
-        val shouldSend = isScoopOn && count > sentCount
+        val calories = caloriesToSend(calorieState.kcal)
+        val shouldSend = isScoopOn && (count > sentCount || calories > sentCalories)
+        if (isScoopOn && id != null) prefs.saveCalories(id, calorieState.kcal)
         stopLocation()
         stopScoopsQuietly()
         if (shouldSend && id != null && user != null) {
             // 最後の回数を送ってから止める
             scope.launch {
-                runCatching { api.scoops(id, user, count) }
+                runCatching { api.scoops(id, user, count, calories) }
                 stopSelfCompletely()
             }
         } else {

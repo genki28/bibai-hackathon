@@ -14,7 +14,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import jp.bibai.yukikaki.helper.R
@@ -34,6 +33,8 @@ import jp.bibai.yukikaki.helper.ui.PixelCard
 import jp.bibai.yukikaki.helper.ui.PollEffect
 import jp.bibai.yukikaki.helper.ui.Screen
 import jp.bibai.yukikaki.helper.ui.ScreenFrame
+import jp.bibai.yukikaki.helper.ui.TestButton
+import jp.bibai.yukikaki.helper.ui.TestTools
 import kotlinx.coroutines.delay
 
 private const val WORKING_POLL_MS = 3000L
@@ -101,8 +102,7 @@ fun WorkingScreen(deps: AppDeps, id: String, isWaitingLeaderAtFirst: Boolean, go
         Text(
             if (startedMs != null) formatElapsed(now - startedMs) else "--:--",
             color = Palette.Navy,
-            fontWeight = FontWeight.Bold,
-            fontSize = 44.sp,
+                        fontSize = 44.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -116,6 +116,7 @@ fun WorkingScreen(deps: AppDeps, id: String, isWaitingLeaderAtFirst: Boolean, go
         MovedCard(current, deps.userId, tracker.scoopCount)
         PixelCard {
             LabelValue("あなた", "${format(tracker.scoopCount)}杯(約${format(scoopKg(tracker.scoopCount))}kg)")
+            LabelValue("消費カロリー", "約${format(tracker.calories)}kcal")
             Text(tracker.scoopStatus.ifEmpty { "スコップ計を準備しています…" }, color = Palette.Navy)
             Text("スマホを上着のポケットに入れて、そのまま雪かきしてね。画面を閉じても数えます。", color = Palette.Navy)
         }
@@ -131,11 +132,11 @@ fun WorkingScreen(deps: AppDeps, id: String, isWaitingLeaderAtFirst: Boolean, go
                 HelperTracker.setSound(context, isSoundOn)
             },
         )
-        PixelButton("揺れをまねる", icon = R.drawable.ic_test, onClick = { HelperTracker.fakeScoop(context) })
         PixelButton("雪かきを終える", isPrimary = true, onClick = {
             HelperTracker.flushScoops(context)
             if (current.canFinish(deps.userId)) go(Screen.Area(id)) else isWaitingLeader = true
         })
+        TestTools { TestButton("テスト: 揺れをまねる", onClick = { HelperTracker.fakeScoop(context) }) }
     }
 }
 
@@ -146,7 +147,7 @@ private fun MovedCard(request: MemberRequest, userId: String, myCount: Int) {
     val kg = scoopKg(team)
     PixelCard {
         Text("みんなで動かした雪", color = Palette.Navy)
-        Text("約${format(kg)}kg(${format(team)}杯)", color = Palette.Navy, fontWeight = FontWeight.Bold, fontSize = 26.sp)
+        Text("約${format(kg)}kg(${format(team)}杯)", color = Palette.Navy, fontSize = 26.sp)
         comparisonFor(kg)?.let { IconLine(R.drawable.ic_party, "${it.label}を超えた!", isBold = true) }
     }
 }

@@ -21,18 +21,21 @@ import jp.bibai.yukikaki.helper.ui.screens.ArrivalScreen
 import jp.bibai.yukikaki.helper.ui.screens.FinishScreen
 import jp.bibai.yukikaki.helper.ui.screens.GatherScreen
 import jp.bibai.yukikaki.helper.ui.screens.HelpListScreen
+import jp.bibai.yukikaki.helper.ui.screens.IdentityScreen
 import jp.bibai.yukikaki.helper.ui.screens.OnboardingScreen
 import jp.bibai.yukikaki.helper.ui.screens.PlaceScreen
-import jp.bibai.yukikaki.helper.ui.screens.RankingScreen
+import jp.bibai.yukikaki.helper.ui.screens.TeamsScreen
 import jp.bibai.yukikaki.helper.ui.screens.WorkingScreen
 import org.osmdroid.config.Configuration
 
-/** 画面の一覧(SPEC の 1〜8)。依頼の画面は依頼 ID を持つ。 */
+/** 画面の一覧(SPEC の 1〜8。8 は第 2 版で「チームの記録」に変えた)。依頼の画面は依頼 ID を持つ。 */
 sealed interface Screen {
     data object Resume : Screen
     data object Onboarding : Screen
     data object HelpList : Screen
-    data object Ranking : Screen
+    data object Teams : Screen
+    /** 本人確認(参加したあと、まだ確認していなければ)。 */
+    data class Identity(val id: String) : Screen
     data class Place(val id: String) : Screen
     data class Arrival(val id: String) : Screen
     data class Gather(val id: String) : Screen
@@ -69,7 +72,7 @@ private fun HelperApp() {
     val go: (Screen) -> Unit = { screen = it }
 
     // 戻るボタン: 依頼の途中の画面は、一覧に戻らないようにする(続きは「アプリを開き直す」で戻れる)
-    BackHandler(enabled = screen is Screen.Ranking || screen is Screen.Arrival || screen is Screen.Area) {
+    BackHandler(enabled = screen is Screen.Teams || screen is Screen.Arrival || screen is Screen.Area) {
         screen = when (val current = screen) {
             is Screen.Arrival -> Screen.Place(current.id)
             is Screen.Area -> Screen.Working(current.id)
@@ -92,7 +95,8 @@ private fun HelperApp() {
         }
         Screen.Onboarding -> OnboardingScreen(deps) { screen = Screen.Resume }
         Screen.HelpList -> HelpListScreen(deps, resumeError, go)
-        Screen.Ranking -> RankingScreen(deps, go)
+        Screen.Teams -> TeamsScreen(deps, go)
+        is Screen.Identity -> IdentityScreen(deps, current.id, go)
         is Screen.Place -> PlaceScreen(deps, current.id, go)
         is Screen.Arrival -> ArrivalScreen(deps, current.id, go)
         is Screen.Gather -> GatherScreen(deps, current.id, go)

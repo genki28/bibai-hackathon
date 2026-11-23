@@ -1,5 +1,5 @@
 // 画面 7「お疲れ様」: 「CLEAR」と、獲得ポイントを派手に(数字が回ってから止まる・花火・ファンファーレ)。
-// 内訳(雪かき・評価・再会・初回ボーナス)と、スコップの回数(自分・みんな)。
+// 内訳(雪かき・評価・再会・初回ボーナス)と、スコップの回数(自分・みんな)。「チームで 〇kcal」(GET /api/teams/mine)。
 
 import HelperCore
 import SwiftUI
@@ -8,6 +8,8 @@ struct FinishView: View {
     let requestId: String
     @EnvironmentObject private var app: AppModel
     @State private var points: RequestPoints?
+    /// この雪かきのチームの消費カロリー(読めなければ出さない)。
+    @State private var teamKcal: Double?
     @State private var shown = 0
     @State private var error: String?
     @State private var coach = SoundCoach()
@@ -20,25 +22,31 @@ struct FinishView: View {
         ZStack {
             ScreenScaffold {
                 Text("CLEAR")
-                    .font(.system(size: 64, weight: .black, design: .monospaced))
+                    .font(.dot(size: 64))
                     .foregroundStyle(Palette.gold)
                     .shadow(color: Palette.navy, radius: 0, x: 4, y: 4)
                     .padding(.top, 24)
-                Text("お疲れ様でした!").font(.title2.weight(.heavy))
+                Text("お疲れ様でした!").font(.dot(.title2))
                 ErrorText(message: error)
                 if let points {
                     PixelCard {
-                        Text("獲得ポイント").font(.headline)
+                        Text("獲得ポイント").font(.dot(.headline))
                         Text("+\(shown.formatted()) pt")
-                            .font(.system(size: 52, weight: .heavy, design: .rounded))
+                            .font(.dot(size: 52))
                             .contentTransition(.numericText())
                             .frame(maxWidth: .infinity)
+                    }
+                    if let teamKcal {
+                        PixelCard {
+                            Text("チームで").font(.dot(.subheadline)).foregroundStyle(Palette.muted)
+                            Text("\(formatKcal(teamKcal))kcal").font(.dot(size: 40, relativeTo: .largeTitle)).foregroundStyle(Palette.vermilion)
+                        }
                     }
                     breakdown(points)
                 } else if error == nil {
                     ProgressView("ポイントを数えています…")
                 }
-                Button { app.go(.ranking) } label: { IconLabel(icon: "crown", text: "ランキングへ") }
+                Button { app.go(.teams) } label: { IconLabel(icon: "cheer", text: "チームの記録へ") }
                     .buttonStyle(.pixel)
                 Button { app.go(.requests) } label: { IconLabel(icon: "runner", text: "助けに行く") }
                     .buttonStyle(.pixelSecondary)
@@ -59,7 +67,7 @@ struct FinishView: View {
                 PixelIcon(name: "snowflake", size: 18)
                 Text("スコップ: あなた \(points.scoops.mine)杯 ・ みんな \(points.scoops.total)杯")
             }
-            .font(.subheadline.weight(.bold))
+            .font(.dot(.subheadline))
         }
     }
 
@@ -67,7 +75,7 @@ struct FinishView: View {
         HStack {
             Text(title)
             Spacer()
-            Text("+\(value.formatted()) pt").font(.body.weight(.bold))
+            Text("+\(value.formatted()) pt").font(.dot(.body))
         }
     }
 
@@ -76,9 +84,21 @@ struct FinishView: View {
             let loaded = try await app.api.points(id: requestId, userId: app.userId)
             points = loaded
             coach.fanfare()
+            async let kcal = loadTeamKcal()
             await roll(to: loaded.total)
+            teamKcal = await kcal
         } catch {
             self.error = "ポイントを読めませんでした: \(error.localizedDescription)"
+        }
+    }
+
+    /// この雪かきのチームの kcal。読めなくてもポイントの画面は出す(カードを出さないだけ)。
+    private func loadTeamKcal() async -> Double? {
+        do {
+            return try await app.api.myTeams(userId: app.userId).teams.first { $0.id == requestId }?.teamCalories
+        } catch {
+            NSLog("チームの記録を読めませんでした: %@", error.localizedDescription)
+            return nil
         }
     }
 

@@ -1,4 +1,4 @@
-// サーバーの API が返す形(src/help-requests/views.ts・request-points.ts・ranking.ts と同じ名前)。
+// サーバーの API が返す形(src/help-requests/views.ts・request-points.ts・snow-map.ts と同じ名前)。
 // 一覧(大まかな情報だけ)と詳細(参加者にはすべて)を 1 つの型で受けるため、ない項目は nil にしている。
 
 import Foundation
@@ -117,23 +117,26 @@ struct RequestPoints: Decodable, Equatable {
     let scoops: Scoops
 }
 
-/// ランキングの 1 行。
-struct RankingEntry: Decodable, Identifiable, Equatable {
-    let rank: Int
-    let displayName: String
-    let points: Int
-    let isMe: Bool
+/// チームの記録(GET /api/teams/mine/:userId。src/help-requests/snow-map.ts の MyTeams と同じ形)。
+struct MyTeams: Decodable, Equatable {
+    struct Team: Decodable, Identifiable, Equatable {
+        let id: String
+        let finishedAt: String
+        let area: String
+        let members: [String]
+        let teamCalories: Double
+        let myCalories: Double
+    }
 
-    var id: String { "\(rank)-\(displayName)-\(points)" }
+    let totalCalories: Double
+    let teamCount: Int
+    let partners: Int
+    let teams: [Team]
 }
 
-/// ランキングの期間。
-enum RankingPeriod: String, CaseIterable, Identifiable {
-    case daily
-    case total
-
-    var id: String { rawValue }
-    var label: String { self == .daily ? "今日" : "これまで" }
+/// 本人確認の状態(GET /api/identity/:userId)。
+struct IdentityStatus: Decodable, Equatable {
+    let verified: Bool
 }
 
 /// サーバーの時刻(ISO 形式。ミリ秒つきも、なしも)を読む。
