@@ -61,7 +61,6 @@
         <h2><img class="ui-icon" src="./icons/pin.svg" alt="" aria-hidden="true" />位置の共有</h2>
         <p class="note">到着まで、お年寄りにあなたの位置が見えます。</p>
         <p id="share-status" class="note" role="status"></p>
-        <button id="share-fake" class="button secondary" type="button" hidden><img class="ui-icon" src="./icons/test.svg" alt="" aria-hidden="true" />デモ: 家に近づく</button>
       </section>
       <section id="sound-card" class="card center sound-card" aria-label="スマホを近づけて到着" hidden>
         <h2><img class="ui-icon" src="./icons/antenna.svg" alt="" aria-hidden="true" />お年寄りのスマホに近づけてね</h2>
@@ -70,7 +69,6 @@
         <p id="sound-status" role="status">合言葉を鳴らしています</p>
         <div class="button-row">
           <button id="sound-band" class="button secondary" type="button">聞こえる音にする</button>
-          <button id="sound-skip" class="button" type="button">スキップして到着</button>
         </div>
         <p id="sound-error" class="error" role="alert" hidden></p>
       </section>
@@ -79,6 +77,10 @@
         <button id="arrive-button" class="button" type="button">到着しました</button>
       </div>
       <p id="error" class="error" role="alert" hidden></p>
+      <div class="test-tools" aria-label="テスト用">
+        <button id="share-fake" class="test-tool" type="button" hidden>テスト: 家に近づく</button>
+        <button id="sound-skip" class="test-tool" type="button" hidden>テスト: スキップして到着</button>
+      </div>
     </main>
     <nav class="tab-bar" aria-label="若者のメニュー">
       <a href="./ranking.html?list=1">ランキング</a>

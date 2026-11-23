@@ -287,7 +287,6 @@
               <span id="scoop-count">0</span> 回 <span class="scoop-kg">/ 約 <span id="scoop-kg">0</span> kg</span>
             </p>
           </div>
-          <button id="scoop-fake" class="button secondary" type="button" hidden><img class="ui-icon" src="./icons/test.svg" alt="" aria-hidden="true" />揺れをまねる</button>
           <button id="sound-toggle" class="button secondary" type="button" aria-pressed="true"><img class="ui-icon" src="./icons/speaker.svg" alt="" aria-hidden="true" />音の実況: オン</button>
         </section>
         <button id="finish-button" class="button" type="button">雪かきを終える</button>
@@ -299,6 +298,9 @@
         <p class="note">完了すると、自動で結果が表示されます。</p>
       </section>
       <p id="error" class="error" role="alert" hidden></p>
+      <div class="test-tools" aria-label="テスト用">
+        <button id="scoop-fake" class="test-tool" type="button" hidden>テスト: 揺れをまねる</button>
+      </div>
     </main>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script type="module" src="./helper-working.js"></script>
