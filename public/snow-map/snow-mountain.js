@@ -13,7 +13,26 @@ const STEEP_UNTIL_KCAL = 400;
 const GENTLE_POWER = 0.7;
 /** カロリーが 0 でも見えるようにする、最低の高さ(m)。 */
 const MIN_HEIGHT_M = 6;
+/** 1 つの雪山の上限(m・倍率をかける前)。まとめた大きな雪山が、美唄の町より大きくならないように。 */
+export const MAX_RADIUS_M = 350;
+export const MAX_HEIGHT_M = 380;
 const METERS_PER_DEGREE = 111_320;
+
+/** 引いて見たときに大きくし始めるズームと、1 段引くごとの倍率。 */
+const SCALE_FROM_ZOOM = 14;
+const SCALE_PER_ZOOM = 2;
+/** このズームより引いたら、もう大きくしない(地図の方が小さくなり、雪山が美唄のあたりにあると分かる)。 */
+export const MAX_SCALE_ZOOM = 12;
+
+/**
+ * 見た目の大きさの倍率。寄って見ると 1 倍、引くと大きく、MAX_SCALE_ZOOM より引いたらそこで止める。
+ * @param {number} zoom 地図のズーム
+ * @returns {number}
+ */
+export function viewScale(zoom) {
+  const clamped = Math.max(MAX_SCALE_ZOOM, zoom);
+  return Math.max(1, SCALE_PER_ZOOM ** (SCALE_FROM_ZOOM - clamped));
+}
 
 /**
  * 1 つの雪山の大きさ(m)。
@@ -24,8 +43,8 @@ const METERS_PER_DEGREE = 111_320;
 export function mountainSize(pile, scale = 1) {
   const total = pile.members.reduce((sum, m) => sum + Math.max(0, m.calories), 0);
   const effective = total <= STEEP_UNTIL_KCAL ? total : STEEP_UNTIL_KCAL + (total - STEEP_UNTIL_KCAL) ** GENTLE_POWER;
-  const heightM = Math.max(MIN_HEIGHT_M, effective * METERS_PER_KCAL) * scale;
-  const radiusM = (BASE_RADIUS_M + Math.sqrt(total) * RADIUS_PER_SQRT_KCAL) * scale;
+  const heightM = Math.min(MAX_HEIGHT_M, Math.max(MIN_HEIGHT_M, effective * METERS_PER_KCAL)) * scale;
+  const radiusM = Math.min(MAX_RADIUS_M, BASE_RADIUS_M + Math.sqrt(total) * RADIUS_PER_SQRT_KCAL) * scale;
   return { heightM, radiusM };
 }
 

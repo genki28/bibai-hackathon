@@ -1,6 +1,10 @@
 // snow-mountain.js の型(TypeScript のテストから使うため)。
 export type Member = { readonly displayName: string; readonly calories: number };
 export const METERS_PER_KCAL: number;
+export const MAX_RADIUS_M: number;
+export const MAX_HEIGHT_M: number;
+export const MAX_SCALE_ZOOM: number;
+export function viewScale(zoom: number): number;
 export function mountainSize(pile: { readonly members: ReadonlyArray<{ readonly calories: number }> }, scale?: number): { heightM: number; radiusM: number };
 export function seedFromId(id: string): number;
 export function seededUnit(seed: number, index: number): number;

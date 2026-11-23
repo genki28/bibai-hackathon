@@ -8,7 +8,7 @@
 
 import * as maplibreModule from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.19.0/dist/maplibre-gl.mjs";
 import { createDemoMap } from "./demo-data.js";
-import { clusterPiles } from "./snow-mountain.js";
+import { clusterPiles, viewScale } from "./snow-mountain.js";
 import { createSnowMountainLayer } from "./snow-mountain-3d.js";
 
 const maplibregl = maplibreModule.default ?? maplibreModule;
@@ -21,10 +21,6 @@ const GROW_MS = 2600;
 const GROW_STAGGER_MS = 180;
 /** 縮尺が変わってまとまり方が変わったときに、育ち直す時間(ミリ秒)。 */
 const REGROW_MS = 700;
-/** この拡大率より引いて見たら、雪山を大きく見せ始める(1 段引くごとに 2 倍 = 画面の上ではほぼ同じ大きさのまま)。 */
-const SCALE_FROM_ZOOM = 14;
-const SCALE_PER_ZOOM = 2;
-const viewScale = (zoom) => Math.max(1, SCALE_PER_ZOOM ** (SCALE_FROM_ZOOM - zoom));
 /** おにぎり 1 個のカロリー(kcal。たとえに使う目安)。 */
 const ONIGIRI_KCAL = 180;
 /** 棒グラフの色(白い背景でも見える色)。 */
