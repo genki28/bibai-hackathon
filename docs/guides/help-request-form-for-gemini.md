@@ -28,7 +28,7 @@ HTML の中の、次の **id と name / value はそのまま残してくださ�
 | `id="close-button"` | 「とじる」ボタン |
 | `id="error"` | エラーを出す場所 |
 | `id="preview-note"` | おためし表示の注意書き |
-| `name="amount"` と `value="little"` / `"normal"` / `"lots"` | 雪の多さ(すこし / ふつう / たくさん) |
+| `name="amount"` と `value="little"` / `"normal"` / `"lots"` | 雪の多さ(すこし / ふつう / たくさん)。ラジオボタンでも選択欄(`<select>`)でもよい |
 
 ## 足してよい入力欄(任意)
 
@@ -40,8 +40,10 @@ HTML の中の、次の **id と name / value はそのまま残してくださ�
 | 住所 | `name="address"` | `<input type="text" name="address">` | 100 文字まで。「北海道美唄市東1条南2丁目」のように書くと、若者の一覧に「東」のような地区名だけが出る |
 | 雪の深さ | `name="depth"` | `<input type="radio" name="depth" value="knee">ひざ` など | 選んだ value の文字(20 文字まで)。value は英語の短い言葉にする(例: `ankle` / `knee` / `waist`) |
 | 道具 | `name="tools"` | `<input type="text" name="tools">` | 100 文字まで。例「スコップあり」 |
+| 道具(チェックと数) | `data-tool="道具の名前"` と `.tool-count` | `<div class="tool-item"><input type="checkbox" data-tool="ママさんダンプ"> <input class="tool-count" type="number"></div>` | `name="tools"` がないときは、チェックした道具を「ママさんダンプ×1、…」にまとめて送る(数は同じ `.tool-item` の中の `.tool-count`) |
 | 位置(緯度・経度) | `name="lat"` と `name="lng"` | `<input type="hidden" name="lat">` `<input type="hidden" name="lng">` | 2 つそろったときだけ送る |
 | 現在地ボタン | `id="use-location-button"` | `<button type="button" id="use-location-button">いまいる場所を使う</button>` | 押すと、上の `lat` / `lng` に現在地が入る(上の 2 つの hidden と一緒に置く) |
+| 現在地の結果 | `id="location-display"` / `id="location-map"` | `<p id="location-display"></p>` `<div id="location-map" class="map-box" hidden></div>` | 結果の文字(「現在地を入れました(誤差 約 12m)」)と、ピンを立てた地図。地図には Leaflet の読み込みが必要(今のフォームを見本に) |
 
 位置が送られないときは、地図には美唄市の中心あたりが出ます。名前・住所・正確な位置は、参加した若者にだけ見せます。
 
