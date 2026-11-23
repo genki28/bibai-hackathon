@@ -24,8 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import jp.bibai.yukikaki.helper.R
-import jp.bibai.yukikaki.helper.core.scoopKg
-import jp.bibai.yukikaki.helper.data.RequestPoints
+import jp.bibai.yukikaki.helper.data.PileMember
 import jp.bibai.yukikaki.helper.service.HelperTracker
 import jp.bibai.yukikaki.helper.sound.Effects
 import jp.bibai.yukikaki.helper.ui.AppDeps
@@ -36,6 +35,9 @@ import jp.bibai.yukikaki.helper.ui.PixelButton
 import jp.bibai.yukikaki.helper.ui.PixelCard
 import jp.bibai.yukikaki.helper.ui.Screen
 import jp.bibai.yukikaki.helper.ui.ScreenFrame
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlin.math.cos
 import kotlin.math.sin
@@ -46,82 +48,116 @@ private const val FIREWORKS_MS = 3500
 private const val RETRY_MS = 3000L
 private const val MAX_RETRIES = 5
 
-/** 7. お疲れ様。獲得ポイントを派手に(数字が回ってから止まる・花火・ファンファーレ)。 */
+/** 一緒にやった人 1 人(kcal がわからなければ null)。 */
+private data class Partner(val name: String, val calories: Int?)
+
+/** お疲れ様の画面に出す消費カロリー。 */
+private data class FinishCalories(val team: Int, val mine: Int, val partners: List<Partner>)
+
+/**
+ * 7. お疲れ様(第 3 版)。「CLEAR」+ チームの消費カロリー(大きく・数字が回る・花火・ファンファーレ)+ あなたの kcal
+ * + 一緒にやった人と kcal。ポイントは出さない。演出は 1 回だけ。
+ */
 @Composable
 fun FinishScreen(deps: AppDeps, id: String, go: (Screen) -> Unit) {
     val context = LocalContext.current
-    var points by remember { mutableStateOf<RequestPoints?>(null) }
+    var calories by remember { mutableStateOf<FinishCalories?>(null) }
     var error by remember { mutableStateOf("") }
-    var teamCalories by remember { mutableStateOf<Int?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(id) {
         HelperTracker.stopAll(context)
         deps.prefs.markSeenFinish(id)
-        // 終わった直後は、まだ「終わっていません」と返ることがあるので、少し待って読み直す
-        repeat(MAX_RETRIES) { attempt ->
+        // 終わった直後は、まだ全員の kcal が届いていないことがあるので、数秒あけて読み直す
+        for (attempt in 1..MAX_RETRIES) {
             try {
-                points = deps.api.points(id, deps.userId)
+                val latest = loadCalories(deps, id)
+                if (latest != null) calories = latest
                 error = ""
-                // チームの消費カロリー(チームの記録の中の、この依頼のぶん)
-                teamCalories = runCatching { deps.api.myTeams(deps.userId).teams.firstOrNull { it.id == id }?.teamCalories }.getOrNull()
-                return@LaunchedEffect
+                if (latest != null && latest.isComplete()) break
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                error = "ポイントを読めませんでした: ${e.message}"
-                if (attempt < MAX_RETRIES - 1) delay(RETRY_MS)
+                error = "消費カロリーを読めませんでした: ${e.message}"
             }
+            // 最初の 1 回が読めたら、ローディングを外して見せる(続きは裏で読み直す)
+            if (calories != null) isLoading = false
+            if (attempt < MAX_RETRIES) delay(RETRY_MS)
         }
+        if (calories == null && error.isEmpty()) error = "まだ記録が届いていません。あとで「チームの記録」で見られます。"
+        isLoading = false
     }
 
-    ScreenFrame("お疲れ様") {
+    ScreenFrame("お疲れ様", isLoading = isLoading) {
+        val current = calories
         Box(Modifier.fillMaxWidth().height(180.dp), contentAlignment = Alignment.Center) {
-            if (points != null) Fireworks(Modifier.fillMaxWidth().height(180.dp))
+            if (current != null) Fireworks(Modifier.fillMaxWidth().height(180.dp))
             Text("CLEAR", color = Palette.Vermilion, fontSize = 56.sp)
         }
         ErrorText(error)
-        teamCalories?.let { kcal ->
-            PixelCard {
-                Text("チームで", color = Palette.Muted, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                Text("${format(kcal)} kcal", color = Palette.Vermilion, fontSize = 36.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-            }
-        }
-        points?.let { PointsView(it, deps.prefs.isSoundOn) }
+        if (current != null) CaloriesView(current, deps.prefs.isSoundOn)
         PixelButton("チームの記録へ", icon = R.drawable.ic_cup, isPrimary = true, onClick = { go(Screen.Teams) })
         PixelButton("助けに行く", onClick = { go(Screen.HelpList) })
     }
 }
 
+/** チームの kcal が入っていて、一緒にやった人の kcal もそろったか。 */
+private fun FinishCalories.isComplete(): Boolean = team > 0 && mine > 0 && partners.all { (it.calories ?: 0) > 0 }
+
+/**
+ * GET /api/teams/mine/{userId} の、この依頼の teamCalories と myCalories。
+ * 一人ひとりの kcal は GET /api/snow-map の同じ依頼から読む(読めなければ名前だけ)。まだ記録になければ null。
+ */
+private suspend fun loadCalories(deps: AppDeps, id: String): FinishCalories? = coroutineScope {
+    val piles = async { runCatching { deps.api.snowPiles() }.getOrNull() }
+    val team = deps.api.myTeams(deps.userId).teams.firstOrNull { it.id == id } ?: return@coroutineScope null
+    val pileMembers = piles.await()?.firstOrNull { it.id == id }?.members
+    FinishCalories(team.teamCalories, team.myCalories, partnersOf(team.members, pileMembers, deps.prefs.displayName))
+}
+
+/** 一緒にやった人(自分の名前を 1 人ぶんだけ除く)。 */
+private fun partnersOf(names: List<String>, pileMembers: List<PileMember>?, myName: String?): List<Partner> {
+    val all = pileMembers?.map { Partner(it.displayName, it.calories) } ?: names.map { Partner(it, null) }
+    val myIndex = all.indexOfFirst { it.name == myName }
+    return if (myIndex < 0) all else all.filterIndexed { index, _ -> index != myIndex }
+}
+
 @Composable
-private fun PointsView(points: RequestPoints, isSoundOn: Boolean) {
+private fun CaloriesView(calories: FinishCalories, isSoundOn: Boolean) {
+    PixelCard {
+        Text("チームで", color = Palette.Navy, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        RollingKcal(calories.team, isSoundOn)
+    }
+    PixelCard {
+        LabelValue("あなた", "${format(calories.mine)} kcal")
+    }
+    if (calories.partners.isNotEmpty()) {
+        PixelCard {
+            Text("一緒にやった人", color = Palette.Navy, fontSize = 18.sp)
+            calories.partners.forEach { partner ->
+                LabelValue("${partner.name} さん", partner.calories?.let { "${format(it)} kcal" } ?: "—")
+            }
+        }
+    }
+}
+
+/** 数字が回ってから止まる(演出は 1 回だけ。値が後から増えたら、そこまで回す)。 */
+@Composable
+private fun RollingKcal(target: Int, isSoundOn: Boolean) {
     val roll = remember { Animatable(0f) }
-    LaunchedEffect(points.total) {
-        roll.animateTo(points.total.toFloat(), tween(ROLL_MS, easing = FastOutSlowInEasing))
-        if (isSoundOn) Effects.fanfare()
+    var hasPlayedFanfare by remember { mutableStateOf(false) }
+    LaunchedEffect(target) {
+        roll.animateTo(target.toFloat(), tween(ROLL_MS, easing = FastOutSlowInEasing))
+        if (isSoundOn && !hasPlayedFanfare) Effects.fanfare()
+        hasPlayedFanfare = true
     }
-    PixelCard {
-        Text("獲得ポイント", color = Palette.Navy, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-        Text(
-            "${format(roll.value.toInt())} pt",
-            color = Palette.Vermilion,
-            fontSize = 44.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
-    PixelCard {
-        Text("内訳", color = Palette.Navy, fontSize = 18.sp)
-        LabelValue("雪かき", "${format(points.workPoints)} pt")
-        LabelValue("評価", points.stars?.let { "${format(points.ratingPoints)} pt(星 $it)" } ?: "まだ届いていません")
-        LabelValue(
-            "再会",
-            if (points.reunionPoints > 0) "${format(points.reunionPoints)} pt(${points.reunionPartners.joinToString("、")}さんと再会!)" else "なし",
-        )
-        LabelValue("初回ボーナス", "${format(points.firstFinishBonus)} pt")
-    }
-    PixelCard {
-        Text("スコップの回数", color = Palette.Navy, fontSize = 18.sp)
-        LabelValue("あなた", "${format(points.myScoops)} 振り(約 ${format(scoopKg(points.myScoops))} kg)")
-        LabelValue("みんな", "${format(points.totalScoops)} 振り(約 ${format(scoopKg(points.totalScoops))} kg)")
-    }
+    Text(
+        "${format(roll.value.toInt())} kcal",
+        color = Palette.Vermilion,
+        fontSize = 44.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 /** 花火の 1 つの粒。 */

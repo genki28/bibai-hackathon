@@ -100,19 +100,37 @@ private fun MapLifecycle(mapView: MapView) {
     }
 }
 
+/**
+ * しるしを置く。同じ id のしるしは作り直さず、位置だけ動かす(絵は id・アイコン・文字が変わったときだけ作る)。
+ * 位置が変わるたびにビットマップを作り直すと重いので、MapView の tag に覚えておく。
+ */
 private fun placeMarkers(view: MapView, markers: List<MapMarker>) {
-    view.overlays.removeAll { it is Marker }
+    @Suppress("UNCHECKED_CAST")
+    val placed = (view.tag as? MutableMap<String, Pair<MapMarker, Marker>>) ?: mutableMapOf<String, Pair<MapMarker, Marker>>().also { view.tag = it }
+    var isChanged = false
+    val wantedIds = markers.map { it.id }.toSet()
+    placed.keys.filter { it !in wantedIds }.forEach { id ->
+        placed.remove(id)?.let { (_, marker) -> view.overlays.remove(marker) }
+        isChanged = true
+    }
     markers.forEach { item ->
-        val marker = Marker(view).apply {
-            position = item.point.toGeoPoint()
-            icon = labeledIcon(view.context, item.icon, item.label)
+        val existing = placed[item.id]
+        if (existing != null && existing.first == item) return@forEach
+        val marker = existing?.second ?: Marker(view).apply {
             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
             setInfoWindow(null)
-            title = item.label
+            view.overlays.add(this)
         }
-        view.overlays.add(marker)
+        val previous = existing?.first
+        if (previous == null || previous.icon != item.icon || previous.label != item.label) {
+            marker.icon = labeledIcon(view.context, item.icon, item.label)
+            marker.title = item.label
+        }
+        marker.position = item.point.toGeoPoint()
+        placed[item.id] = item to marker
+        isChanged = true
     }
-    view.invalidate()
+    if (isChanged) view.invalidate()
 }
 
 /** アイコンの下に文字の札を付けた絵を作る(地図のしるし用)。 */

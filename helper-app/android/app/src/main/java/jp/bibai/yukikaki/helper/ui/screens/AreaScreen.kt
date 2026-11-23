@@ -52,7 +52,9 @@ import jp.bibai.yukikaki.helper.ui.PixelShape
 import jp.bibai.yukikaki.helper.ui.Screen
 import jp.bibai.yukikaki.helper.ui.ScreenFrame
 import jp.bibai.yukikaki.helper.ui.toGeoPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.osmdroid.util.TileSystem
 import org.osmdroid.views.MapView
 import kotlin.math.hypot
@@ -89,11 +91,10 @@ fun AreaScreen(deps: AppDeps, id: String, go: (Screen) -> Unit) {
         }
     }
 
-    ScreenFrame("範囲を記録", isScrollable = false) {
+    ScreenFrame("範囲を記録", isScrollable = false, isLoading = (request == null && error.isEmpty()) || isBusy) {
         val current = request
         if (current == null) {
             ErrorText(error)
-            Text("読み込んでいます…", color = Palette.Navy)
             return@ScreenFrame
         }
         BrushEditor(home = current.home, error = error, isBusy = isBusy) { areaM2 ->
@@ -122,7 +123,15 @@ private fun ColumnScope.BrushEditor(home: LatLng, error: String, isBusy: Boolean
     var mapView by remember { mutableStateOf<MapView?>(null) }
     var mapVersion by remember { mutableIntStateOf(0) }
 
-    val areaM2 = remember(strokes) { paintedAreaM2(strokes.map { it.toLocal(home) }).roundToInt() }
+    var areaM2 by remember { mutableIntStateOf(0) }
+    var isCalculating by remember { mutableStateOf(false) }
+    // 面積の計算(マス目を数える)は重いので、裏の処理で行う。線が変わるたびに計算し直す(前の計算は取り消す)
+    LaunchedEffect(strokes, home) {
+        isCalculating = true
+        val local = strokes.map { it.toLocal(home) }
+        areaM2 = withContext(Dispatchers.Default) { paintedAreaM2(local).roundToInt() }
+        isCalculating = false
+    }
     val isTooLarge = areaM2 > BrushArea.MAX_AREA_M2
 
     IconLine(
@@ -202,7 +211,7 @@ private fun ColumnScope.BrushEditor(home: LatLng, error: String, isBusy: Boolean
     PixelButton(
         "雪かきを完了する",
         isPrimary = true,
-        isEnabled = strokes.isNotEmpty() && !isTooLarge && !isBusy,
+        isEnabled = strokes.isNotEmpty() && !isTooLarge && !isBusy && !isCalculating,
         icon = R.drawable.ic_check,
         onClick = { onFinish(areaM2) },
     )

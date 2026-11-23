@@ -35,9 +35,13 @@ import jp.bibai.yukikaki.helper.ui.Screen
 import jp.bibai.yukikaki.helper.ui.ScreenFrame
 import jp.bibai.yukikaki.helper.ui.TestButton
 import jp.bibai.yukikaki.helper.ui.TestTools
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.delay
 
-private const val WORKING_POLL_MS = 3000L
+/** 読み直しの間隔。スコップ計(裏の仕組み)も 10 秒ごとに最新を受け取るので、画面は 5 秒ごとで十分。 */
+private const val WORKING_POLL_MS = 5000L
 private const val TICK_MS = 1000L
 
 /** 5. 雪かき中。スコップ計はいつもオン(画面を閉じても数える)。 */
@@ -48,8 +52,6 @@ fun WorkingScreen(deps: AppDeps, id: String, isWaitingLeaderAtFirst: Boolean, go
     var error by remember { mutableStateOf("") }
     var isWaitingLeader by remember { mutableStateOf(isWaitingLeaderAtFirst) }
     var isSoundOn by remember { mutableStateOf(deps.prefs.isSoundOn) }
-    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    val tracker by HelperTracker.state.collectAsState()
 
     suspend fun reload(): Boolean {
         val latest = deps.api.detail(id, deps.userId)
@@ -70,12 +72,6 @@ fun WorkingScreen(deps: AppDeps, id: String, isWaitingLeaderAtFirst: Boolean, go
         }
     }
     PollEffect(id, WORKING_POLL_MS) { reload() }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(TICK_MS)
-            now = System.currentTimeMillis()
-        }
-    }
 
     // 通知の許可(と、裏で動かすための位置の許可)を求めてから、スコップ計を始める
     val permissions = buildList {
@@ -84,11 +80,10 @@ fun WorkingScreen(deps: AppDeps, id: String, isWaitingLeaderAtFirst: Boolean, go
     }.toTypedArray()
     RequestPermissionsThen(id, permissions) { ctx -> HelperTracker.startScoops(ctx, id, deps.userId) }
 
-    ScreenFrame("雪かき中") {
+    ScreenFrame("雪かき中", isLoading = request == null && error.isEmpty()) {
         val current = request
         if (current == null) {
             ErrorText(error)
-            Text("読み込んでいます…", color = Palette.Navy)
             return@ScreenFrame
         }
         if (isWaitingLeader && !current.canFinish(deps.userId)) {
@@ -98,14 +93,7 @@ fun WorkingScreen(deps: AppDeps, id: String, isWaitingLeaderAtFirst: Boolean, go
             }
             return@ScreenFrame
         }
-        val startedMs = parseIsoMs(current.startedAt)
-        Text(
-            if (startedMs != null) formatElapsed(now - startedMs) else "--:--",
-            color = Palette.Navy,
-                        fontSize = 44.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        ElapsedClock(parseIsoMs(current.startedAt))
         if (current.leaderUserId != null) {
             IconLine(
                 R.drawable.ic_crown,
@@ -113,14 +101,7 @@ fun WorkingScreen(deps: AppDeps, id: String, isWaitingLeaderAtFirst: Boolean, go
                 isBold = true,
             )
         }
-        MovedCard(current, deps.userId, tracker.scoopCount)
-        PixelCard {
-            LabelValue("あなた", "${format(tracker.scoopCount)}杯(約${format(scoopKg(tracker.scoopCount))}kg)")
-            LabelValue("消費カロリー", "約${format(tracker.calories)}kcal")
-            Text(tracker.scoopStatus.ifEmpty { "スコップ計を準備しています…" }, color = Palette.Navy)
-            Text("スマホを上着のポケットに入れて、そのまま雪かきしてね。画面を閉じても数えます。", color = Palette.Navy)
-        }
-        ErrorText(tracker.backgroundWarning)
+        TrackerCards(current, deps.userId)
         Text("いっしょに: ${current.helpers.joinToString("、") { it.displayName }}", color = Palette.Navy)
         ErrorText(error)
         PixelButton(
@@ -138,6 +119,45 @@ fun WorkingScreen(deps: AppDeps, id: String, isWaitingLeaderAtFirst: Boolean, go
         })
         TestTools { TestButton("テスト: 揺れをまねる", onClick = { HelperTracker.fakeScoop(context) }) }
     }
+}
+
+/**
+ * 経過時間(1 秒ごとに進む)。時計の数字だけをここで作り直す(画面全体は作り直さない)。
+ * アプリが裏に回っている間は止める。
+ */
+@Composable
+private fun ElapsedClock(startedMs: Long?) {
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                now = System.currentTimeMillis()
+                delay(TICK_MS)
+            }
+        }
+    }
+    Text(
+        if (startedMs != null) formatElapsed(now - startedMs) else "--:--",
+        color = Palette.Navy,
+        fontSize = 44.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+/** スコップ計の数字(すくうたびに変わる)。ここだけを作り直す。 */
+@Composable
+private fun TrackerCards(request: MemberRequest, userId: String) {
+    val tracker by HelperTracker.state.collectAsState()
+    MovedCard(request, userId, tracker.scoopCount)
+    PixelCard {
+        LabelValue("あなた", "${format(tracker.scoopCount)}杯(約${format(scoopKg(tracker.scoopCount))}kg)")
+        LabelValue("消費カロリー", "約${format(tracker.calories)}kcal")
+        Text(tracker.scoopStatus.ifEmpty { "スコップ計を準備しています…" }, color = Palette.Navy)
+        Text("スマホを上着のポケットに入れて、そのまま雪かきしてね。画面を閉じても数えます。", color = Palette.Navy)
+    }
+    ErrorText(tracker.backgroundWarning)
 }
 
 /** みんなで動かした雪 約〇kg(〇杯)と、たとえ。 */

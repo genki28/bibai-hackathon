@@ -19,7 +19,8 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Build
 import android.os.IBinder
-import android.os.Looper
+import android.os.Handler
+import android.os.HandlerThread
 import android.os.PowerManager
 import android.speech.tts.TextToSpeech
 import android.util.Log
@@ -48,7 +49,7 @@ import jp.bibai.yukikaki.helper.data.Prefs
 import jp.bibai.yukikaki.helper.sound.Effects
 import jp.bibai.yukikaki.helper.ui.MainActivity
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.android.asCoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -63,10 +64,17 @@ import java.util.Locale
  * - スコップ計: 加速度(TYPE_LINEAR_ACCELERATION。なければ TYPE_ACCELEROMETER と重力の推定)で数え、10 秒ごとに送る
  * - 消費カロリー: 同じ加速度から数え(core/Calories.kt)、回数と一緒に送る
  * - 通知「雪かき中: 〇杯 / 約〇kg」を出し続け、すくうたびに「ザクッ」、節目は TextToSpeech で読み上げる
+ * - これらはすべて裏のスレッド(workerThread)で動かす。画面(メインスレッド)ではセンサーの計算をしない
  */
 class HelperService : Service(), SensorEventListener {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    /**
+     * 裏の処理用の 1 本のスレッド。センサー(1 秒に 50 回ほど)・位置・送信・音はすべてここで動かし、
+     * 画面(メインスレッド)を重くしない。1 本だけなので、変数を同時に書き換えることはない。
+     */
+    private val workerThread = HandlerThread("helper-worker").apply { start() }
+    private val worker = Handler(workerThread.looper)
+    private val scope = CoroutineScope(SupervisorJob() + worker.asCoroutineDispatcher())
     private val api = ApiClient()
     private lateinit var prefs: Prefs
 
@@ -95,7 +103,7 @@ class HelperService : Service(), SensorEventListener {
     private var lastNotifiedAt = 0L
 
     private var tts: TextToSpeech? = null
-    private var isTtsReady = false
+    @Volatile private var isTtsReady = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -110,15 +118,16 @@ class HelperService : Service(), SensorEventListener {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // フォアグラウンドにするのは、すぐ(ここで)行う。中身の処理は裏のスレッドへ
+        if (intent?.action == ACTION_LOCATION || intent?.action == ACTION_SCOOPS) promote()
+        worker.post { handle(intent) }
+        return START_NOT_STICKY
+    }
+
+    private fun handle(intent: Intent?) {
         when (intent?.action) {
-            ACTION_LOCATION -> {
-                promote()
-                startLocation(intent)
-            }
-            ACTION_SCOOPS -> {
-                promote()
-                startScoops(intent)
-            }
+            ACTION_LOCATION -> startLocation(intent)
+            ACTION_SCOOPS -> startScoops(intent)
             ACTION_DEMO_STEP -> demoStep()
             ACTION_FAKE_SCOOP -> addScoops(scoopState.copy(count = scoopState.count + 1))
             ACTION_SOUND -> setSound(intent.getBooleanExtra(EXTRA_SOUND_ON, true))
@@ -131,15 +140,18 @@ class HelperService : Service(), SensorEventListener {
             // 仕組みに止められて、また起こされたとき(intent が null)は、覚えていないので止める
             else -> if (!isLocationOn && !isScoopOn) stopSelf()
         }
-        return START_NOT_STICKY
     }
 
     override fun onDestroy() {
-        stopLocation()
-        stopScoopsQuietly()
-        tts?.shutdown()
+        worker.post {
+            stopLocation()
+            stopScoopsQuietly()
+            tts?.shutdown()
+            HelperTracker.update { TrackerState() }
+        }
         scope.cancel()
-        HelperTracker.update { TrackerState() }
+        // たまっている処理(上の後片付け)を終えてから、スレッドを止める
+        workerThread.quitSafely()
         super.onDestroy()
     }
 
@@ -243,7 +255,7 @@ class HelperService : Service(), SensorEventListener {
                 .filter { runCatching { manager.isProviderEnabled(it) }.getOrDefault(false) }
                 .forEach { provider ->
                     runCatching {
-                        manager.requestLocationUpdates(provider, LOCATION_UPDATE_MS, 0f, locationListener, Looper.getMainLooper())
+                        manager.requestLocationUpdates(provider, LOCATION_UPDATE_MS, 0f, locationListener, workerThread.looper)
                     }.onFailure { Log.e(TAG, "位置を読み始められませんでした($provider)", it) }
                 }
         }
@@ -319,7 +331,7 @@ class HelperService : Service(), SensorEventListener {
         val linear = sensors.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)
         val sensor = linear ?: sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         isUsingGravityFallback = linear == null
-        val status = if (sensor != null && sensors.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME)) {
+        val status = if (sensor != null && sensors.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME, worker)) {
             "スコップ計: 数えています"
         } else {
             "この端末ではスコップ計が使えません"

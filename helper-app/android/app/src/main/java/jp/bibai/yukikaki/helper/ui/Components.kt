@@ -53,6 +53,19 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import jp.bibai.yukikaki.helper.R
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 
 // 色・文字・ボタン・枠など、どの画面でも使う部品。見た目は Web(public/liff/snow-ui.css・snow-pixel.css)に合わせる:
@@ -144,26 +157,31 @@ fun BrandLine() {
     }
 }
 
-/** 画面の土台(白い背景・上にブランドの行と大きな見出し・縦に並べてスクロール)。 */
+/** 画面の土台(白い背景・上にブランドの行と大きな見出し・縦に並べてスクロール)。isLoading なら真ん中にローディングを重ねる。 */
 @Composable
 fun ScreenFrame(
     title: String,
     modifier: Modifier = Modifier,
     isScrollable: Boolean = true,
+    isLoading: Boolean = false,
     bottomBar: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(modifier.fillMaxSize().background(Palette.White)) {
-        BrandLine()
-        val scroll = if (isScrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier
-        Column(
-            modifier = Modifier.weight(1f).fillMaxWidth().then(scroll).padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(title, fontSize = 32.sp, modifier = Modifier.padding(top = 4.dp, bottom = 8.dp))
-            content()
+    Box(modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().background(Palette.White)) {
+            BrandLine()
+            val scroll = if (isScrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier
+            Column(
+                modifier = Modifier.weight(1f).fillMaxWidth().then(scroll).padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(title, fontSize = 32.sp, modifier = Modifier.padding(top = 4.dp, bottom = 8.dp))
+                content()
+            }
+            bottomBar?.invoke()
         }
-        bottomBar?.invoke()
+        // 通信を待つ間・画面が変わる間は、上にかぶせて押せなくする
+        if (isLoading) LoadingOverlay()
     }
 }
 
@@ -310,11 +328,54 @@ fun ErrorText(message: String) {
     Text(message, color = Palette.Vermilion)
 }
 
-/** 読み込み中。 */
+private const val SPIN_MS = 1200
+private const val LOADING_TEXT = "読み込み中…"
+
+/** 回る雪の結晶 + 文字(画面の真ん中に出すローディング)。 */
 @Composable
-fun LoadingBox(text: String = "読み込んでいます…") {
-    Box(Modifier.fillMaxSize().background(Palette.White), contentAlignment = Alignment.Center) {
+fun LoadingSpinner(text: String = LOADING_TEXT) {
+    val spin = rememberInfiniteTransition(label = "spin")
+    val angle = spin.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(SPIN_MS, easing = LinearEasing)),
+        label = "angle",
+    )
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // 角度は描く段階だけで読む(画面全体を作り直さない)
+        PixelIcon(R.drawable.ic_snowflake, size = 48, modifier = Modifier.graphicsLayer { rotationZ = angle.value })
         Text(text, color = Palette.Navy, fontSize = 18.sp)
+    }
+}
+
+/** 画面いっぱいのローディング(白い背景)。 */
+@Composable
+fun LoadingBox(text: String = LOADING_TEXT) {
+    Box(Modifier.fillMaxSize().background(Palette.White), contentAlignment = Alignment.Center) {
+        LoadingSpinner(text)
+    }
+}
+
+/** 画面の上にかぶせるローディング。下のボタンは押せない(触っても何も起きない)。 */
+@Composable
+fun LoadingOverlay(text: String = LOADING_TEXT) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Palette.White.copy(alpha = 0.85f))
+            .pointerInput(Unit) {
+                // 触ったことを、ここで全部受け止める
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false).consume()
+                    do {
+                        val event = awaitPointerEvent()
+                        event.changes.forEach { it.consume() }
+                    } while (event.changes.any { it.pressed })
+                }
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        LoadingSpinner(text)
     }
 }
 
@@ -347,17 +408,29 @@ private fun TabItem(text: String, @DrawableRes icon: Int, isSelected: Boolean, o
 }
 
 /**
- * intervalMs ごとに block をくり返す(画面にいる間だけ)。block が true を返したら止める。
+ * intervalMs ごとに block をくり返す(画面にいて、アプリが見えている間だけ)。block が true を返したら止める。
+ * アプリが裏に回ったら止め、戻ってきたらまた始める(見えない画面で読み直さない)。
+ * 1 回ずつ順番に動くので、前の読み直しが終わる前に次が始まる(重なる)ことはない。
  * 失敗しても止めない(電波が戻ったら続きから)。
  */
 @Composable
 fun PollEffect(key: Any, intervalMs: Long, block: suspend () -> Boolean) {
     val current = rememberUpdatedState(block)
-    LaunchedEffect(key) {
-        while (true) {
-            delay(intervalMs)
-            val shouldStop = runCatching { current.value() }.getOrDefault(false)
-            if (shouldStop) break
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(key, lifecycle) {
+        var isStopped = false
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (!isStopped) {
+                delay(intervalMs)
+                val shouldStop = try {
+                    current.value()
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    false
+                }
+                if (shouldStop) isStopped = true
+            }
         }
     }
 }

@@ -61,14 +61,12 @@ fun TeamsScreen(deps: AppDeps, go: (Screen) -> Unit) {
 
     ScreenFrame(
         title = "チームの記録",
+        isLoading = teams == null && error.isEmpty(),
         bottomBar = { BottomTabs(Tab.TEAMS, onHelp = { go(Screen.HelpList) }, onTeams = {}) },
     ) {
         ErrorText(error)
         val current = teams
-        when {
-            current == null && error.isEmpty() -> Text("読み込んでいます…")
-            current != null -> TeamsSummary(current)
-        }
+        if (current != null) TeamsSummary(current)
         PixelButton("美唄の雪山マップを見る", icon = R.drawable.ic_pin, onClick = {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("${deps.api.baseUrl}/snow-map.html"))
             try {

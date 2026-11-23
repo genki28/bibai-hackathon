@@ -54,11 +54,10 @@ fun GatherScreen(deps: AppDeps, id: String, go: (Screen) -> Unit) {
     }
     PollEffect(id, GATHER_POLL_MS) { reload() }
 
-    ScreenFrame("集合") {
+    ScreenFrame("集合", isLoading = (request == null && error.isEmpty()) || isBusy) {
         val current = request
         if (current == null) {
             ErrorText(error)
-            Text("読み込んでいます…", color = Palette.Navy)
             return@ScreenFrame
         }
         Text(

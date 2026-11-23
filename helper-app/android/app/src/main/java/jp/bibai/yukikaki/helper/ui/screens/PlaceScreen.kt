@@ -79,11 +79,10 @@ fun PlaceScreen(deps: AppDeps, id: String, go: (Screen) -> Unit) {
         }
     }
 
-    ScreenFrame("目的地") {
+    ScreenFrame("目的地", isLoading = (request == null && error.isEmpty()) || isBusy) {
         val current = request
         if (current == null) {
             ErrorText(error)
-            Text("読み込んでいます…", color = Palette.Navy)
             return@ScreenFrame
         }
         val markers = buildList {
@@ -106,7 +105,7 @@ fun PlaceScreen(deps: AppDeps, id: String, go: (Screen) -> Unit) {
             LabelValue("参加", "${current.helpers.size}/${current.capacity} 人")
         }
         ErrorText(error)
-        PixelButton("到着しました", icon = R.drawable.ic_check, isPrimary = true, onClick = { go(Screen.Arrival(id)) })
+        PixelButton("到着しました", icon = R.drawable.ic_check, isPrimary = true, isEnabled = !isBusy, onClick = { go(Screen.Arrival(id)) })
         PixelButton("参加をやめる", isEnabled = !isBusy, onClick = {
             isBusy = true
             scope.launch {

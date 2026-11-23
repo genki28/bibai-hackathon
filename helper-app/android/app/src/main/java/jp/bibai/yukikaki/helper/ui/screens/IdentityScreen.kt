@@ -11,6 +11,7 @@ import android.webkit.WebViewClient
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,6 +32,7 @@ import androidx.core.content.ContextCompat
 import jp.bibai.yukikaki.helper.ui.AppDeps
 import jp.bibai.yukikaki.helper.ui.BrandLine
 import jp.bibai.yukikaki.helper.ui.ErrorText
+import jp.bibai.yukikaki.helper.ui.LoadingOverlay
 import jp.bibai.yukikaki.helper.ui.Palette
 import jp.bibai.yukikaki.helper.ui.PollEffect
 import jp.bibai.yukikaki.helper.ui.Screen
@@ -98,29 +100,33 @@ fun IdentityScreen(deps: AppDeps, id: String, go: (Screen) -> Unit) {
         }
     }
 
-    Column(Modifier.fillMaxSize().background(Palette.White)) {
-        BrandLine()
-        ErrorText(error)
-        if (isCameraAsked) {
-            IdentityWebView(url, chromeClient, Modifier.weight(1f).fillMaxWidth())
-        } else {
-            Column(Modifier.weight(1f)) {}
-        }
-        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp)) {
-            TestButton("参加をやめる", isEnabled = !isBusy, onClick = {
-                isBusy = true
-                scope.launch {
-                    try {
-                        deps.api.leave(id, deps.userId)
-                        go(Screen.HelpList)
-                    } catch (e: Exception) {
-                        error = "参加をやめられませんでした: ${e.message}"
-                    } finally {
-                        isBusy = false
+    Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().background(Palette.White)) {
+            BrandLine()
+            ErrorText(error)
+            if (isCameraAsked) {
+                IdentityWebView(url, chromeClient, Modifier.weight(1f).fillMaxWidth())
+            } else {
+                Column(Modifier.weight(1f)) {}
+            }
+            Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp)) {
+                TestButton("参加をやめる", isEnabled = !isBusy, onClick = {
+                    isBusy = true
+                    scope.launch {
+                        try {
+                            deps.api.leave(id, deps.userId)
+                            go(Screen.HelpList)
+                        } catch (e: Exception) {
+                            error = "参加をやめられませんでした: ${e.message}"
+                        } finally {
+                            isBusy = false
+                        }
                     }
-                }
-            })
+                })
+            }
         }
+        // 参加をやめる通信を待つ間は、押せなくしてローディングを出す
+        if (isBusy) LoadingOverlay()
     }
 }
 

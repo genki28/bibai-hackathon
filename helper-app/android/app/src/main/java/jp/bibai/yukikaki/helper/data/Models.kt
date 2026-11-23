@@ -5,7 +5,7 @@ import jp.bibai.yukikaki.helper.core.LatLng
 import org.json.JSONArray
 import org.json.JSONObject
 
-// サーバーの返事(JSON)の形。src/help-requests/views.ts・request-points.ts・snow-map.ts に合わせる。
+// サーバーの返事(JSON)の形。src/help-requests/views.ts・snow-map.ts に合わせる。
 // 読むのは画面で使う項目だけ。
 
 /** 美唄市の中心あたり(依頼に位置がないとき)。 */
@@ -55,18 +55,6 @@ data class MemberRequest(
     fun scoops(): List<HelperScoops> = helpers.map { HelperScoops(it.userId, it.scoops) }
 }
 
-data class RequestPoints(
-    val workPoints: Int,
-    val stars: Int?,
-    val ratingPoints: Int,
-    val reunionPoints: Int,
-    val reunionPartners: List<String>,
-    val firstFinishBonus: Int,
-    val total: Int,
-    val myScoops: Int,
-    val totalScoops: Int,
-)
-
 /** チームの記録の 1 件(終わった雪かき 1 回)。 */
 data class TeamRecord(
     val id: String,
@@ -76,6 +64,11 @@ data class TeamRecord(
     val teamCalories: Int,
     val myCalories: Int,
 )
+
+/** 雪山マップの 1 つ(終わった雪かき 1 回)の、一人ひとりの消費カロリー。 */
+data class PileMember(val displayName: String, val calories: Int)
+
+data class SnowPile(val id: String, val members: List<PileMember>)
 
 /** GET /api/teams/mine/{userId} の返事。 */
 data class MyTeams(
@@ -131,23 +124,6 @@ object Parse {
         )
     }
 
-    fun points(o: JSONObject): RequestPoints {
-        val reunion = o.optJSONObject("reunion") ?: JSONObject()
-        val partners = reunion.optJSONArray("partners")
-        val scoops = o.optJSONObject("scoops") ?: JSONObject()
-        return RequestPoints(
-            workPoints = o.optInt("workPoints"),
-            stars = o.optIntOrNull("stars"),
-            ratingPoints = o.optInt("ratingPoints"),
-            reunionPoints = reunion.optInt("points"),
-            reunionPartners = if (partners == null) emptyList() else (0 until partners.length()).map { partners.getString(it) },
-            firstFinishBonus = o.optInt("firstFinishBonus"),
-            total = o.optInt("total"),
-            myScoops = scoops.optInt("mine"),
-            totalScoops = scoops.optInt("total"),
-        )
-    }
-
     private fun teamRecord(o: JSONObject): TeamRecord {
         val members = o.optJSONArray("members")
         return TeamRecord(
@@ -166,6 +142,14 @@ object Parse {
         partners = o.optInt("partners"),
         teams = o.optJSONArray("teams").mapObjects(::teamRecord),
     )
+
+    /** GET /api/snow-map の data → 雪山の一覧(画面で使う id と一人ひとりの kcal だけ)。 */
+    fun snowPiles(o: JSONObject): List<SnowPile> = o.optJSONArray("piles").mapObjects { pile ->
+        SnowPile(
+            id = pile.getString("id"),
+            members = pile.optJSONArray("members").mapObjects { PileMember(it.optString("displayName", "名無し"), it.optInt("calories")) },
+        )
+    }
 
     fun <T> list(array: JSONArray?, transform: (JSONObject) -> T): List<T> = array.mapObjects(transform)
 }

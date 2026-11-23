@@ -81,7 +81,7 @@ fun ArrivalScreen(deps: AppDeps, id: String, go: (Screen) -> Unit) {
         isArrived || latest.status == "working"
     }
 
-    ScreenFrame("到着") {
+    ScreenFrame("到着", isLoading = isBusy) {
         PixelCard {
             IconLine(R.drawable.ic_phone, "お年寄りのスマホに近づけてね", isBold = true)
             IconLine(R.drawable.ic_pencil, "雪かきするエリアを確認してください")

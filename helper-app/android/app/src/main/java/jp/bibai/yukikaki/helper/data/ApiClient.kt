@@ -24,29 +24,28 @@ class ApiClient(val baseUrl: String = BuildConfig.API_BASE.trimEnd('/')) {
     // --- 一覧・詳細 ---
 
     suspend fun listOpen(): List<PublicRequest> =
-        Parse.list(call("GET", "/api/help-requests").getJSONArray("data"), Parse::publicRequest)
+        call("GET", "/api/help-requests") { Parse.list(it.getJSONArray("data"), Parse::publicRequest) }
 
-    suspend fun active(userId: String): MemberRequest? {
-        val data = call("GET", "/api/help-requests/active/${enc(userId)}").optJSONObject("data")
-        return data?.let(Parse::memberRequest)
-    }
+    suspend fun active(userId: String): MemberRequest? =
+        call("GET", "/api/help-requests/active/${enc(userId)}") { json -> json.optJSONObject("data")?.let(Parse::memberRequest) }
 
     suspend fun detail(id: String, userId: String): MemberRequest =
-        Parse.memberRequest(call("GET", "/api/help-requests/${enc(id)}?userId=${enc(userId)}").getJSONObject("data"))
+        call("GET", "/api/help-requests/${enc(id)}?userId=${enc(userId)}") { Parse.memberRequest(it.getJSONObject("data")) }
 
     suspend fun arrivalCode(id: String, userId: String): String =
-        call("GET", "/api/help-requests/${enc(id)}/arrival-code?userId=${enc(userId)}").getJSONObject("data").getString("code")
-
-    suspend fun points(id: String, userId: String): RequestPoints =
-        Parse.points(call("GET", "/api/help-requests/${enc(id)}/points?userId=${enc(userId)}").getJSONObject("data"))
+        call("GET", "/api/help-requests/${enc(id)}/arrival-code?userId=${enc(userId)}") { it.getJSONObject("data").getString("code") }
 
     /** 自分が入ったチームと、消費カロリーの合計(チームの記録)。 */
     suspend fun myTeams(userId: String): MyTeams =
-        Parse.myTeams(call("GET", "/api/teams/mine/${enc(userId)}").getJSONObject("data"))
+        call("GET", "/api/teams/mine/${enc(userId)}") { Parse.myTeams(it.getJSONObject("data")) }
+
+    /** 美唄の雪山マップ(終わった雪かきごとの、一人ひとりの消費カロリー)。 */
+    suspend fun snowPiles(): List<SnowPile> =
+        call("GET", "/api/snow-map") { Parse.snowPiles(it.getJSONObject("data")) }
 
     /** 本人確認が済んでいるか(GET /api/identity/{userId} の verified)。 */
     suspend fun isIdentityVerified(userId: String): Boolean =
-        call("GET", "/api/identity/${enc(userId)}").getJSONObject("data").optBoolean("verified")
+        call("GET", "/api/identity/${enc(userId)}") { it.getJSONObject("data").optBoolean("verified") }
 
     // --- 操作(返事は自分から見た依頼) ---
 
@@ -75,11 +74,15 @@ class ApiClient(val baseUrl: String = BuildConfig.API_BASE.trimEnd('/')) {
     private fun userBody(userId: String) = JSONObject().put("userId", userId)
 
     private suspend fun action(id: String, name: String, body: JSONObject): MemberRequest =
-        Parse.memberRequest(call("POST", "/api/help-requests/${enc(id)}/$name", body).getJSONObject("data"))
+        call("POST", "/api/help-requests/${enc(id)}/$name", body) { Parse.memberRequest(it.getJSONObject("data")) }
 
-    /** 1 回呼ぶ。成功なら返事全体の JSON、失敗なら ApiException。 */
-    private suspend fun call(method: String, path: String, body: JSONObject? = null): JSONObject =
-        withContext(Dispatchers.IO) {
+    /** 1 回呼んで、返事を transform で読む。通信も JSON を読むのも裏の処理(メインスレッドの外)で行う。失敗なら ApiException。 */
+    private suspend fun <T> call(method: String, path: String, body: JSONObject? = null, transform: (JSONObject) -> T): T =
+        withContext(Dispatchers.IO) { transform(callBlocking(method, path, body)) }
+
+    /** 1 回呼ぶ(呼んだスレッドで待つ)。成功なら返事全体の JSON、失敗なら ApiException。 */
+    private fun callBlocking(method: String, path: String, body: JSONObject?): JSONObject =
+        run {
             val connection = (URL(baseUrl + path).openConnection() as HttpURLConnection).apply {
                 requestMethod = method
                 connectTimeout = TIMEOUT_MS

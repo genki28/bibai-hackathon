@@ -48,6 +48,7 @@ fun HelpListScreen(deps: AppDeps, initialError: String, go: (Screen) -> Unit) {
     var error by remember { mutableStateOf(initialError) }
     var selectedId by remember { mutableStateOf<String?>(null) }
     var isJoining by remember { mutableStateOf(false) }
+    var isReloading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     suspend fun reload() {
@@ -81,13 +82,14 @@ fun HelpListScreen(deps: AppDeps, initialError: String, go: (Screen) -> Unit) {
 
     ScreenFrame(
         title = "雪かきに参加",
+        isLoading = (requests == null && error.isEmpty()) || isJoining,
         bottomBar = { BottomTabs(Tab.HELP, onHelp = {}, onTeams = { go(Screen.Teams) }) },
     ) {
         Text("${deps.prefs.displayName ?: ""} さん、雪かきを手伝える家を選んでね", color = Palette.Muted)
         ErrorText(error)
         val list = requests
         when {
-            list == null -> Text("読み込んでいます…")
+            list == null -> Unit
             list.isEmpty() -> PixelCard { Text("いまは募集がありません。また見に来てね。") }
             else -> {
                 Row(verticalAlignment = Alignment.Bottom) {
@@ -107,7 +109,14 @@ fun HelpListScreen(deps: AppDeps, initialError: String, go: (Screen) -> Unit) {
                 }
             }
         }
-        PixelButton("読み直す", onClick = { scope.launch { reload() } })
+        PixelButton("読み直す", isEnabled = !isReloading, onClick = {
+            // 読み直しが重ならないよう、終わるまで押せなくする
+            isReloading = true
+            scope.launch {
+                reload()
+                isReloading = false
+            }
+        })
     }
 }
 
