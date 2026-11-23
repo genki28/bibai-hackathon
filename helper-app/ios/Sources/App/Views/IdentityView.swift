@@ -34,6 +34,11 @@ struct IdentityView: View {
 
     private func waitForVerified() async {
         while !Task.isCancelled {
+            // アプリを閉じている間は読み直さない
+            guard app.isForeground else {
+                try? await Task.sleep(nanoseconds: Self.pollNanoseconds)
+                continue
+            }
             do {
                 if try await app.api.identityStatus(userId: app.userId).verified {
                     app.go(.place(requestId))

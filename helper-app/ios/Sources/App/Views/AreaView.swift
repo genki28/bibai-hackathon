@@ -13,22 +13,35 @@ struct GeoStroke: Equatable {
     let points: [GeoPoint]
 }
 
+/// 地図の動きと、なぞっている途中の線(1 秒に何十回も変わる)。
+/// @Observable にして、読んでいる BrushOverlay だけを描き直す(画面全体・地図を作り直さない)。
+@Observable
+final class BrushDraft {
+    /// 地図が動いた回数(変わるたびに線を描き直す)。
+    var cameraTick = 0
+    /// なぞっている途中の線。
+    var current: GeoStroke?
+    /// 最後に点を足した画面の位置(近すぎる点は足さない)。
+    @ObservationIgnored var lastLocation: CGPoint?
+}
+
 struct AreaView: View {
     let requestId: String
     @EnvironmentObject private var app: AppModel
     @State private var request: HelpRequest?
     @State private var camera: MapCameraPosition = .automatic
     @State private var strokes: [GeoStroke] = []
-    @State private var current: GeoStroke?
+    @State private var draft = BrushDraft()
     @State private var widthM = BrushArea.thinWidthM
     @State private var isBrush = true
-    @State private var cameraTick = 0
     @State private var areaM2 = 0
     @State private var error: String?
     @State private var isSending = false
 
     /// 地図を最初に出すときの広さ(m)。
     private static let initialSpanM = 120.0
+    /// なぞるとき、前の点からこれ(画面のポイント)より近い点は足さない(点が増えすぎて重くならないように)。
+    private static let minPointGap: CGFloat = 3
 
     private var isTooLarge: Bool { areaM2 > BrushArea.maxAreaM2 }
 
@@ -38,7 +51,7 @@ struct AreaView: View {
             ScreenTitle(text: "範囲を記録")
             Text(isBrush ? "雪かきしたところを指でなぞって塗ってね" : "雪かきした場所まで地図を動かしてね")
                 .font(.dot(.subheadline)).frame(maxWidth: .infinity, alignment: .leading)
-            if let request { mapArea(home: request.home) } else { ProgressView("読み込んでいます…").frame(maxHeight: .infinity) }
+            if let request { mapArea(home: request.home) } else { Spacer() }
             controls
             ErrorText(message: isTooLarge ? "広すぎます(5,000 ㎡まで)。[1 つ戻す] で減らしてください。" : error)
             HStack {
@@ -56,6 +69,7 @@ struct AreaView: View {
         .background(Palette.white.ignoresSafeArea())
         .foregroundStyle(Palette.navy)
         .font(.dot(.body))
+        .loadingOverlay(request == nil && error == nil)
         .task { await load() }
     }
 
@@ -64,9 +78,9 @@ struct AreaView: View {
             Map(position: $camera, interactionModes: isBrush ? [] : .all) {
                 Annotation("ここ", coordinate: home.coordinate) { PixelIcon(name: "house", size: 28) }
             }
-            .onMapCameraChange(frequency: .continuous) { cameraTick &+= 1 }
+            .onMapCameraChange(frequency: .continuous) { draft.cameraTick &+= 1 }
             .overlay {
-                BrushOverlay(strokes: strokes + (current.map { [$0] } ?? []), proxy: proxy, home: home, tick: cameraTick)
+                BrushOverlay(strokes: strokes, draft: draft, proxy: proxy, home: home)
                     .opacity(0.55)
                     .allowsHitTesting(false)
             }
@@ -119,13 +133,17 @@ struct AreaView: View {
     private func drawGesture(proxy: MapProxy, home: GeoPoint) -> some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .local)
             .onChanged { value in
+                if let last = draft.lastLocation,
+                   hypot(value.location.x - last.x, value.location.y - last.y) < Self.minPointGap { return }
                 guard let coordinate = proxy.convert(value.location, from: .local) else { return }
+                draft.lastLocation = value.location
                 let point = GeoPoint(coordinate)
-                current = GeoStroke(widthM: widthM, points: (current?.points ?? []) + [point])
+                draft.current = GeoStroke(widthM: widthM, points: (draft.current?.points ?? []) + [point])
             }
             .onEnded { _ in
-                guard let finished = current else { return }
-                current = nil
+                draft.lastLocation = nil
+                guard let finished = draft.current else { return }
+                draft.current = nil
                 update(strokes + [finished])
             }
     }
@@ -161,20 +179,22 @@ struct AreaView: View {
         isSending = true
         defer { isSending = false }
         do {
-            _ = try await app.api.finish(id: requestId, userId: app.userId, areaM2: areaM2)
-            app.go(.finish(requestId))
+            try await app.whileBusy {
+                _ = try await app.api.finish(id: requestId, userId: app.userId, areaM2: areaM2)
+                app.go(.finish(requestId))
+            }
         } catch {
             self.error = "終了できませんでした: \(error.localizedDescription)"
         }
     }
 }
 
-/// 塗った線を、地図の上に描く(緯度経度 → 画面の点に直す)。tick が変わる(地図が動く)たびに描き直す。
+/// 塗った線を、地図の上に描く(緯度経度 → 画面の点に直す)。地図が動く・なぞるたびに、ここだけ描き直す。
 private struct BrushOverlay: View {
     let strokes: [GeoStroke]
+    let draft: BrushDraft
     let proxy: MapProxy
     let home: GeoPoint
-    let tick: Int
 
     /// 1m が画面の何ポイントか(家から東へ 10m の点との距離で測る)。
     private func pointsPerMeter() -> CGFloat {
@@ -185,11 +205,14 @@ private struct BrushOverlay: View {
     }
 
     var body: some View {
-        Canvas { context, _ in
+        // ここで読むので、地図が動く・線が伸びるたびに、この Canvas だけが描き直される
+        let all = strokes + (draft.current.map { [$0] } ?? [])
+        let tick = draft.cameraTick
+        return Canvas { context, _ in
             _ = tick
             let scale = pointsPerMeter()
             guard scale > 0 else { return }
-            for stroke in strokes {
+            for stroke in all {
                 let points = stroke.points.compactMap { proxy.convert($0.coordinate, to: .local) }
                 let width = stroke.widthM * scale
                 if points.count == 1, let p = points.first {

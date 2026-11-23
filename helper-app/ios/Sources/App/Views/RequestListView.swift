@@ -26,9 +26,7 @@ struct RequestListView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             ErrorText(message: app.notice)
             ErrorText(message: error)
-            if isLoading && requests.isEmpty {
-                ProgressView("読み込んでいます…").padding(.top, 24)
-            } else if requests.isEmpty {
+            if !isLoading && requests.isEmpty {
                 PixelCard {
                     IconLabel(icon: "check", text: "いま募集中の雪かきはありません")
                     Text("下に引っぱると読み直します").font(.dot(.footnote))
@@ -47,6 +45,7 @@ struct RequestListView: View {
         }
         .refreshable { await load() }
         .task { await load() }
+        .loadingOverlay(isLoading && requests.isEmpty)
     }
 
     private func toggle(_ request: HelpRequest) {
@@ -70,9 +69,11 @@ struct RequestListView: View {
         isJoining = true
         defer { isJoining = false }
         do {
-            let joined = try await app.api.join(id: request.id, userId: app.userId, displayName: app.displayName)
-            app.notice = nil
-            await app.afterJoin(joined.id)
+            try await app.whileBusy {
+                let joined = try await app.api.join(id: request.id, userId: app.userId, displayName: app.displayName)
+                app.notice = nil
+                await app.afterJoin(joined.id)
+            }
         } catch {
             self.error = "参加できませんでした: \(error.localizedDescription)"
         }

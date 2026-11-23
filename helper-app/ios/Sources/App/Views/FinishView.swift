@@ -1,22 +1,44 @@
-// 画面 7「お疲れ様」: 「CLEAR」と、獲得ポイントを派手に(数字が回ってから止まる・花火・ファンファーレ)。
-// 内訳(雪かき・評価・再会・初回ボーナス)と、スコップの回数(自分・みんな)。「チームで 〇kcal」(GET /api/teams/mine)。
+// 画面 7「お疲れ様」: 「CLEAR」と、チームでの消費カロリー(大きく・数字が回ってから止まる・花火・ファンファーレ)。
+// その下に、あなたの消費カロリーと、一緒にやった人の名前とそれぞれの kcal(SPEC「第 3 版の変更」4)。ポイントは出さない。
+// - チームの kcal は GET /api/teams/mine/{userId} の、その依頼の teamCalories
+// - 一緒にやった人の kcal は、依頼の詳細の helpers[].calories(なければ時間から出した値。サーバーと同じ)
+// - 終わってすぐで、まだ全員の kcal が届いていなければ、数秒あけて読み直す
+// - 演出は 1 回だけ(もう一度見るボタンはない。SPEC「第 3 版の変更」2)
 
-import HelperCore
 import SwiftUI
+
+/// お疲れ様の画面に出す数字。
+private struct FinishSummary: Equatable {
+    struct Partner: Equatable, Identifiable {
+        let id: String
+        let name: String
+        let kcal: Double
+    }
+
+    let teamKcal: Double
+    let myKcal: Double
+    let partners: [Partner]
+    /// チームの記録に入っていて、全員の kcal が届いているか(届いていなければ読み直す)。
+    let isComplete: Bool
+}
 
 struct FinishView: View {
     let requestId: String
     @EnvironmentObject private var app: AppModel
-    @State private var points: RequestPoints?
-    /// この雪かきのチームの消費カロリー(読めなければ出さない)。
-    @State private var teamKcal: Double?
-    @State private var shown = 0
+    @State private var summary: FinishSummary?
+    @State private var shownKcal = 0
+    @State private var isTrying = true
     @State private var error: String?
-    @State private var coach = SoundCoach()
+    @State private var isShowingFireworks = false
+    /// ファンファーレの部品。画面を作り直すたびに音の部品を作らないよう、鳴らすときに 1 回だけ作る。
+    @State private var coach: SoundCoach?
 
     /// 数字が回る時間(秒)と、回る回数。
     private static let rollSeconds = 1.6
     private static let rollSteps = 40
+    /// 全員の kcal がそろうまで読み直す回数と間隔(秒)。
+    private static let maxAttempts = 4
+    private static let retrySeconds: UInt64 = 3
 
     var body: some View {
         ZStack {
@@ -27,96 +49,134 @@ struct FinishView: View {
                     .shadow(color: Palette.navy, radius: 0, x: 4, y: 4)
                     .padding(.top, 24)
                 Text("お疲れ様でした!").font(.dot(.title2))
-                ErrorText(message: error)
-                if let points {
-                    PixelCard {
-                        Text("獲得ポイント").font(.dot(.headline))
-                        Text("+\(shown.formatted()) pt")
-                            .font(.dot(size: 52))
-                            .contentTransition(.numericText())
-                            .frame(maxWidth: .infinity)
-                    }
-                    if let teamKcal {
-                        PixelCard {
-                            Text("チームで").font(.dot(.subheadline)).foregroundStyle(Palette.muted)
-                            Text("\(formatKcal(teamKcal))kcal").font(.dot(size: 40, relativeTo: .largeTitle)).foregroundStyle(Palette.vermilion)
-                        }
-                    }
-                    breakdown(points)
-                } else if error == nil {
-                    ProgressView("ポイントを数えています…")
+                ErrorText(message: summary == nil ? error : nil)
+                if let summary {
+                    teamCard
+                    membersCard(summary)
                 }
                 Button { app.go(.teams) } label: { IconLabel(icon: "cheer", text: "チームの記録へ") }
                     .buttonStyle(.pixel)
                 Button { app.go(.requests) } label: { IconLabel(icon: "runner", text: "助けに行く") }
                     .buttonStyle(.pixelSecondary)
             }
-            if points != nil { Fireworks().allowsHitTesting(false).ignoresSafeArea() }
+            if isShowingFireworks {
+                Fireworks { isShowingFireworks = false }.allowsHitTesting(false).ignoresSafeArea()
+            }
         }
+        .loadingOverlay(summary == nil && isTrying)
         .task { await load() }
     }
 
-    private func breakdown(_ points: RequestPoints) -> some View {
+    private var teamCard: some View {
         PixelCard {
-            row("雪かき", points.workPoints)
-            row(points.stars.map { "評価(星 \($0))" } ?? "評価(まだ)", points.ratingPoints)
-            row(points.reunion.partners.isEmpty ? "再会" : "再会(\(points.reunion.partners.joined(separator: "、")) さん)", points.reunion.points)
-            row("初回ボーナス", points.firstFinishBonus)
-            Divider().overlay(Palette.navy)
-            HStack {
-                PixelIcon(name: "snowflake", size: 18)
-                Text("スコップ: あなた \(points.scoops.mine)杯 ・ みんな \(points.scoops.total)杯")
+            Text("チームでの消費カロリー").font(.dot(.headline))
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(shownKcal.formatted())
+                    .font(.dot(size: 64, relativeTo: .largeTitle))
+                    .foregroundStyle(Palette.vermilion)
+                    .contentTransition(.numericText())
+                    .monospacedDigit()
+                Text("kcal").font(.dot(.title2))
             }
-            .font(.dot(.subheadline))
+            .frame(maxWidth: .infinity)
         }
     }
 
-    private func row(_ title: String, _ value: Int) -> some View {
-        HStack {
-            Text(title)
-            Spacer()
-            Text("+\(value.formatted()) pt").font(.dot(.body))
+    private func membersCard(_ summary: FinishSummary) -> some View {
+        PixelCard {
+            row(name: "あなた", kcal: summary.myKcal, isMe: true)
+            if !summary.partners.isEmpty {
+                Divider().overlay(Palette.navy)
+                Text("一緒にやった人").font(.dot(.subheadline)).foregroundStyle(Palette.muted)
+                ForEach(summary.partners) { partner in row(name: "\(partner.name) さん", kcal: partner.kcal, isMe: false) }
+            }
         }
     }
+
+    private func row(name: String, kcal: Double, isMe: Bool) -> some View {
+        HStack {
+            Text(name).font(.dot(isMe ? .title3 : .body))
+            Spacer()
+            Text("約\(formatKcal(kcal))kcal")
+                .font(.dot(isMe ? .title3 : .body))
+                .foregroundStyle(isMe ? Palette.vermilion : Palette.navy)
+        }
+    }
+
+    // MARK: - 読み込み
 
     private func load() async {
-        do {
-            let loaded = try await app.api.points(id: requestId, userId: app.userId)
-            points = loaded
-            coach.fanfare()
-            async let kcal = loadTeamKcal()
-            await roll(to: loaded.total)
-            teamKcal = await kcal
-        } catch {
-            self.error = "ポイントを読めませんでした: \(error.localizedDescription)"
+        defer { isTrying = false }
+        for attempt in 1...Self.maxAttempts {
+            if attempt > 1 {
+                try? await Task.sleep(nanoseconds: Self.retrySeconds * 1_000_000_000)
+                if Task.isCancelled { return }
+            }
+            guard let loaded = await fetchSummary() else { continue }
+            let isFirst = summary == nil
+            summary = loaded
+            if isFirst {
+                celebrate()
+                await roll(to: Int(loaded.teamKcal.rounded()))
+            } else {
+                withAnimation { shownKcal = Int(loaded.teamKcal.rounded()) }
+            }
+            if loaded.isComplete { return }
         }
     }
 
-    /// この雪かきのチームの kcal。読めなくてもポイントの画面は出す(カードを出さないだけ)。
-    private func loadTeamKcal() async -> Double? {
-        do {
-            return try await app.api.myTeams(userId: app.userId).teams.first { $0.id == requestId }?.teamCalories
-        } catch {
-            NSLog("チームの記録を読めませんでした: %@", error.localizedDescription)
+    /// チームの記録と依頼の詳細を同時に読んで、画面の数字にする。読めなければ nil(error に理由)。
+    private func fetchSummary() async -> FinishSummary? {
+        async let teamsResult = app.api.myTeams(userId: app.userId)
+        async let requestResult = app.loadRequest(requestId)
+        let team = (try? await teamsResult)?.teams.first { $0.id == requestId }
+        switch await requestResult {
+        case .failure(let failure):
+            error = "読み込めませんでした: \(failure.message)"
             return nil
+        case .success(let request):
+            error = nil
+            let me = request.helper(app.userId)
+            let partners = request.allHelpers
+                .filter { $0.userId != app.userId }
+                .map { FinishSummary.Partner(id: $0.userId, name: $0.displayName, kcal: request.calories(of: $0)) }
+            let memberTotal = request.allHelpers.reduce(0) { $0 + request.calories(of: $1) }
+            return FinishSummary(
+                teamKcal: team?.teamCalories ?? memberTotal,
+                myKcal: team?.myCalories ?? me.map { request.calories(of: $0) } ?? UserStore.calories(requestId: requestId),
+                partners: partners,
+                isComplete: team != nil && request.allHelpers.allSatisfy { $0.calories != nil }
+            )
         }
+    }
+
+    // MARK: - 演出(1 回だけ)
+
+    private func celebrate() {
+        let fanfare = coach ?? SoundCoach()
+        coach = fanfare
+        fanfare.fanfare()
+        isShowingFireworks = true
     }
 
     /// 数字を回してから、本当の値で止める。
     private func roll(to total: Int) async {
         let pause = UInt64(Self.rollSeconds / Double(Self.rollSteps) * 1_000_000_000)
         for step in 1...Self.rollSteps {
+            if Task.isCancelled { break }
             let progress = Double(step) / Double(Self.rollSteps)
             let jitter = step < Self.rollSteps ? Int.random(in: 0...max(1, total / 10)) : 0
-            withAnimation(.linear(duration: 0.03)) { shown = min(total, Int(Double(total) * progress) + jitter) }
+            withAnimation(.linear(duration: 0.03)) { shownKcal = min(total, Int(Double(total) * progress) + jitter) }
             try? await Task.sleep(nanoseconds: pause)
         }
-        withAnimation { shown = total }
+        withAnimation { shownKcal = total }
     }
 }
 
-/// ドット絵ふうの花火(四角い火花が広がって消える)。
+/// ドット絵ふうの花火(四角い火花が広がって消える)。1 回だけ打ち上げたら onEnd を呼ぶ(描き続けない)。
 private struct Fireworks: View {
+    let onEnd: () -> Void
+
     private struct Burst {
         let center: CGPoint
         let delay: Double
@@ -132,13 +192,16 @@ private struct Fireworks: View {
     ]
     private static let sparks = 14
     private static let burstSeconds = 1.4
-    private static let cycleSeconds = 3.0
+    /// 全部の花火が消えるまでの時間(秒)。
+    private static let totalSeconds = 2.0 + burstSeconds
+    /// 1 秒に描く回数(画面の最大より少なくして軽くする)。
+    private static let framesPerSecond = 30.0
     @State private var start = Date()
 
     var body: some View {
-        TimelineView(.animation) { timeline in
+        TimelineView(.animation(minimumInterval: 1 / Self.framesPerSecond)) { timeline in
             Canvas { context, size in
-                let elapsed = timeline.date.timeIntervalSince(start).truncatingRemainder(dividingBy: Self.cycleSeconds)
+                let elapsed = timeline.date.timeIntervalSince(start)
                 for burst in Self.bursts {
                     let t = (elapsed - burst.delay) / Self.burstSeconds
                     guard t > 0, t < 1 else { continue }
@@ -154,6 +217,10 @@ private struct Fireworks: View {
                     }
                 }
             }
+        }
+        .task {
+            try? await Task.sleep(nanoseconds: UInt64(Self.totalSeconds * 1_000_000_000))
+            if !Task.isCancelled { onEnd() }
         }
     }
 }

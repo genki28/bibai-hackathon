@@ -20,8 +20,13 @@ extension AppModel {
     }
 
     /// 止められるまで、数秒ごとに詳細を読み直して onUpdate を呼ぶ。onUpdate が true を返したら止める。
+    /// 画面が消えたら(.task が止まる)読み直しも止まる。アプリを閉じている間は読み直さない(電池と通信の節約)。
     func pollRequest(_ id: String, onUpdate: (HelpRequest) -> Bool, onError: (String) -> Void) async {
         while !Task.isCancelled {
+            guard isForeground else {
+                try? await Task.sleep(nanoseconds: Polling.intervalSeconds * 1_000_000_000)
+                continue
+            }
             switch await loadRequest(id) {
             case .success(let request):
                 if onUpdate(request) { return }

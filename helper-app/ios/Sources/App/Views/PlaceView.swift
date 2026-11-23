@@ -34,10 +34,9 @@ struct PlaceView: View {
                 TestTools {
                     Button("テスト: 家に近づく") { Task { await session.demoStep() } }
                 }
-            } else {
-                ProgressView("読み込んでいます…")
             }
         }
+        .loadingOverlay(request == nil && error == nil)
         .task { await load() }
         .confirmationDialog("参加をやめますか?", isPresented: $isConfirmingLeave, titleVisibility: .visible) {
             Button("参加をやめる", role: .destructive) { Task { await leave() } }
@@ -90,8 +89,10 @@ struct PlaceView: View {
         isBusy = true
         defer { isBusy = false }
         do {
-            _ = try await app.api.leave(id: requestId, userId: app.userId)
-            app.go(.requests)
+            try await app.whileBusy {
+                _ = try await app.api.leave(id: requestId, userId: app.userId)
+                app.go(.requests)
+            }
         } catch {
             self.error = "参加をやめられませんでした: \(error.localizedDescription)"
         }

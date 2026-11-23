@@ -13,13 +13,22 @@ final class SoundCodePlayer {
 
     private let output = AudioOutput(sampleRate: SoundCodePlayer.sampleRate)
     private var stopTimer: Timer?
+    private var renderTask: Task<Void, Never>?
     private(set) var isPlaying = false
 
     /// 鳴らし始める(すでに鳴っていれば、新しい音に切り替える)。onEnd は 3 分たって止まったときに呼ぶ。
     func play(code: String, band: SoundBand, onEnd: @escaping @MainActor () -> Void) {
         stop()
-        output.play(renderCycle(code, band: band, sampleRate: Self.sampleRate), loops: true, interrupt: true)
         isPlaying = true
+        // 波形づくり(1 秒ぶん・48,000 個)は裏で計算して、画面の動きを止めない
+        let sampleRate = Self.sampleRate
+        renderTask = Task {
+            let samples = await Task.detached(priority: .userInitiated) {
+                renderCycle(code, band: band, sampleRate: sampleRate)
+            }.value
+            guard !Task.isCancelled, self.isPlaying else { return }
+            self.output.play(samples, loops: true, interrupt: true)
+        }
         stopTimer = Timer.scheduledTimer(withTimeInterval: Self.maxPlaySeconds, repeats: false) { _ in
             Task { @MainActor in
                 self.stop()
@@ -29,6 +38,8 @@ final class SoundCodePlayer {
     }
 
     func stop() {
+        renderTask?.cancel()
+        renderTask = nil
         stopTimer?.invalidate()
         stopTimer = nil
         output.stop()

@@ -19,15 +19,13 @@ struct BibaiHelperApp: App {
 
 struct RootView: View {
     @EnvironmentObject private var app: AppModel
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
             switch app.screen {
             case .loading:
-                ProgressView("読み込んでいます…")
-                    .font(.dot(.body))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Palette.white.ignoresSafeArea())
+                Palette.white.ignoresSafeArea()
             case .onboarding:
                 OnboardingView()
             case .requests, .teams:
@@ -49,7 +47,10 @@ struct RootView: View {
             }
         }
         .font(.dot(.body))
+        // 通信を待つ間・起動して続きを調べる間は、真ん中にローディング(ボタンは押せない)
+        .loadingOverlay(app.isBusy || app.screen == .loading)
         .task { await app.launch() }
+        .onChange(of: scenePhase) { _, phase in app.isForeground = phase == .active }
     }
 }
 

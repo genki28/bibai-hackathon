@@ -9,7 +9,8 @@ struct ArrivalView: View {
     let requestId: String
     @EnvironmentObject private var app: AppModel
     @EnvironmentObject private var session: HelperSession
-    @State private var player = SoundCodePlayer()
+    /// 音を鳴らす部品。画面を作り直すたびに音の部品を作らないよう、鳴らすときに 1 回だけ作る。
+    @State private var player: SoundCodePlayer?
     @State private var code: String?
     @State private var isAudible = false
     @State private var isPlaying = false
@@ -59,7 +60,7 @@ struct ArrivalView: View {
                 return true
             }, onError: { error = $0 })
         }
-        .onDisappear { player.stop() }
+        .onDisappear { player?.stop() }
     }
 
     private func prepare() async {
@@ -74,7 +75,9 @@ struct ArrivalView: View {
 
     private func startPlaying() {
         guard let code else { return }
-        player.play(code: code, band: band) { isPlaying = false }
+        let current = player ?? SoundCodePlayer()
+        player = current
+        current.play(code: code, band: band) { isPlaying = false }
         isPlaying = true
     }
 
@@ -82,15 +85,17 @@ struct ArrivalView: View {
         isBusy = true
         defer { isBusy = false }
         do {
-            let request = try await app.api.arrive(id: requestId, userId: app.userId)
-            moveOn(request)
+            try await app.whileBusy {
+                let request = try await app.api.arrive(id: requestId, userId: app.userId)
+                moveOn(request)
+            }
         } catch {
             self.error = "到着にできませんでした: \(error.localizedDescription)"
         }
     }
 
     private func moveOn(_ request: HelpRequest) {
-        player.stop()
+        player?.stop()
         session.markArrived()
         app.go(request.status == .working ? .working(requestId) : AppModel.screen(for: request, userId: app.userId))
     }

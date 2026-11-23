@@ -26,6 +26,12 @@ final class AppModel: ObservableObject {
     @Published private(set) var displayName: String
     /// 続きを調べたときの失敗(一覧の画面に出す)。
     @Published var notice: String?
+    /// 通信を待っている数(1 以上なら、画面の真ん中にローディングを出して、ボタンを押せなくする)。
+    @Published private(set) var busyCount = 0
+    var isBusy: Bool { busyCount > 0 }
+    /// アプリが前に出ているか(画面を閉じている間は、画面ごとの読み直しを休む)。
+    /// 画面の描き直しを起こさないよう、@Published にはしない。
+    var isForeground = true
 
     let userId: String
     let api: ApiClient
@@ -53,7 +59,7 @@ final class AppModel: ObservableObject {
         guard !trimmed.isEmpty else { return }
         UserStore.displayName = trimmed
         displayName = trimmed
-        await resume()
+        await whileBusy { await resume() }
     }
 
     /// 続きがあるか調べて、状態に合わせた画面へ進む。なければ一覧。
@@ -89,6 +95,13 @@ final class AppModel: ObservableObject {
     func afterJoin(_ requestId: String) async {
         let isVerified = (try? await api.identityStatus(userId: userId).verified) ?? false
         go(isVerified ? .place(requestId) : .identity(requestId))
+    }
+
+    /// work が終わるまで、ローディングを出してボタンを押せなくする(SPEC「第 3 版の変更」1)。
+    func whileBusy<T>(_ work: () async throws -> T) async rethrows -> T {
+        busyCount += 1
+        defer { busyCount -= 1 }
+        return try await work()
     }
 
     /// 画面を移る。お疲れ様・一覧・チームの記録に移ったら、裏で動かしているものを止める。

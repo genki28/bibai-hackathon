@@ -22,10 +22,9 @@ struct WorkingView: View {
                 } else {
                     working(request)
                 }
-            } else {
-                ProgressView("読み込んでいます…")
             }
         }
+        .loadingOverlay(request == nil && error == nil)
         .task {
             await app.pollRequest(requestId, onUpdate: { latest in
                 if request == nil { session.beginScooping(latest) }
@@ -34,8 +33,10 @@ struct WorkingView: View {
                 session.updateHelpers(latest)
                 if latest.status == .working { return false }
                 Task {
-                    await session.flushScoops()
-                    app.go(AppModel.screen(for: latest, userId: app.userId))
+                    await app.whileBusy {
+                        await session.flushScoops()
+                        app.go(AppModel.screen(for: latest, userId: app.userId))
+                    }
                 }
                 return true
             }, onError: { error = $0 })
@@ -107,12 +108,14 @@ struct WorkingView: View {
     }
 
     private func finish(_ request: HelpRequest) async {
-        // 終える前に、いまの回数を送っておく(送れなくても進む)
-        await session.flushScoops()
-        if request.canFinish(app.userId) {
-            app.go(.area(requestId))
-        } else {
-            isWaitingLeader = true
+        // 終える前に、いまの回数を送っておく(送れなくても進む)。送る間はローディングを出して、二度押しできないようにする
+        await app.whileBusy {
+            await session.flushScoops()
+            if request.canFinish(app.userId) {
+                app.go(.area(requestId))
+            } else {
+                isWaitingLeader = true
+            }
         }
     }
 }

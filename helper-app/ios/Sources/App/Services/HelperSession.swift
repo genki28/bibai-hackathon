@@ -55,7 +55,7 @@ final class HelperSession: ObservableObject {
         self.userId = userId
         self.api = api
         tracker.onFix = { [weak self] fix in self?.onFix(fix) }
-        tracker.onFailure = { [weak self] message in self?.locationStatus = message }
+        tracker.onFailure = { [weak self] message in self?.setLocationStatus(message) }
     }
 
     // MARK: - 位置(画面 3 から)
@@ -67,7 +67,7 @@ final class HelperSession: ObservableObject {
         hasArrived = hasArrived || request.hasArrived(userId)
         tracker.start()
         if locationTimer == nil {
-            if latestFix == nil && !isDemo { locationStatus = "位置を読み込んでいます…" }
+            if latestFix == nil && !isDemo { setLocationStatus("位置を読み込んでいます…") }
             locationTimer = Timer.scheduledTimer(withTimeInterval: LocationSharePolicy.sendIntervalSeconds, repeats: true) { _ in
                 MainActor.assumeIsolated { self.tickLocation() }
             }
@@ -77,7 +77,7 @@ final class HelperSession: ObservableObject {
     /// 到着したら、もう位置は送らない(読むのは続ける)。
     func markArrived() {
         hasArrived = true
-        locationStatus = ""
+        setLocationStatus("")
     }
 
     /// [テスト: 家に近づく] 家から南西へ約 1km の所から、押すたびに 150m ずつ近づいた位置を送る。
@@ -92,16 +92,24 @@ final class HelperSession: ObservableObject {
         locationStatus = "テストの位置を送りました(家まで約 \(Int(distanceM(next, home).rounded())) m)"
     }
 
+    /// 地図の「あなた」を動かす最小の距離(m)。位置は 1 秒に何度も届くので、少しの揺れでは画面を描き直さない。
+    private static let mapMoveThresholdM = 5.0
+
     private func onFix(_ fix: LocationTracker.Fix) {
         latestFix = fix
         guard !isDemo else { return }
-        myPoint = fix.point
-        if !hasArrived { locationStatus = "位置を共有しています(到着するまで)" }
+        // @Published は同じ値を入れても画面を描き直すので、変わったときだけ入れる
+        if myPoint.map({ distanceM($0, fix.point) >= Self.mapMoveThresholdM }) ?? true { myPoint = fix.point }
+        setLocationStatus(hasArrived ? "" : "位置を共有しています(到着するまで)")
         if lastSent == nil { Task { await self.sendLocation(fix.point, accuracy: fix.accuracy) } }
     }
 
+    private func setLocationStatus(_ text: String) {
+        if locationStatus != text { locationStatus = text }
+    }
+
     private func tickLocation() {
-        guard !isDemo, let fix = latestFix else { return }
+        guard !isDemo, !hasArrived, let fix = latestFix else { return }
         if shouldSendLocation(fix.point, lastSent: lastSent, nowMs: Date().timeIntervalSince1970 * 1000) {
             Task { await self.sendLocation(fix.point, accuracy: fix.accuracy) }
         }
@@ -200,9 +208,9 @@ final class HelperSession: ObservableObject {
     }
 
     private func announce(mine: Int, isScoop: Bool) {
-        myScoops = mine
+        if myScoops != mine { myScoops = mine }
         let next = ScoopCounts(mine: mine, team: teamScoops(helpers, myUserId: userId, myCount: mine))
-        teamCount = next.team
+        if teamCount != next.team { teamCount = next.team }
         defer { lastCounts = next }
         guard let announcement = announcementFor(prev: lastCounts, next: next) else { return }
         if announcement.kind == .milestone { coach.fanfare() }
@@ -221,7 +229,7 @@ final class HelperSession: ObservableObject {
         scoopTimer = nil
         isScooping = false
         requestId = nil
-        locationStatus = ""
+        setLocationStatus("")
     }
 
     private func switchRequest(to request: HelpRequest) {

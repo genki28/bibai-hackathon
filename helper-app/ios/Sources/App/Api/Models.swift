@@ -45,6 +45,8 @@ struct Helper: Decodable, Identifiable, Equatable {
     let joinedAt: String?
     let arrivedAt: String?
     let scoops: Int?
+    /// アプリで測った消費カロリー(kcal)。測っていない人・まだ届いていない人は nil。
+    let calories: Double?
 
     var id: String { userId }
 }
@@ -70,6 +72,12 @@ struct HelpRequest: Decodable, Identifiable, Equatable {
     let leaderUserId: String?
     let startedAt: String?
     let finishedAt: String?
+    /// 雪かきの結果(終わった依頼だけ)。calories は時間から出した値(測っていない人に使う)。
+    let result: WorkResult?
+
+    struct WorkResult: Decodable, Equatable {
+        let calories: Double?
+    }
 
     /// 美唄市の中心あたり(位置がない依頼に使う。src/help-requests/views.ts の BIBAI_CENTER と同じ)。
     static let bibaiCenter = GeoPoint(lat: 43.33, lng: 141.853)
@@ -86,6 +94,8 @@ struct HelpRequest: Decodable, Identifiable, Equatable {
 
     func helper(_ userId: String) -> Helper? { allHelpers.first { $0.userId == userId } }
     func hasArrived(_ userId: String) -> Bool { helper(userId)?.arrivedAt != nil }
+    /// その人の消費カロリー。アプリで測った値があればそれ、なければ時間から出した値(サーバーの caloriesOf と同じ)。
+    func calories(of helper: Helper) -> Double { helper.calories ?? result?.calories ?? 0 }
     var leaderName: String { allHelpers.first { $0.userId == leaderUserId }?.displayName ?? "リーダー" }
     /// 範囲を記録して終われるか(リーダー。リーダーがいない古い依頼はだれでも)。
     func canFinish(_ userId: String) -> Bool { leaderUserId == nil || leaderUserId == userId }
@@ -94,27 +104,6 @@ struct HelpRequest: Decodable, Identifiable, Equatable {
 /// 合言葉。
 struct ArrivalCode: Decodable {
     let code: String
-}
-
-/// お疲れ様の画面のポイント。
-struct RequestPoints: Decodable, Equatable {
-    struct Reunion: Decodable, Equatable {
-        let points: Int
-        let partners: [String]
-    }
-
-    struct Scoops: Decodable, Equatable {
-        let mine: Int
-        let total: Int
-    }
-
-    let workPoints: Int
-    let stars: Int?
-    let ratingPoints: Int
-    let reunion: Reunion
-    let firstFinishBonus: Int
-    let total: Int
-    let scoops: Scoops
 }
 
 /// チームの記録(GET /api/teams/mine/:userId。src/help-requests/snow-map.ts の MyTeams と同じ形)。

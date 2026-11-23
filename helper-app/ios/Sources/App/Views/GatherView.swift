@@ -38,10 +38,9 @@ struct GatherView: View {
                 Button { Task { await start() } } label: { IconLabel(icon: "snowman", text: "雪かきを始める") }
                     .buttonStyle(.pixel)
                     .disabled(isStarting)
-            } else {
-                ProgressView("読み込んでいます…")
             }
         }
+        .loadingOverlay(request == nil && error == nil)
         .task {
             await app.pollRequest(requestId, onUpdate: { latest in
                 if request == nil { session.beginTrip(latest) }
@@ -58,8 +57,10 @@ struct GatherView: View {
         isStarting = true
         defer { isStarting = false }
         do {
-            let started = try await app.api.start(id: requestId, userId: app.userId)
-            app.go(AppModel.screen(for: started, userId: app.userId))
+            try await app.whileBusy {
+                let started = try await app.api.start(id: requestId, userId: app.userId)
+                app.go(AppModel.screen(for: started, userId: app.userId))
+            }
         } catch {
             self.error = "始められませんでした: \(error.localizedDescription)"
         }

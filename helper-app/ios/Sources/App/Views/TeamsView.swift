@@ -21,14 +21,13 @@ struct TeamsView: View {
                     PixelCard { Text("まだ記録がありません。雪かきに参加すると、ここに残ります。") }
                 }
                 ForEach(teams.teams) { team in TeamCard(team: team) }
-            } else if isLoading {
-                ProgressView("読み込んでいます…")
             }
             Button { openSnowMap() } label: { IconLabel(icon: "snowman", text: "美唄の雪山マップを見る") }
                 .buttonStyle(.pixelSecondary)
         }
         .refreshable { await load() }
         .task { await load() }
+        .loadingOverlay(isLoading && teams == nil)
     }
 
     private func summary(_ teams: MyTeams) -> some View {

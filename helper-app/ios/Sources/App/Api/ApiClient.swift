@@ -89,10 +89,6 @@ final class ApiClient: Sendable {
         try await get("/api/help-requests/\(id)/arrival-code", query: ["userId": userId], as: ArrivalCode.self).code
     }
 
-    func points(id: String, userId: String) async throws -> RequestPoints {
-        try await get("/api/help-requests/\(id)/points", query: ["userId": userId], as: RequestPoints.self)
-    }
-
     /// 自分が入ったチームと、消費カロリーの合計(チームの記録)。
     func myTeams(userId: String) async throws -> MyTeams {
         try await get("/api/teams/mine/\(userId)", as: MyTeams.self)
