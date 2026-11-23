@@ -85,3 +85,10 @@ iPhone(Swift / SwiftUI)と Android(Kotlin / Jetpack Compose)で、**同じ動き
 5. **本人確認は Web と同じ仕組みで**: 参加したら(すでに確認済みなら飛ばす)、アプリの中のブラウザ(iPhone: WKWebView、Android: WebView)で `{サーバーの URL}/liff/identity.html?appUserId={利用者 ID}&appName={名前(URL 用に変換)}` を開く。顔の照合はその画面がスマホの中で行う(同じ AI・同じ判定)。カメラを使えるようにする(iPhone: `NSCameraUsageDescription` と、WKWebView のカメラの許可、`allowsInlineMediaPlayback`。Android: `CAMERA` の権限と `WebChromeClient.onPermissionRequest`、`setMediaPlaybackRequiresUserGesture(false)`)。2 秒ごとに `GET /api/identity/{userId}` を読み、`verified: true` になったら閉じて 3 へ。その画面の下に [テスト: 本人確認をスキップ] がある
 6. **消費カロリーはアプリで測る**: 雪かき中(画面を閉じていても)、加速度から消費カロリーを数える。1 サンプルごとに、なめらかにした揺れの大きさ(スコップ計と同じ 5 サンプルの平均)が **1.5 m/s² 以上なら 5.5 METs(雪かき)、それより小さければ 2.0 METs(立って休む)** として、`kcal += METs × 60(kg)× 経過時間(時間)× 1.05`(サンプルの間が 1 秒より空いたら、その間は数えない)。純粋な関数にしてテストを書く。回数と一緒に `POST .../scoops { userId, count, calories }`(calories は整数、0〜5,000)で送る。雪かき中の画面に「消費カロリー 約〇kcal」を出す
 7. **ランキングをやめて「チームの記録」に**: 下のタブ「ランキング」を「チームの記録」に変える。`GET /api/teams/mine/{userId}` の `{ totalCalories, teamCount, partners, teams: [{ id, finishedAt, area, members, teamCalories, myCalories }] }` で、「あなたのチームで 合計 〇kcal」「〇回 ・ 〇人といっしょに」と、チームごとのカード(いつ・どこ・一緒にやった人の名前・チームの kcal・自分の kcal)。[美唄の雪山マップを見る] で `{サーバーの URL}/snow-map.html` を外のブラウザで開く。お疲れ様の画面にも「チームで 〇kcal」を出す
+
+## 第 3 版の変更(2026-11-23。iPhone で試した結果から)
+
+1. **画面が変わるときは必ずローディングを出す**: 通信を待つ間(参加・到着・開始・雪かきを終える → 範囲の画面・完了 → お疲れ様 など)、ボタンを押せない状態にして、画面の真ん中にローディング(雪の結晶が回る・「読み込み中…」)を出す。止まっているように見せない
+2. **お疲れ様の画面の [もう一度見る] はなくす**(演出は 1 回だけ)
+3. **動きを軽くする**: 画面ごとの読み直しの間隔・地図の作り直し・ドット絵や演出の描き直しを見直し、見えていない画面のタイマーや読み直しは止める。重い処理は画面の外(裏の処理)でする
+4. **ポイントは見せず、すべて消費カロリーにする**: お疲れ様の画面は「CLEAR」と **チームでの消費カロリー**(大きく・数字が回る演出)、あなたの消費カロリー、一緒にやった人の名前と、それぞれの kcal。ポイント・評価のポイント・再会ボーナス・初回ボーナスの表示は出さない。チームの kcal は `GET /api/teams/mine/{userId}` の、その依頼の `teamCalories`(終わってすぐで、まだ全員の kcal が届いていなければ、数秒あけて読み直す)
