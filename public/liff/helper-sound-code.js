@@ -84,6 +84,7 @@ export function startSoundCode({ requestId, userId, onArrived, onSkip }) {
   function start() {
     byId("sound-card").hidden = false;
     byId("arrive-row").hidden = true;
+    byId("sound-skip").hidden = false;
     byId("sound-card").scrollIntoView({ behavior: "smooth", block: "center" });
     play();
   }
