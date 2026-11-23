@@ -1,5 +1,6 @@
 // 【お年寄り】待機画面の「来てくれる人の現在地」(タクシーアプリのように、向かっている人を地図に出す)。
-// - 地図に、お年寄りの家(依頼に位置があれば)と、向かっている若者のアイコン(名前つき)を出す
+// - 地図に、お年寄りの家(依頼に位置があれば)と、向かっている若者をドット絵のキャラクター(名前つき)で出す。
+//   新しい位置が届くたびに、キャラクターが歩いて移動する(pixel-walker-marker.js)
 // - 下に 1 人ずつ「〇〇さん あと約 5 分 / 1 分前の位置」「〇〇さんが着きました」「位置の共有なし」を出す
 // - 位置はサーバーが依頼したお年寄り本人にだけ返す(30 分より古い位置・到着後は来ない)
 // - 更新は help-waiting.js の数秒ごとの読み直しのたびに update(request) を呼ぶ。操作はいらない
@@ -7,7 +8,8 @@
 
 import { byId } from "./common.js";
 import { helperProgress } from "./eta.js";
-import { BIBAI_CENTER, createMap, DETAIL_ZOOM, fitToPoints, showPersonMarker, showPin } from "./map.js";
+import { BIBAI_CENTER, createMap, DETAIL_ZOOM, fitToPoints, showPin } from "./map.js";
+import { createWalkerMarker } from "./pixel-walker-marker.js";
 import { el } from "./request-page.js";
 
 /** 地図をいちばん寄せたときの拡大率(家と若者が近いとき)。 */
@@ -51,7 +53,11 @@ function renderList(request, home, now) {
 /** 待機画面の現在地の表示を用意する。戻り値の update(request) を読み直しのたびに呼ぶ。 */
 export function createElderLiveMap() {
   let map = null;
-  let layers = [];
+  let homePin = null;
+  /** 向かっている人ごとのキャラクター(userId → 印)。 */
+  let walkers = new Map();
+  /** 地図の見える範囲を合わせたときの、人の並び(変わったときだけ合わせ直す。毎回動くと見づらいため)。 */
+  let fittedKey = "";
 
   const ensureMap = (home) => {
     if (map) return map;
@@ -60,12 +66,27 @@ export function createElderLiveMap() {
     return map;
   };
 
+  /** 向かっている人のキャラクターを、増やす・歩かせる・消す。 */
+  const drawWalkers = (moving) => {
+    const next = new Map();
+    moving.forEach((helper) => {
+      const walker = walkers.get(helper.userId) ?? createWalkerMarker(map, helper.location, `${helper.displayName} さん`);
+      walker.moveTo(helper.location);
+      next.set(helper.userId, walker);
+    });
+    walkers.forEach((walker, userId) => {
+      if (!next.has(userId)) walker.remove();
+    });
+    walkers = next;
+  };
+
   const drawMarkers = (request, home) => {
-    layers.forEach((layer) => layer.remove());
+    if (home && !homePin) homePin = showPin(map, home, "おうち");
     const moving = request.helpers.filter((h) => !h.arrivedAt && h.location);
-    const homeLayers = home ? [showPin(map, home, "おうち")] : [];
-    const helperLayers = moving.map((h) => showPersonMarker(map, h.location, `${h.displayName} さん`));
-    layers = [...homeLayers, ...helperLayers];
+    drawWalkers(moving);
+    const key = [home ? "home" : "", ...moving.map((h) => h.userId)].join("|");
+    if (key === fittedKey) return;
+    fittedKey = key;
     const points = [...(home ? [home] : []), ...moving.map((h) => h.location)];
     fitToPoints(map, points.length > 0 ? points : [BIBAI_CENTER], points.length > 0 ? MAX_FIT_ZOOM : OVERVIEW_ZOOM);
   };

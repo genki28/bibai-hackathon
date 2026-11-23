@@ -130,7 +130,7 @@ function setUpLocationButton() {
         showError("");
         button.disabled = false;
         button.textContent = "📍 もう一度取得";
-        showLocationText(`📍 現在地を入れました(誤差 約 ${Math.round(coords.accuracy)}m)`);
+        showLocationText("📍 現在地を入れました");
         showLocationMap({ lat: coords.latitude, lng: coords.longitude });
       },
       (error) => {

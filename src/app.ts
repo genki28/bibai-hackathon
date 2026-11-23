@@ -1,10 +1,12 @@
-import { JSONParseError, SignatureValidationFailed } from "@line/bot-sdk";
+import { JSONParseError, messagingApi, SignatureValidationFailed } from "@line/bot-sdk";
 import express from "express";
 import type { ErrorRequestHandler, Express, RequestHandler } from "express";
 import { fileURLToPath } from "node:url";
 import { createWebhookHandlers } from "./bot/webhook.js";
 import { isBotConfigured, isLiffConfigured } from "./config.js";
 import { createHelpRequestRouter } from "./help-requests/routes.js";
+import { createElderNotifier } from "./help-requests/notify.js";
+import type { NotifyElder } from "./help-requests/notify.js";
 import { createSnowDepthProvider } from "./help-requests/snow-depth.js";
 import { createIdentityRouter } from "./identity/routes.js";
 import type { IdentityStore } from "./identity/store.js";
@@ -14,7 +16,7 @@ import { createInviteRouter } from "./invites/routes.js";
 import type { InviteStore } from "./invites/store.js";
 import { createStores } from "./storage.js";
 import { createTestModeRouter } from "./test-mode/routes.js";
-import { TEST_USERS } from "./test-mode/users.js";
+import { isTestUserId, TEST_USERS } from "./test-mode/users.js";
 import { verifyIdTokenWithLine } from "./users/idToken.js";
 import { createMenuUnlinker } from "./users/menu.js";
 import { createUsersRouter } from "./users/routes.js";
@@ -76,7 +78,23 @@ export type AppOptions = WeatherRouterOptions &
     readonly inviteStore?: InviteStore;
     /** リーダーを選ぶときの乱数(テスト用)。helpRequestStore を渡したときは使わない。 */
     readonly random?: RandomSource;
+    /** 若者が参加したときに、お年寄りの LINE に知らせる処理(テスト用の差し替え)。 */
+    readonly notifyElder?: NotifyElder;
   };
+
+/** お年寄りへの「向かっています」のお知らせ。LINE とつながっていない(手元で .env が空)ときは何もしない。 */
+function defaultElderNotifier(config: AppConfig, botConfigured: boolean): NotifyElder {
+  if (!botConfigured || !isLiffConfigured(config)) return async () => {};
+  const client = new messagingApi.MessagingApiClient({ channelAccessToken: config.channelAccessToken });
+  return createElderNotifier({
+    liffId: config.liffId,
+    push: async (to, messages) => {
+      await client.pushMessage({ to, messages });
+    },
+    // テスト用の利用者は LINE にいない(送ると失敗する)ので送らない
+    shouldSkip: isTestUserId,
+  });
+}
 
 export function createApp(config: AppConfig, options: AppOptions = {}): Express {
   const app = express();
@@ -131,6 +149,8 @@ export function createApp(config: AppConfig, options: AppOptions = {}): Express 
       listReferrals: inviteStore.listReferrals,
       // 参加を取り消したら本人確認も取り消す(次に参加するときは、もう一度顔の照合が必要)
       onLeave: identityStore.remove,
+      // 若者が参加したら「〇〇さんが向かっています」をお年寄りの LINE に送る
+      notifyElder: options.notifyElder ?? defaultElderNotifier(config, botConfigured),
       // 音の合言葉は、サーバーだけが知っている LINE のチャネルシークレットから作る
       arrivalCodeSecret: config.channelSecret,
     }),

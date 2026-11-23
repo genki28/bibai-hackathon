@@ -43,7 +43,7 @@ HTML の中の、次の **id と name / value はそのまま残してくださ�
 | 道具(チェックと数) | `data-tool="道具の名前"` と `.tool-count` | `<div class="tool-item"><input type="checkbox" data-tool="ママさんダンプ"> <input class="tool-count" type="number"></div>` | `name="tools"` がないときは、チェックした道具を「ママさんダンプ×1、…」にまとめて送る(数は同じ `.tool-item` の中の `.tool-count`) |
 | 位置(緯度・経度) | `name="lat"` と `name="lng"` | `<input type="hidden" name="lat">` `<input type="hidden" name="lng">` | 2 つそろったときだけ送る |
 | 現在地ボタン | `id="use-location-button"` | `<button type="button" id="use-location-button">いまいる場所を使う</button>` | 押すと、上の `lat` / `lng` に現在地が入る(上の 2 つの hidden と一緒に置く) |
-| 現在地の結果 | `id="location-display"` / `id="location-map"` | `<p id="location-display"></p>` `<div id="location-map" class="map-box" hidden></div>` | 結果の文字(「現在地を入れました(誤差 約 12m)」)と、ピンを立てた地図。地図には Leaflet の読み込みが必要(今のフォームを見本に) |
+| 現在地の結果 | `id="location-display"` / `id="location-map"` | `<p id="location-display"></p>` `<div id="location-map" class="map-box" hidden></div>` | 結果の文字(「現在地を入れました」)と、ピンを立てた地図。地図には Leaflet の読み込みが必要(今のフォームを見本に) |
 
 位置が送られないときは、地図には美唄市の中心あたりが出ます。名前・住所・正確な位置は、参加した若者にだけ見せます。
 
