@@ -4,8 +4,8 @@ import { createDemoMap } from "../public/snow-map/demo-data.js";
 const NOW = Date.parse("2026-11-23T03:00:00Z");
 
 describe("createDemoMap(雪山マップの見本のデータ)", () => {
-  test("たくさんの雪山を作る(ふつうは 60 個)", () => {
-    expect(createDemoMap({ now: NOW }).piles).toHaveLength(60);
+  test("たくさんの雪山を作る(ふつうは 150 個)", () => {
+    expect(createDemoMap({ now: NOW }).piles).toHaveLength(150);
   });
 
   test("同じ種なら、いつも同じ雪山", () => {
@@ -40,7 +40,7 @@ describe("createDemoMap(雪山マップの見本のデータ)", () => {
 
   test("全体の数は、雪山の数・関わった人の数(重なりなし)・カロリーの合計", () => {
     const map = createDemoMap({ now: NOW });
-    expect(map.totals.piles).toBe(60);
+    expect(map.totals.piles).toBe(150);
     expect(map.totals.calories).toBe(map.piles.reduce((sum, p) => sum + p.totalCalories, 0));
     expect(map.totals.people).toBe(new Set(map.piles.flatMap((p) => p.members.map((m) => m.displayName))).size);
     expect(map.isDemo).toBe(true);

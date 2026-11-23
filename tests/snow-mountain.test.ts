@@ -1,58 +1,103 @@
 import { describe, expect, test } from "vitest";
-import { METERS_PER_KCAL, STEPS, clusterPiles, mountainFeatures, ringAround } from "../public/snow-map/snow-mountain.js";
+import {
+  METERS_PER_KCAL,
+  clusterPiles,
+  growProgress,
+  mountainProfile,
+  mountainSize,
+  pickMountain,
+  seedFromId,
+  snowNoise,
+  toLocalMeters,
+} from "../public/snow-map/snow-mountain.js";
 
 const CENTER = { lat: 43.33, lng: 141.853 };
 
-describe("ringAround(雪山の 1 段の輪)", () => {
-  test("閉じた多角形(最初と最後の点が同じ)", () => {
-    const ring = ringAround(CENTER, 30, 8);
-    expect(ring).toHaveLength(9);
-    expect(ring[0]).toEqual(ring[8]);
-  });
-
-  test("半径 30m の輪は、真ん中から約 30m 離れている", () => {
-    const [lng, lat] = ringAround(CENTER, 30, 8)[0];
-    const dy = (lat - CENTER.lat) * 111_320;
-    const dx = (lng - CENTER.lng) * 111_320 * Math.cos((CENTER.lat * Math.PI) / 180);
-    expect(Math.hypot(dx, dy)).toBeCloseTo(30, 0);
-  });
-});
-
-describe("mountainFeatures(カロリー → 段々の雪山)", () => {
+describe("mountainSize(カロリー → 雪山の高さと広がり)", () => {
   const members = [
     { displayName: "A", calories: 300 },
     { displayName: "B", calories: 100 },
   ];
 
-  test("段の数だけ形ができ、上の段ほど小さく高い", () => {
-    const features = mountainFeatures({ id: "p1", ...CENTER, members }, 1);
-    expect(features).toHaveLength(STEPS);
-    const heights = features.map((f) => f.properties.height);
-    expect([...heights].sort((a, b) => a - b)).toEqual(heights);
-    expect(features[0].properties.base).toBe(0);
+  test("高さは、みんなのカロリーの合計 × METERS_PER_KCAL", () => {
+    expect(mountainSize({ members }).heightM).toBeCloseTo(400 * METERS_PER_KCAL);
   });
 
-  test("いちばん上の高さは、みんなのカロリーの合計 × METERS_PER_KCAL", () => {
-    const features = mountainFeatures({ id: "p1", ...CENTER, members }, 1);
-    expect(features[STEPS - 1].properties.height).toBeCloseTo(400 * METERS_PER_KCAL);
+  test("カロリーが多いほど、高く広い", () => {
+    const small = mountainSize({ members: [{ calories: 100 }] });
+    const big = mountainSize({ members: [{ calories: 900 }] });
+    expect(big.heightM).toBeGreaterThan(small.heightM);
+    expect(big.radiusM).toBeGreaterThan(small.radiusM);
   });
 
-  test("育つ途中(progress 0.5)は、半分の高さ", () => {
-    const top = (p: number) => mountainFeatures({ id: "p1", ...CENTER, members }, p)[STEPS - 1].properties.height;
-    expect(top(0.5)).toBeCloseTo(top(1) / 2);
-  });
-
-  test("段の色は、その高さの層をつくった人で分ける(カロリーの多い A が下の 3/4)", () => {
-    const owners = mountainFeatures({ id: "p1", ...CENTER, members }, 1).map((f) => f.properties.member);
-    const countA = owners.filter((name) => name === "A").length;
-    expect(countA).toBe(STEPS * 0.75);
-    expect(owners[0]).toBe("A");
-    expect(owners[STEPS - 1]).toBe("B");
+  test("引いて見たときの倍率(scale)で、高さも広がりも同じ倍になる", () => {
+    const one = mountainSize({ members }, 1);
+    const four = mountainSize({ members }, 4);
+    expect(four.heightM).toBeCloseTo(one.heightM * 4);
+    expect(four.radiusM).toBeCloseTo(one.radiusM * 4);
   });
 
   test("カロリーが 0 でも、小さな雪山は出す(見えなくならないように)", () => {
-    const features = mountainFeatures({ id: "p1", ...CENTER, members: [{ displayName: "A", calories: 0 }] }, 1);
-    expect(features[STEPS - 1].properties.height).toBeGreaterThan(0);
+    expect(mountainSize({ members: [{ calories: 0 }] }).heightM).toBeGreaterThan(0);
+  });
+});
+
+describe("雪山の形(でこぼこ・横から見た形)", () => {
+  test("同じ ID なら同じ種、違う ID なら違う種", () => {
+    expect(seedFromId("demo-1")).toBe(seedFromId("demo-1"));
+    expect(seedFromId("demo-1")).not.toBe(seedFromId("demo-2"));
+  });
+
+  test("でこぼこは -1〜1 で、種が違うと形も違う", () => {
+    const angles = Array.from({ length: 24 }, (_, i) => (i / 24) * Math.PI * 2);
+    const a = angles.map((angle) => snowNoise(1, angle, 0.5));
+    const b = angles.map((angle) => snowNoise(2, angle, 0.5));
+    [...a, ...b].forEach((n) => {
+      expect(n).toBeGreaterThanOrEqual(-1);
+      expect(n).toBeLessThanOrEqual(1);
+    });
+    expect(a).not.toEqual(b);
+  });
+
+  test("横から見た形は、真ん中がいちばん高く、すそで 0 になる", () => {
+    expect(mountainProfile(0)).toBe(1);
+    expect(mountainProfile(1)).toBe(0);
+    expect(mountainProfile(0.3)).toBeGreaterThan(mountainProfile(0.6));
+  });
+});
+
+describe("growProgress(下から育つ割合)", () => {
+  test("はじめは 0、時間がたつと 1。途中は半分より先に進む", () => {
+    expect(growProgress(0, 0, 1000, 100)).toBe(0);
+    expect(growProgress(1000, 0, 1000, 100)).toBe(1);
+    expect(growProgress(500, 0, 1000, 100)).toBeGreaterThan(0.5);
+  });
+
+  test("後ろの雪山ほど遅れて育つ", () => {
+    expect(growProgress(500, 3, 1000, 100)).toBeLessThan(growProgress(500, 0, 1000, 100));
+  });
+});
+
+describe("toLocalMeters(基準の点からの位置)", () => {
+  test("北へ 0.001 度は、約 111m 北", () => {
+    const p = toLocalMeters(CENTER, { lat: CENTER.lat + 0.001, lng: CENTER.lng });
+    expect(p.x).toBeCloseTo(0);
+    expect(p.y).toBeCloseTo(111.32, 1);
+  });
+});
+
+describe("pickMountain(押した点に近い雪山を選ぶ)", () => {
+  const candidates = [
+    { item: "a", base: { x: 100, y: 300 }, peak: { x: 100, y: 200 }, radiusPx: 30 },
+    { item: "b", base: { x: 300, y: 300 }, peak: { x: 300, y: 250 }, radiusPx: 30 },
+  ];
+
+  test("てっぺんのあたりを押しても、その雪山が選ばれる", () => {
+    expect(pickMountain({ x: 105, y: 210 }, candidates)).toBe("a");
+  });
+
+  test("どの雪山からも遠いときは null", () => {
+    expect(pickMountain({ x: 200, y: 50 }, candidates)).toBeNull();
   });
 });
 

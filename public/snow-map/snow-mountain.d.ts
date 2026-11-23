@@ -1,25 +1,22 @@
 // snow-mountain.js の型(TypeScript のテストから使うため)。
 export type Member = { readonly displayName: string; readonly calories: number };
-export type MountainFeature = {
-  readonly type: "Feature";
-  readonly geometry: { readonly type: "Polygon"; readonly coordinates: ReadonlyArray<ReadonlyArray<[number, number]>> };
-  readonly properties: {
-    readonly id: string;
-    readonly step: number;
-    readonly base: number;
-    readonly height: number;
-    readonly member: string;
-    readonly memberIndex: number;
-  };
-};
-export const STEPS: number;
 export const METERS_PER_KCAL: number;
-export function ringAround(center: { readonly lat: number; readonly lng: number }, radiusM: number, sides?: number): Array<[number, number]>;
-export function mountainFeatures(
-  pile: { readonly id: string; readonly lat: number; readonly lng: number; readonly members: ReadonlyArray<Member> },
-  progress: number,
-  scale?: number,
-): MountainFeature[];
+export function mountainSize(pile: { readonly members: ReadonlyArray<{ readonly calories: number }> }, scale?: number): { heightM: number; radiusM: number };
+export function seedFromId(id: string): number;
+export function seededUnit(seed: number, index: number): number;
+export function snowNoise(seed: number, angle: number, u: number): number;
+export function mountainProfile(u: number): number;
+export function growProgress(elapsedMs: number, index: number, growMs: number, staggerMs: number): number;
+export function toLocalMeters(
+  origin: { readonly lat: number; readonly lng: number },
+  point: { readonly lat: number; readonly lng: number },
+): { x: number; y: number };
+type ScreenPoint = { readonly x: number; readonly y: number };
+export function pickMountain<T>(
+  point: ScreenPoint,
+  candidates: ReadonlyArray<{ readonly item: T; readonly base: ScreenPoint; readonly peak: ScreenPoint; readonly radiusPx: number }>,
+  minPx?: number,
+): T | null;
 export type Pile = {
   readonly id: string;
   readonly lat: number;
