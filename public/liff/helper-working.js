@@ -6,7 +6,7 @@
 // スコップ計をオンにしたら、画面が消えないようにする(wake-lock.js)。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
-import { byId, callApi, fetchAppConfig } from "./common.js";
+import { byId, callApi } from "./common.js";
 import { navigateTo, pageReady } from "./loading.js";
 import {
   fetchRequest,
@@ -119,15 +119,6 @@ const sendScoops = (id, userId) => (count, { keepalive = false } = {}) =>
     keepalive,
   });
 
-/** テスト用の設定(testMode)がオンか。読めなければオフ。 */
-async function isTestMode() {
-  try {
-    return (await fetchAppConfig()).testMode;
-  } catch {
-    return false;
-  }
-}
-
 /** 音の実況のボタンの文字を、今のオン / オフに合わせる。 */
 function showSoundToggle(coach) {
   const button = byId("sound-toggle");
@@ -153,6 +144,16 @@ function connectSound(coach) {
     coach.say("スコップ計、スタート!");
   });
   byId("scoop-fake").addEventListener("click", () => coach.unlock(), { once: true });
+  // スコップ計はいつもオン。最初に画面のどこかを押したら、音を出せるようにして、画面を消さないようにする
+  keepScreenOn();
+  document.addEventListener(
+    "pointerdown",
+    () => {
+      coach.unlock();
+      keepScreenOn();
+    },
+    { once: true },
+  );
 }
 
 /** 状態に合わせて画面を移る。移ったら(または続けられなければ)true。 */
@@ -192,7 +193,6 @@ async function main() {
       coach.scoop();
       movedMeter?.setMyCount(count);
     },
-    isTestMode: await isTestMode(),
   });
   movedMeter = startMovedMeter({ request, userId, myCount: scoopMeter.count(), coach });
   let latestRequest = request;

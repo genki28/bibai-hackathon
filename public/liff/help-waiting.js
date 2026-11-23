@@ -4,7 +4,7 @@
 // 来た人のスマホが鳴らす音の合言葉を聞き取って、その人を到着にできる(elder-sound-arrive.js)。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
-import { byId, callApi, fetchAppConfig, isPreviewMode } from "./common.js";
+import { byId, callApi, isPreviewMode } from "./common.js";
 import { createElderLiveMap } from "./elder-live-map.js";
 import { createElderSoundArrive } from "./elder-sound-arrive.js";
 import { pageReady } from "./loading.js";
@@ -82,15 +82,6 @@ async function refresh(userId) {
   return false;
 }
 
-/** テスト用の設定(testMode)がオンか。読めなければオフ。 */
-async function isTestMode() {
-  try {
-    return (await fetchAppConfig()).testMode;
-  } catch {
-    return false;
-  }
-}
-
 async function onCancel() {
   if (!confirm("雪かきのおねがいを取り消しますか?")) return;
   const button = byId("cancel-button");
@@ -136,7 +127,7 @@ async function main() {
     return;
   }
   const userId = await userIdPromise;
-  soundArrive = createElderSoundArrive({ userId, isTestMode: await isTestMode(), onChange: renderAll });
+  soundArrive = createElderSoundArrive({ userId, onChange: renderAll });
   // 1 回目の様子がそろったら画面を見せる
   stopPolling = startPolling(
     () => refresh(userId),

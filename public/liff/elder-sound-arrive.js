@@ -2,7 +2,7 @@
 // - 向かっている人(まだ着いていない人)がいる間だけ、ボタンを出す
 // - 押すとマイクで聞き始める。若者のスマホが鳴らす合言葉が聞こえたら、サーバーに送って、その人を到着にする
 // - 全員が着いたら、または 3 分たったら止める。音はどこにも送らない(送るのは聞き取った 4 桁だけ)
-// - テスト用の設定(testMode)がオンのときだけ [🧪 合言葉をまねる](マイクを使わず、画面の中で鳴らして聞く)
+// - [🧪 合言葉をまねる] で、マイクを使わず画面の中で鳴らして聞く(デモ・1 台で試すため)
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
 import { byId, callApi } from "./common.js";
@@ -21,11 +21,11 @@ const comingHelpers = (request) =>
     : [];
 
 /**
- * @param {{ userId: string, isTestMode: boolean, onChange: (request: object) => void }} options
+ * @param {{ userId: string, onChange: (request: object) => void }} options
  *   onChange は、だれかが着いたときに、新しい依頼の様子で呼ぶ(画面をすぐ直すため)
  * @returns {{ update: (request: object | null) => void }}
  */
-export function createElderSoundArrive({ userId, isTestMode, onChange }) {
+export function createElderSoundArrive({ userId, onChange }) {
   let request = null;
   let context = null;
   let listener = null;
@@ -98,10 +98,10 @@ export function createElderSoundArrive({ userId, isTestMode, onChange }) {
   byId("sound-listen").addEventListener("click", () =>
     begin(() => listenWithMicrophone(context, onCode, onLevel)),
   );
-  if (isTestMode) {
+  {
     const fake = byId("sound-fake");
     fake.hidden = false;
-    // テスト用: まだ着いていない人の合言葉を受け取り、スピーカーとマイクの代わりに画面の中でつないで鳴らす
+    // まだ着いていない人の合言葉を受け取り、スピーカーとマイクの代わりに画面の中でつないで鳴らす
     fake.addEventListener("click", () =>
       begin(async () => {
         const helper = comingHelpers(request)[0];
