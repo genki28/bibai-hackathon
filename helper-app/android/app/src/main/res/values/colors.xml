@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPEC の 5 色 -->
+<resources>
+    <color name="navy">#192e49</color>
+    <color name="vermilion">#b73e2c</color>
+    <color name="white">#ffffff</color>
+    <color name="sky">#d4e0e8</color>
+    <color name="gold">#ffc94d</color>
+</resources>

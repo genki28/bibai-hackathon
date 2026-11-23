@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- public/liff/icons/warning.svg を VectorDrawable に直したもの(16×16 のドット絵) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="#192e49"
+        android:pathData="M7 1h2v2h1v2h1v2h1v2h1v2h1v2h1v2H1v-2h1v-2h1V9h1V7h1V5h1V3h1z" />
+    <path
+        android:fillColor="#ffffff"
+        android:pathData="M7 4h2v2h1v2h1v2h1v2h1v1H3v-1h1v-2h1V8h1V6h1z" />
+    <path
+        android:fillColor="#b73e2c"
+        android:pathData="M7,6h2v4h-2z" />
+    <path
+        android:fillColor="#b73e2c"
+        android:pathData="M7,11h2v2h-2z" />
+</vector>

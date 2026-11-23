@@ -1,0 +1,148 @@
+package jp.bibai.yukikaki.helper.data
+
+import jp.bibai.yukikaki.helper.core.HelperScoops
+import jp.bibai.yukikaki.helper.core.LatLng
+import org.json.JSONArray
+import org.json.JSONObject
+
+// サーバーの返事(JSON)の形。src/help-requests/views.ts・request-points.ts・ranking.ts に合わせる。
+// 読むのは画面で使う項目だけ。
+
+/** 美唄市の中心あたり(依頼に位置がないとき)。 */
+val BIBAI_CENTER = LatLng(43.33, 141.853)
+
+/** 一覧の 1 件(参加していない人に見せる形)。 */
+data class PublicRequest(
+    val id: String,
+    val status: String,
+    val amount: String,
+    val area: String,
+    val helperCount: Int,
+    val capacity: Int,
+)
+
+data class Helper(
+    val userId: String,
+    val displayName: String,
+    val arrivedAt: String?,
+    val scoops: Int?,
+)
+
+/** 参加した人に見せる形(GET /api/help-requests/{id}?userId= と POST の返事)。 */
+data class MemberRequest(
+    val id: String,
+    val status: String,
+    val amount: String,
+    val area: String,
+    val name: String?,
+    val address: String?,
+    val home: LatLng,
+    val depth: String?,
+    val tools: String?,
+    val helpers: List<Helper>,
+    val capacity: Int,
+    val leaderUserId: String?,
+    val startedAt: String?,
+    /** elder / helper / guest(guest は参加していない)。 */
+    val viewer: String,
+) {
+    fun helperOf(userId: String): Helper? = helpers.firstOrNull { it.userId == userId }
+    fun isMember(userId: String): Boolean = helperOf(userId) != null
+    val arrivedCount: Int get() = helpers.count { it.arrivedAt != null }
+    val leaderName: String get() = helpers.firstOrNull { it.userId == leaderUserId }?.displayName ?: "リーダー"
+    /** 範囲を記録して終われるか(リーダー。リーダーがいない古い依頼はだれでも)。 */
+    fun canFinish(userId: String): Boolean = leaderUserId == null || leaderUserId == userId
+    fun scoops(): List<HelperScoops> = helpers.map { HelperScoops(it.userId, it.scoops) }
+}
+
+data class RequestPoints(
+    val workPoints: Int,
+    val stars: Int?,
+    val ratingPoints: Int,
+    val reunionPoints: Int,
+    val reunionPartners: List<String>,
+    val firstFinishBonus: Int,
+    val total: Int,
+    val myScoops: Int,
+    val totalScoops: Int,
+)
+
+data class RankingEntry(
+    val rank: Int,
+    val displayName: String,
+    val points: Int,
+    val isMe: Boolean,
+)
+
+private fun JSONObject.optStringOrNull(key: String): String? =
+    if (isNull(key) || !has(key)) null else optString(key).ifEmpty { null }
+
+private fun JSONObject.optIntOrNull(key: String): Int? = if (isNull(key) || !has(key)) null else optInt(key)
+
+private fun <T> JSONArray?.mapObjects(transform: (JSONObject) -> T): List<T> =
+    if (this == null) emptyList() else (0 until length()).map { transform(getJSONObject(it)) }
+
+object Parse {
+    fun publicRequest(o: JSONObject) = PublicRequest(
+        id = o.getString("id"),
+        status = o.optString("status"),
+        amount = o.optString("amount", "normal"),
+        area = o.optString("area", "美唄市内"),
+        helperCount = o.optInt("helperCount"),
+        capacity = o.optInt("capacity", 5),
+    )
+
+    private fun helper(o: JSONObject) = Helper(
+        userId = o.getString("userId"),
+        displayName = o.optString("displayName", "名無し"),
+        arrivedAt = o.optStringOrNull("arrivedAt"),
+        scoops = o.optIntOrNull("scoops"),
+    )
+
+    fun memberRequest(o: JSONObject): MemberRequest {
+        val lat = if (o.isNull("lat") || !o.has("lat")) o.optDouble("approxLat", BIBAI_CENTER.lat) else o.getDouble("lat")
+        val lng = if (o.isNull("lng") || !o.has("lng")) o.optDouble("approxLng", BIBAI_CENTER.lng) else o.getDouble("lng")
+        return MemberRequest(
+            id = o.getString("id"),
+            status = o.optString("status"),
+            amount = o.optString("amount", "normal"),
+            area = o.optString("area", "美唄市内"),
+            name = o.optStringOrNull("name"),
+            address = o.optStringOrNull("address"),
+            home = LatLng(lat, lng),
+            depth = o.optStringOrNull("depth"),
+            tools = o.optStringOrNull("tools"),
+            helpers = o.optJSONArray("helpers").mapObjects(::helper),
+            capacity = o.optInt("capacity", 5),
+            leaderUserId = o.optStringOrNull("leaderUserId"),
+            startedAt = o.optStringOrNull("startedAt"),
+            viewer = o.optString("viewer", "guest"),
+        )
+    }
+
+    fun points(o: JSONObject): RequestPoints {
+        val reunion = o.optJSONObject("reunion") ?: JSONObject()
+        val partners = reunion.optJSONArray("partners")
+        val scoops = o.optJSONObject("scoops") ?: JSONObject()
+        return RequestPoints(
+            workPoints = o.optInt("workPoints"),
+            stars = o.optIntOrNull("stars"),
+            ratingPoints = o.optInt("ratingPoints"),
+            reunionPoints = reunion.optInt("points"),
+            reunionPartners = if (partners == null) emptyList() else (0 until partners.length()).map { partners.getString(it) },
+            firstFinishBonus = o.optInt("firstFinishBonus"),
+            total = o.optInt("total"),
+            myScoops = scoops.optInt("mine"),
+            totalScoops = scoops.optInt("total"),
+        )
+    }
+
+    fun rankingEntry(o: JSONObject) = RankingEntry(
+        rank = o.optInt("rank"),
+        displayName = o.optString("displayName", "名無し"),
+        points = o.optInt("points"),
+        isMe = o.optBoolean("isMe"),
+    )
+
+    fun <T> list(array: JSONArray?, transform: (JSONObject) -> T): List<T> = array.mapObjects(transform)
+}

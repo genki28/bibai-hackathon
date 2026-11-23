@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- public/liff/icons/antenna.svg を VectorDrawable に直したもの(16×16 のドット絵) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="#192e49"
+        android:pathData="M2 4h2v3h1v2h2v1h2V9h1V7h2v3h-1v1h-2v2h3v2H4v-2h3v-2H5v-1H4V9H3V7H2z" />
+    <path
+        android:fillColor="#d4e0e8"
+        android:pathData="M4 5h1v2h1v1h2v1H6V8H5V7H4z" />
+    <path
+        android:fillColor="#b73e2c"
+        android:pathData="M10 3h2v1h1v2h-2V5h-1z" />
+    <path
+        android:fillColor="#192e49"
+        android:pathData="M11 1h2v1h1v1h1v3h-1V4h-1V3h-2z" />
+    <path
+        android:fillColor="#b73e2c"
+        android:pathData="M8,5h2v2h-2z" />
+</vector>
