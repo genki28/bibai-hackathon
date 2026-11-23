@@ -17,6 +17,7 @@ import {
 import { canFinish } from "./leader.js";
 import { fail } from "./model.js";
 import type { HelpRequest, Result } from "./model.js";
+import type { NotifyElder } from "./notify.js";
 import { buildRanking, isRankingPeriod } from "./ranking.js";
 import { pointsForRequest } from "./request-points.js";
 import { DEFAULT_SNOW_DEPTH_M } from "./score.js";
@@ -38,6 +39,8 @@ export type HelpRequestRouterOptions = {
   readonly listReferrals?: () => Promise<readonly Referral[]>;
   /** 参加の取り消しに成功したあとに呼ぶ(本人確認を取り消して、次に参加するときにもう一度確認させる)。 */
   readonly onLeave?: (userId: string) => Promise<void>;
+  /** 若者が参加した(向かい始めた)あとに呼ぶ(依頼したお年寄りの LINE に知らせる)。 */
+  readonly notifyElder?: NotifyElder;
   /** 音の合言葉を作るための秘密(サーバーだけが知っている値)。空なら手元用の値を使う。 */
   readonly arrivalCodeSecret?: string;
 };
@@ -176,9 +179,14 @@ export function createHelpRequestRouter(options: HelpRequestRouterOptions = {}):
       return userId ? run(id, userId, at) : null;
     };
 
+  const notifyElder = options.notifyElder ?? (async () => {});
   post("join", async (id, body, at) => {
     const input = parseJoinInput(body);
-    return input ? store.join(id, input, at) : null;
+    if (!input) return null;
+    const result = await store.join(id, input, at);
+    // 向かい始めたことを、お年寄りに知らせる(失敗しても参加はそのまま)
+    if (result.ok) await notifyElder(result.value, input.displayName);
+    return result;
   });
   const onLeave = options.onLeave ?? (async () => {});
   post(

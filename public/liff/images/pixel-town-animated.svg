@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 64" shape-rendering="crispEdges">
+  <!--
+    お年寄りの待機画面の絵(pixel-town.svg を動くようにしたもの)。雪が降り、二人がスコップを動かして雪を飛ばす。
+    動きは SVG の中の CSS(steps でカクカク動かして、ドット絵らしくする)。「動きを減らす」設定では止める。
+  -->
+  <style>
+    .shovel-a { animation: dig-a 1.2s steps(1) infinite; }
+    .shovel-b { animation: dig-b 1.2s steps(1) infinite 0.6s; }
+    .body-a { animation: bob 1.2s steps(1) infinite; }
+    .body-b { animation: bob 1.2s steps(1) infinite 0.6s; }
+    .toss-a { animation: toss-a 1.2s steps(4) infinite; }
+    .toss-b { animation: toss-b 1.2s steps(4) infinite 0.6s; }
+    .flake { animation: fall 6s linear infinite; }
+    .f2 { animation-duration: 7.5s; animation-delay: -2s; }
+    .f3 { animation-duration: 5.5s; animation-delay: -4s; }
+    .f4 { animation-duration: 8s; animation-delay: -1s; }
+    .f5 { animation-duration: 6.5s; animation-delay: -3s; }
+    .f6 { animation-duration: 7s; animation-delay: -5s; }
+    .smoke { animation: smoke 3s steps(3) infinite; }
+    @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(1px); } }
+    @keyframes dig-a { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-2px, -3px); } }
+    @keyframes dig-b { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(2px, -3px); } }
+    @keyframes toss-a { 0% { transform: translate(0, 0); opacity: 0; } 25% { opacity: 1; } 100% { transform: translate(10px, -12px); opacity: 0; } }
+    @keyframes toss-b { 0% { transform: translate(0, 0); opacity: 0; } 25% { opacity: 1; } 100% { transform: translate(-10px, -12px); opacity: 0; } }
+    @keyframes fall { from { transform: translate(0, -8px); } to { transform: translate(4px, 66px); } }
+    @keyframes smoke { 0% { transform: translate(0, 0); opacity: 0.9; } 100% { transform: translate(2px, -8px); opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
+    }
+  </style>
+  <path fill="#edf2f6" d="M0 0h192v64H0z"/>
+  <path fill="#d4e0e8" d="M0 38h12v-6h12v-8h12v-8h12v8h12v8h16v8h20v-8h12v-8h12v-8h12v8h12v8h12v8h36v24H0z"/>
+  <path fill="#fff" d="M36 24v-8h12v8h8v4H28v-4zm80 0v-8h16v8h8v4h-32v-4zM0 49h32v-4h40v4h28v-4h52v4h40v15H0z"/>
+  <!-- 木と玄関 -->
+  <path fill="#192e49" d="M16 26h4v4h4v4h4v4h-8v12h-4V38H8v-4h4v-4h4zm132-6h24v4h8v4h8v4h-4v20h-44V32h-4v-4h8v-4h4z"/>
+  <path fill="#fff" d="M148 20h24v4h8v4h-36v-4h4z"/>
+  <path fill="#b73e2c" d="M164 36h12v16h-12z"/>
+  <path fill="#ffc94d" d="M148 36h8v8h-8z"/>
+  <path fill="#fff" d="M172 42h2v2h-2z"/>
+  <!-- 煙突の煙 -->
+  <path class="smoke" fill="#d4e0e8" d="M174 14h4v4h-4z"/>
+  <!-- 雪かきをする一人目(左) -->
+  <g class="body-a">
+    <path fill="#192e49" d="M54 25h8v4h4v8h-4v4h4v11h-4v5h-8v-4h4v-9h-4v8h-4V40h4v-3h-4v-8h4z"/>
+    <path fill="#b73e2c" d="M54 25h8v4h4v4H50v-4h4zm0 15h8v8h-8z"/>
+    <path fill="#fff" d="M54 33h8v4h-8z"/>
+    <path fill="#192e49" d="M60 33h2v2h-2z"/>
+  </g>
+  <g class="shovel-a">
+    <path fill="#192e49" d="M68 43h4v4h4v4h4v4h-4v-4h-4v-4h-4z"/>
+    <path fill="#b73e2c" d="M76 51h12v4h-4v4h-8z"/>
+  </g>
+  <path class="toss-a" fill="#fff" d="M86 48h3v3h-3zm4 2h2v2h-2z"/>
+  <!-- 雪かきをする二人目(右) -->
+  <g class="body-b">
+    <path fill="#192e49" d="M116 25h8v4h4v8h-4v3h4v12h-4v-8h-4v9h4v4h-8v-5h-4V41h4v-4h-4v-8h4z"/>
+    <path fill="#fff" d="M116 33h8v4h-8z"/>
+    <path fill="#192e49" d="M116 33h2v2h-2z"/>
+    <path fill="#b73e2c" d="M116 29h12v4h-16v-4z"/>
+  </g>
+  <g class="shovel-b">
+    <path fill="#192e49" d="M112 43h-4v4h-4v4h-4v4h4v-4h4v-4h4z"/>
+    <path fill="#b73e2c" d="M104 51H92v4h4v4h8z"/>
+  </g>
+  <path class="toss-b" fill="#fff" d="M92 48h3v3h-3zm-4 2h2v2h-2z"/>
+  <!-- まんなかの雪の山 -->
+  <path fill="#d4e0e8" d="M80 60v-4h4v-4h4v-4h12v4h4v4h4v4zM36 57h8v2h-8zm96 2h8v2h-8z"/>
+  <!-- 降る雪 -->
+  <path class="flake" fill="#fff" d="M12 2h2v2h-2z"/>
+  <path class="flake f2" fill="#fff" d="M40 0h2v2h-2z"/>
+  <path class="flake f3" fill="#fff" d="M70 4h2v2h-2z"/>
+  <path class="flake f4" fill="#fff" d="M100 0h2v2h-2z"/>
+  <path class="flake f5" fill="#fff" d="M134 2h2v2h-2z"/>
+  <path class="flake f6" fill="#fff" d="M160 0h2v2h-2z"/>
+  <path class="flake f3" fill="#fff" d="M186 3h2v2h-2z"/>
+  <path class="flake f2" fill="#fff" d="M24 5h1v1h-1z"/>
+  <path class="flake f5" fill="#fff" d="M118 6h1v1h-1z"/>
+</svg>

@@ -183,6 +183,33 @@
         background: #a84320;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
       }
+      /* 向かっている人のドット絵のキャラクター(pixel-walker-marker.js)。主人公の画像の 4 コマのうち 2 コマを交互に */
+      .walker-marker {
+        background: none;
+        border: 0;
+      }
+      .walker-sprite {
+        display: block;
+        width: 54px;
+        height: 49px;
+        background: url("./images/working-hero.png") 0 0 / 400% 100% no-repeat;
+        image-rendering: pixelated;
+        filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+      }
+      .walker-sprite.is-walking {
+        animation: walker-step 0.5s steps(1) infinite;
+      }
+      .walker-sprite.is-left {
+        transform: scaleX(-1);
+      }
+      @keyframes walker-step {
+        0% {
+          background-position: 0 0;
+        }
+        50% {
+          background-position: 33.333% 0;
+        }
+      }
       .leaflet-tooltip.person-label {
         padding: 2px 8px;
         font-size: 1rem;
