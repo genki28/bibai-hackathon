@@ -24,6 +24,33 @@ import "./reset-menu-button.js";
 import "./test-mode.js";
 
 const STEPS = ["ask", "sending", "done"];
+/** 一度入れた名前を、次から最初から入れておくために端末に覚える場所。 */
+const NAME_KEY = "bibai-elder-name";
+
+/** 前に入れた名前(なければ空)。 */
+function savedName() {
+  try {
+    return localStorage.getItem(NAME_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/** 名前を覚える(覚えられなくても、依頼はそのまま送る)。 */
+function saveName(name) {
+  try {
+    if (name) localStorage.setItem(NAME_KEY, name);
+  } catch (error) {
+    console.error("名前を端末に覚えておけませんでした", error);
+  }
+}
+
+/** name="name" の入力欄があり、空なら、前に入れた名前を入れておく。 */
+function fillSavedName() {
+  const field = document.querySelector('input[name="name"]');
+  const name = savedName();
+  if (field && !field.value && name) field.value = name;
+}
 const PREVIEW_DELAY_MS = 1000;
 const WAITING_PAGE = "./help-waiting.html";
 
@@ -154,7 +181,10 @@ async function sendRequest(userIdPromise) {
     return;
   }
   const userId = await userIdPromise;
-  await postJson("/api/help-requests", { ...optionalFields(), userId, amount: selectedAmount() });
+  const fields = optionalFields();
+  await postJson("/api/help-requests", { ...fields, userId, amount: selectedAmount() });
+  // 送れたら、次から名前を入れなくてよいように覚える
+  saveName(fields.name ?? "");
 }
 
 async function onCall(userIdPromise) {
@@ -188,6 +218,7 @@ function main() {
   const userIdPromise = isPreviewMode() ? Promise.resolve("") : resolveUserId();
   userIdPromise.catch((error) => console.error(error));
 
+  fillSavedName();
   setUpLocationButton();
   byId("call-button").addEventListener("click", () => onCall(userIdPromise));
   byId("cancel-button").addEventListener("click", closeScreen);
