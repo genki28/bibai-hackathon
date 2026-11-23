@@ -75,3 +75,13 @@ iPhone(Swift / SwiftUI)と Android(Kotlin / Jetpack Compose)で、**同じ動き
 | 位置を送る間隔・デモの近づき方 | `public/liff/location-share.js`、`public/liff/eta.js` の `stepToward` | `tests/eta.test.ts` |
 | 画面の文言・流れ | `public/liff/` の `go-help`、`helper-place`、`helper-sound-code`、`helper-gather`、`helper-working`、`snow-area`、`finish`、`ranking` | — |
 | API の細かい決まり | `src/help-requests/routes.ts`、`src/help-requests/views.ts`、`docs/features/pages.md` の「API の一覧」 | `tests/*api*.test.ts` |
+
+## 第 2 版の変更(2026-11-23。iPhone で試した結果から)
+
+1. **参加の確認は、押したカードのすぐ下に出す**: 一覧のカードを押したら、そのカードが下に伸びて「この雪かきに参加しますか?」と [参加する] [やめておく] を出す(画面のいちばん下のシートや、画面の真ん中のダイアログにしない)
+2. **見た目は Web(LIFF)に合わせる**: 白い背景・紺の文字・朱色の大事なボタン・四角い枠に影をずらした「ドット絵のカード」(`public/liff/snow-ui.css`、`public/liff/snow-pixel.css`、`public/liff/template.css` を見る)。上に「ユキカキ・レイド / 美唄」の行、大きな見出し。**文字は DotGothic16**(Google Fonts、SIL Open Font License。`https://github.com/google/fonts/tree/main/ofl/dotgothic16` の `DotGothic16-Regular.ttf` と `OFL.txt` をアプリに入れる)。画面の見本は `docs/manual/images/*.jpeg`
+3. **到着の画面に合言葉の数字を出さない**: 「合言葉を鳴らしています」だけ(4 桁は画面にもログにも出さない)
+4. **テスト用のボタンは画面のいちばん下に、小さく灰色の文字で「テスト: 〇〇」**: [テスト: 揺れをまねる](雪かき中)、[テスト: 家に近づく](目的地)、[テスト: スキップして到着](到着の画面になってから)。「デモ: 家に近づく」「スキップして到着」の大きなボタンはやめる
+5. **本人確認は Web と同じ仕組みで**: 参加したら(すでに確認済みなら飛ばす)、アプリの中のブラウザ(iPhone: WKWebView、Android: WebView)で `{サーバーの URL}/liff/identity.html?appUserId={利用者 ID}&appName={名前(URL 用に変換)}` を開く。顔の照合はその画面がスマホの中で行う(同じ AI・同じ判定)。カメラを使えるようにする(iPhone: `NSCameraUsageDescription` と、WKWebView のカメラの許可、`allowsInlineMediaPlayback`。Android: `CAMERA` の権限と `WebChromeClient.onPermissionRequest`、`setMediaPlaybackRequiresUserGesture(false)`)。2 秒ごとに `GET /api/identity/{userId}` を読み、`verified: true` になったら閉じて 3 へ。その画面の下に [テスト: 本人確認をスキップ] がある
+6. **消費カロリーはアプリで測る**: 雪かき中(画面を閉じていても)、加速度から消費カロリーを数える。1 サンプルごとに、なめらかにした揺れの大きさ(スコップ計と同じ 5 サンプルの平均)が **1.5 m/s² 以上なら 5.5 METs(雪かき)、それより小さければ 2.0 METs(立って休む)** として、`kcal += METs × 60(kg)× 経過時間(時間)× 1.05`(サンプルの間が 1 秒より空いたら、その間は数えない)。純粋な関数にしてテストを書く。回数と一緒に `POST .../scoops { userId, count, calories }`(calories は整数、0〜5,000)で送る。雪かき中の画面に「消費カロリー 約〇kcal」を出す
+7. **ランキングをやめて「チームの記録」に**: 下のタブ「ランキング」を「チームの記録」に変える。`GET /api/teams/mine/{userId}` の `{ totalCalories, teamCount, partners, teams: [{ id, finishedAt, area, members, teamCalories, myCalories }] }` で、「あなたのチームで 合計 〇kcal」「〇回 ・ 〇人といっしょに」と、チームごとのカード(いつ・どこ・一緒にやった人の名前・チームの kcal・自分の kcal)。[美唄の雪山マップを見る] で `{サーバーの URL}/snow-map.html` を外のブラウザで開く。お疲れ様の画面にも「チームで 〇kcal」を出す
