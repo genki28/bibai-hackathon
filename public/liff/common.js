@@ -162,3 +162,22 @@ export function closeScreen() {
   }
   history.back();
 }
+
+/**
+ * ドット絵のアイコン(icons/〇〇.svg。ChatGPT で作ったもの)の <img>。飾りなので読み上げない。
+ * @param {string} name アイコンの名前(icons/ のファイル名から .svg を除いたもの)
+ * @param {string} [className] 大きく出すときは "ui-icon is-big"
+ */
+export function icon(name, className = "ui-icon") {
+  const img = document.createElement("img");
+  img.src = new URL(`./icons/${name}.svg`, import.meta.url).href;
+  img.alt = "";
+  img.className = className;
+  img.setAttribute("aria-hidden", "true");
+  return img;
+}
+
+/** 要素の中身を「アイコン + 文字」にする(文字は textContent と同じく、そのまま文字として入る)。 */
+export function setIconText(element, name, text) {
+  element.replaceChildren(icon(name), text);
+}

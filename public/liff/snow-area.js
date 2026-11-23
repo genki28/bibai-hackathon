@@ -2,7 +2,7 @@
 // 地図の上の操作(点を動かす・消す・足す、モード)は map.js の enableAreaDrawing。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
-import { byId } from "./common.js";
+import { byId, setIconText } from "./common.js";
 import { navigateTo, pageReady } from "./loading.js";
 import { AREA_MODE, createMap, DRAW_ZOOM, enableAreaDrawing, pointOf } from "./map.js";
 import {
@@ -25,11 +25,13 @@ const START_SQUARE_SIZE_M = 15;
 /** モードごとの、地図の上のしるしと説明文。 */
 const MODE_TEXT = {
   [AREA_MODE.move]: {
-    badge: "✋ 地図を動かす",
+    badge: "地図を動かす",
+    badgeIcon: "hand",
     hint: "点をつまんで動かす・タップで消す",
   },
   [AREA_MODE.draw]: {
-    badge: "✏️ 描いています",
+    badge: "描いています",
+    badgeIcon: "pencil",
     hint: "地図をタップで点を追加",
   },
 };
@@ -45,7 +47,7 @@ function showModeAndHint() {
   byId("mode-move").setAttribute("aria-pressed", String(!isDrawing));
   byId("mode-draw").setAttribute("aria-pressed", String(isDrawing));
   byId("map-wrap").classList.toggle("is-drawing", isDrawing);
-  byId("mode-badge").textContent = text.badge;
+  setIconText(byId("mode-badge"), text.badgeIcon, text.badge);
   byId("area-hint").textContent = pointCount === 0 && !isDrawing ? EMPTY_HINT : text.hint;
 }
 

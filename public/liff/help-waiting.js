@@ -4,7 +4,7 @@
 // 来た人のスマホが鳴らす音の合言葉を聞き取って、その人を到着にできる(elder-sound-arrive.js)。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
-import { byId, callApi, isPreviewMode } from "./common.js";
+import { byId, callApi, icon, isPreviewMode } from "./common.js";
 import { createElderLiveMap } from "./elder-live-map.js";
 import { createElderSoundArrive } from "./elder-sound-arrive.js";
 import { pageReady } from "./loading.js";
@@ -16,10 +16,10 @@ const AMOUNT_LABELS = { little: "すこし", normal: "ふつう", lots: "たく�
 
 /** 状態ごとの見出しとアイコン。 */
 const STATUS_VIEWS = {
-  waiting: { icon: "⏳", text: "お手伝いする人を\n探しています" },
-  accepted: { icon: "🙌", text: "お手伝いする人が\n向かっています" },
-  working: { icon: "⛄", text: "雪かき中です" },
-  done: { icon: "🎉", text: "雪かきが終わりました" },
+  waiting: { icon: "hourglass", text: "お手伝いする人を\n探しています" },
+  accepted: { icon: "cheer", text: "お手伝いする人が\n向かっています" },
+  working: { icon: "snowman", text: "雪かき中です" },
+  done: { icon: "party", text: "雪かきが終わりました" },
 };
 
 let stopPolling = () => {};
@@ -45,7 +45,7 @@ function render(request) {
     else step.removeAttribute("aria-current");
   });
   if (!request) {
-    byId("status-icon").textContent = "🏠";
+    byId("status-icon").replaceChildren(icon("house", "ui-icon is-big"));
     byId("request-status").textContent = "いまは、おねがいしている雪かきはありません。";
     byId("request-helpers").textContent = "";
     byId("request-detail").textContent = "";
@@ -54,7 +54,7 @@ function render(request) {
     return;
   }
   const view = STATUS_VIEWS[request.status] ?? STATUS_VIEWS.waiting;
-  byId("status-icon").textContent = view.icon;
+  byId("status-icon").replaceChildren(icon(view.icon, "ui-icon is-big"));
   byId("request-status").textContent = view.text;
   byId("request-helpers").textContent = helpersText(request);
   const createdAt = new Date(request.createdAt).toLocaleString("ja-JP");

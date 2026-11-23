@@ -6,7 +6,7 @@
 // スコップ計をオンにしたら、画面が消えないようにする(wake-lock.js)。
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
-import { byId, callApi } from "./common.js";
+import { byId, callApi, setIconText } from "./common.js";
 import { navigateTo, pageReady } from "./loading.js";
 import {
   fetchRequest,
@@ -86,10 +86,11 @@ function showLeaderRole(request, userId) {
     role.textContent = "";
     return;
   }
-  role.textContent =
-    request.leaderUserId === userId
-      ? "👑 あなたがリーダー(終わったら範囲を記録)"
-      : `👑 リーダー: ${leaderNameOf(request)} さん`;
+  setIconText(
+    role,
+    "crown",
+    request.leaderUserId === userId ? "あなたがリーダー(終わったら範囲を記録)" : `リーダー: ${leaderNameOf(request)} さん`,
+  );
 }
 
 /** 「リーダーが範囲に丸を付けています」の表示にする(終わったら読み直しでお疲れ様へ進む)。 */
@@ -122,7 +123,7 @@ const sendScoops = (id, userId) => (count, { keepalive = false } = {}) =>
 /** 音の実況のボタンの文字を、今のオン / オフに合わせる。 */
 function showSoundToggle(coach) {
   const button = byId("sound-toggle");
-  button.textContent = coach.isOn() ? "🔊 音の実況: オン" : "🔇 音の実況: オフ";
+  setIconText(button, coach.isOn() ? "speaker" : "mute", coach.isOn() ? "音の実況: オン" : "音の実況: オフ");
   button.setAttribute("aria-pressed", String(coach.isOn()));
 }
 

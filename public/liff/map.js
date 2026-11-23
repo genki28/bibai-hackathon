@@ -67,11 +67,15 @@ export function showPin(map, point, label) {
  * 人の印(丸いアイコン + 名前の札)を置く。名前は利用者が決めた文字なので、
  * HTML の文字列ではなく要素(textContent)で渡す。
  */
-export function showPersonMarker(map, point, name, emoji = "🏃") {
+export function showPersonMarker(map, point, name, iconName = "runner") {
   const L = window.L;
   const icon = document.createElement("span");
   icon.className = "person-marker-icon";
-  icon.textContent = emoji;
+  const img = document.createElement("img");
+  img.src = new URL(`./icons/${iconName}.svg`, import.meta.url).href;
+  img.alt = "";
+  img.className = "ui-icon";
+  icon.append(img);
   const label = document.createElement("span");
   label.textContent = name;
   const marker = L.marker([point.lat, point.lng], {

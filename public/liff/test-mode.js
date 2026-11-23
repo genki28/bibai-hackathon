@@ -9,6 +9,7 @@
 
 import {
   fetchAppConfig,
+  icon,
   getSelectedTestUserId,
   isPreviewMode,
   postJson,
@@ -133,7 +134,8 @@ function addStyle() {
 }
 
 function addBanner(profile) {
-  const banner = el("div", `🧪 テスト中: ${profile.displayName} として操作しています`);
+  const banner = el("div");
+  banner.append(icon("test"), `テスト中: ${profile.displayName} として操作しています`);
   banner.id = BANNER_ID;
   banner.setAttribute("role", "status");
   document.body.prepend(banner);
@@ -188,7 +190,8 @@ async function openDialog(testUsers) {
   panel.setAttribute("aria-modal", "true");
   panel.setAttribute("aria-label", "テスト用の利用者の切り替え");
 
-  const resetButton = el("button", "🗑 テストのデータを消す", "test-danger");
+  const resetButton = el("button", undefined, "test-danger");
+  resetButton.append(icon("trash"), "テストのデータを消す");
   resetButton.type = "button";
   resetButton.addEventListener("click", () => resetTestData(resetButton));
   const closeButton = el("button", "とじる", "test-close");
@@ -196,7 +199,11 @@ async function openDialog(testUsers) {
   closeButton.addEventListener("click", closeDialog);
 
   panel.append(
-    el("h2", "🧪 テスト用の利用者の切り替え"),
+    (() => {
+      const title = el("h2");
+      title.append(icon("test"), "テスト用の利用者の切り替え");
+      return title;
+    })(),
     el("p", `いまの利用者: ${current.displayName}`),
     choiceButton(`自分(LINE / ふだんの ID: ${own.displayName})`, "", currentTestId),
     ...testUsers.map((user) => choiceButton(user.label, user.userId, currentTestId)),
@@ -214,7 +221,8 @@ async function openDialog(testUsers) {
 }
 
 function addButton(testUsers) {
-  const button = el("button", "🧪 テスト");
+  const button = el("button");
+  button.append(icon("test"), "テスト");
   button.id = BUTTON_ID;
   button.type = "button";
   button.addEventListener("click", () =>

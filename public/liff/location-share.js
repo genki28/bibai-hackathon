@@ -7,7 +7,7 @@
 // - [🧪 位置をまねる] で、押すたびに家へ少しずつ近づく位置を送る(デモ・屋内で試すため)
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
-import { byId } from "./common.js";
+import { byId, setIconText } from "./common.js";
 import { distanceM, stepToward } from "./eta.js";
 
 /** サーバーに送る間隔(ミリ秒)。 */
@@ -22,14 +22,17 @@ const FAKE_START_OFFSET = { lat: -0.006, lng: -0.008 };
 const FAKE_STEP_M = 150;
 
 const STATUS = {
-  sharing: "📍 位置を共有しています(到着するまで)",
-  waitingFix: "📍 位置を読み込んでいます…",
+  sharing: "位置を共有しています(到着するまで)",
+  waitingFix: "位置を読み込んでいます…",
   failed: "位置を取得できませんでした",
   unsupported: "この端末では位置を取得できません",
 };
 
-const showStatus = (text) => {
-  byId("share-status").textContent = text;
+/** 状態の文字。共有中・読み込み中はピンのアイコン、まねたときは試験管のアイコンを付ける。 */
+const showStatus = (text, iconName = "") => {
+  const name = iconName || (text === STATUS.sharing || text === STATUS.waitingFix ? "pin" : "");
+  if (name) setIconText(byId("share-status"), name, text);
+  else byId("share-status").textContent = text;
 };
 
 /**
@@ -108,7 +111,7 @@ export function startLocationShare({ home, send }) {
     fake.addEventListener("click", async () => {
       fakePoint = stepToward(fakePoint, home, FAKE_STEP_M);
       await sendPoint({ ...fakePoint, accuracy: 10 });
-      showStatus(`🧪 まねた位置を送りました(家まで約 ${Math.round(distanceM(fakePoint, home))} m)`);
+      showStatus(`まねた位置を送りました(家まで約 ${Math.round(distanceM(fakePoint, home))} m)`, "test");
     });
   }
 

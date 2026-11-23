@@ -5,7 +5,7 @@
 // - [🧪 合言葉をまねる] で、マイクを使わず画面の中で鳴らして聞く(デモ・1 台で試すため)
 // 注意: 画面に文字を入れるときは必ず textContent を使う(innerHTML は使わない)。
 
-import { byId, callApi } from "./common.js";
+import { byId, callApi, setIconText } from "./common.js";
 import { postAction } from "./request-page.js";
 import { createAudioContext, listenToSource, listenWithMicrophone, playCode } from "./sound-checkin.js";
 
@@ -34,11 +34,13 @@ export function createElderSoundArrive({ userId, onChange }) {
   let isSending = false;
   let lastWrong = { code: "", at: 0 };
 
-  const setStatus = (text) => {
-    byId("sound-status").textContent = text;
+  /** 状態の文字。iconName があれば、前にアイコンを付ける。 */
+  const setStatus = (text, iconName = "") => {
+    if (iconName) setIconText(byId("sound-status"), iconName, text);
+    else byId("sound-status").textContent = text;
   };
 
-  function stop(message = "") {
+  function stop(message = "", iconName = "") {
     listener?.stop();
     fakePlayer?.stop();
     listener = null;
@@ -46,7 +48,7 @@ export function createElderSoundArrive({ userId, onChange }) {
     clearTimeout(limitTimer);
     byId("sound-listen").hidden = false;
     byId("sound-level").hidden = true;
-    setStatus(message);
+    setStatus(message, iconName);
   }
 
   /** 着いた人の名前(前の様子と比べて、新しく着いた人)。 */
@@ -64,8 +66,8 @@ export function createElderSoundArrive({ userId, onChange }) {
       const names = arrivedNames(request, latest).join("、");
       request = latest;
       onChange(latest);
-      if (comingHelpers(latest).length === 0) stop(`✅ ${names}が着きました!`);
-      else setStatus(`✅ ${names}が着きました!ほかの人も、スマホを近づけてね`);
+      if (comingHelpers(latest).length === 0) stop(`${names}が着きました!`, "check");
+      else setStatus(`${names}が着きました!ほかの人も、スマホを近づけてね`, "check");
     } catch (error) {
       lastWrong = { code, at: now };
       setStatus(`${error.message} もう少し近づけてね`);
@@ -87,7 +89,7 @@ export function createElderSoundArrive({ userId, onChange }) {
       listener = await makeListener();
       byId("sound-listen").hidden = true;
       byId("sound-level").hidden = false;
-      setStatus("📡 聞いています。来た人に、スマホを近づけてもらってね");
+      setStatus("聞いています。来た人に、スマホを近づけてもらってね", "antenna");
       limitTimer = setTimeout(() => stop("聞くのを止めました。もう一度押すと聞き直します。"), LISTEN_LIMIT_MS);
     } catch (error) {
       console.error("合言葉を聞けませんでした", error);

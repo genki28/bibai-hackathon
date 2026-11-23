@@ -1,0 +1,2 @@
+<!-- letter: ChatGPT で作ったドット絵のアイコン(16×16)。docs/design.md の 4 色だけを使う -->
+<svg viewBox="0 0 16 16" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="4" width="14" height="10" fill="#192e49"/><rect x="2" y="5" width="12" height="8" fill="#ffffff"/><path fill="#d4e0e8" d="M2 6h1v1h2v1h2v1h2V8h2V7h2V6h1v2h-1v1h-2v1H9v1H7v-1H5V9H3V8H2z"/><path fill="#192e49" d="M2 11h2v-1h2v1H5v1H2zM14 11h-2v-1h-2v1h1v1h3z"/><path fill="#b73e2c" d="M6 2h2v1h1V2h2v1h1v2h-1v1h-1v1H9v1H8V7H7V6H6V5H5V3h1z"/></svg>
